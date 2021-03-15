@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+alias ls="ls -G"
+alias clearderiveddata='rm -rf /Users/sendhil/Library/Developer/Xcode/DerivedData/*'
+alias projects='cd /Users/sendhil/Projects'
+alias tmux="TERM=screen-256color tmux"
+alias findfile='find . -name '
+alias src='cd ~/src'
+alias todo="cd ~/Dropbox/todo"
+alias work-notes="cd ~/Dropbox/lyft-work-notebook"
+alias notes="cd ~/Dropbox/general-notebook"
+alias nightlight='redshift "-l47.62:-122.21" -t 3700:3700'
+alias tree="tree -C"
+alias weather="curl wttr.in"
+
+# Calendar
+alias pcal="gcalcli --configFolder ~/.config/gcalcli/personal"
+alias wcal="gcalcli --configFolder ~/.config/gcalcli/work"
+
+# Git
+alias gitwipe='git reset --hard HEAD && git clean -df'
+alias git_cleanup='git branch --merged develop | grep -Ev "(master|release|hotfix|develop)" | xargs git branch -d'
+
+# Kitty
+alias d="kitty +kitten diff"
+
+# Dunst
+alias dunstpause="killall -SIGUSR1 dunst"
+alias dunstresume="killall -SIGUSR2 dunst"
+
+export COCOAPODS_DISABLE_DETERMINISTIC_UUIDS=true
+export EDITOR=nvim
+
+# IP addresses (From https://github.com/jfrazelle/dotfiles/)
+alias pubip="dig +short myip.opendns.com @resolver1.opendns.com"
+alias localip="sudo ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1'"
+alias ips="sudo ifconfig -a | grep -o 'inet6\? \(addr:\)\?\s\?\(\(\([0-9]\+\.\)\{3\}[0-9]\+\)\|[a-fA-F0-9:]\+\)' | awk '{ sub(/inet6? (addr:)? ?/, \"\"); print }'"
+
+# View HTTP traffic (From https://github.com/jfrazelle/dotfiles/)
+alias sniff="sudo ngrep -d 'en1' -t '^(GET|POST) ' 'tcp and port 80'"

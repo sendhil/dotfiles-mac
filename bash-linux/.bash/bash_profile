@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+
+if [ -f ~/.bash_local ]; then
+  source ~/.bash_local
+fi
+
+source ~/.bash/bash_aliases
+source ~/.bash/fzf_related
+source ~/.bash/utilities
+source ~/.bash/google_cloud
+source ~/.bash/k8s
+
+# enable color support of ls and also add handy aliases
+if [ -x /usr/bin/dircolors ]; then
+    test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
+    alias ls='ls --color=auto'
+    alias dir='dir --color=auto'
+    #alias vdir='vdir --color=auto'
+
+    alias grep='grep --color=auto'
+    alias fgrep='fgrep --color=auto'
+    alias egrep='egrep --color=auto'
+fi
+
+# Set Vi Mode
+set -o vi
+bindkey "^R" history-incremental-search-backward
+bindkey '^x^e' edit-command-line
+
+export REVIEW_BASE=master
+export NVM_DIR="/Users/sendhil/.nvm"
+export GOPATH=$HOME/go
+export GOROOT=/usr/lib/golang
+export BAT_THEME="TwoDark"
+export PATH=~/.cargo/bin:$GOPATH/bin:$GOROOT/bin:~/src/google-cloud-sdk/bin:~/.local/bin:$HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin:$PATH
+export LESS=FRX
+
+# VirtualEnv
+if [ -f ~/.local/bin/virtualenvwrapper_lazy.sh ]; then
+  export WORKON_HOME=$HOME/.virtualenvs
+  export PROJECT_HOME=$HOME/src
+  source ~/.local/bin/virtualenvwrapper_lazy.sh
+fi
+
+# Colored Man Pages
+export MANPAGER="nvim -c 'set ft=man' -"

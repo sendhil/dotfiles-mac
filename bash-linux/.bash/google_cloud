@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+if test -d ~/src/google-cloud-sdk; then 
+  source ~/src/google-cloud-sdk/completion.zsh.inc
+  source ~/src/google-cloud-sdk/path.zsh.inc
+fi
