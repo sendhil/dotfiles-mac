@@ -3,11 +3,11 @@ all: stow gitconfig
 
 .PHONY: stow
 stow:
-	stow -t ~ kitty neovim vim skhd bash-linux bat
+	stow -t ~ kitty neovim vim skhd bash-linux bat yabai
 
 .PHONY: unstow
 unstow:
-	@stow -D -t ~ kitty neovim vim skhd bash-linux bat
+	@stow -D -t ~ kitty neovim vim skhd bash-linux bat yabai
 
 .PHONY: gitconfig
 gitconfig:
