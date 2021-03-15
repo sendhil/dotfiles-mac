@@ -114,11 +114,12 @@ alt - return : /Applications/Kitty.app/Contents/MacOS/kitty --single-instance -d
 # # close focused window
 shift + alt - q : yabai -m window --close
 #
-# # focus window
-alt - h : yabai -m window --focus west
+# focus window
+# next/prev defined in stack section below so as to make things more consistent when using a stack
+# alt - h : yabai -m window --focus west
 alt - j : yabai -m window --focus south
 alt - k : yabai -m window --focus north
-alt - l : yabai -m window --focus east
+# alt - l : yabai -m window --focus east
 
 # Move Window
 shift + alt - h : yabai -m window --swap west
@@ -151,7 +152,25 @@ shift + alt - 0x18: yabai -m space --balance
 alt + shift - r : launchctl kickstart -k "gui/${UID}/homebrew.mxcl.yabai"
 
 # Stack
-alt + shift - s : yabai -m space --layout "$(yabai -m query --spaces --space | jq -r 'if .type == "bsp" then "stack" else "bsp" end')"
+alt - s : yabai -m space --layout "$(yabai -m query --spaces --space | jq -r 'if .type == "bsp" then "stack" else "bsp" end')"
+
+# Next/Prev inspired from - https://anuj-chandra.medium.com/using-i3-like-tiling-window-managers-in-macos-with-yabai-ebf0e002b992
+# Next
+alt - h : yabai -m query --spaces --space \
+  | jq -re ".index" \
+  | xargs -I{} yabai -m query --windows --space {} \
+  | jq -sre "add | map(select(.minimized != 1)) | sort_by(.display, .frame.y, .frame.x, .id) | reverse | nth(index(map(select(.focused == 1))) - 1).id" \
+  | xargs -I{} yabai -m window --focus {}
+# Prev
+alt - l : yabai -m query --spaces --space \
+  | jq -re ".index" \
+  | xargs -I{} yabai -m query --windows --space {} \
+  | jq -sre "add | map(select(.minimized != 1)) | sort_by(.display, .frame.y, .frame.y, .id) | nth(index(map(select(.focused == 1))) - 1).id" \
+  | xargs -I{} yabai -m window --focus {}
+
+
+# Fullscreen
+alt - f : yabai -m window --toggle zoom-fullscreen
 
 # cmd - j : chunkc tiling::window --focus prev
 # cmd - k : chunkc tiling::window --focus next
