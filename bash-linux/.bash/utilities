@@ -119,5 +119,5 @@ function bat-allfilesrecursively {
 
 function timer() {
     n=$1
-    countdown "$n" && i3-nagbar -m "$n timer is over" -t warning
+		countdown "$n" && terminal-notifier -title "Timer" -message "Timer is done."
 }
