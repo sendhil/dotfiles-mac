@@ -122,16 +122,16 @@ alt - k : yabai -m window --focus north
 # alt - l : yabai -m window --focus east
 
 # Move/Warp Window
-shift + alt - h : yabai -m window --warp west
-shift + alt - j : yabai -m window --warp south
-shift + alt - k : yabai -m window --warp north
-shift + alt - l : yabai -m window --warp east
+shift + alt - h : yabai -m window --warp west || yabai -m window --display west
+shift + alt - j : yabai -m window --warp south || yabai -m window --display south
+shift + alt - k : yabai -m window --warp north || yabai -m window --display north
+shift + alt - l : yabai -m window --warp east || yabai -m window --display east
 
 # Move/Swap Window
-ctrl + alt - h : yabai -m window --swap west
-ctrl + alt - j : yabai -m window --swap south
-ctrl + alt - k : yabai -m window --swap north
-ctrl + alt - l : yabai -m window --swap east
+ctrl + alt - h : yabai -m window --swap west || yabai -m window --display west
+ctrl + alt - j : yabai -m window --swap south || yabai -m window --display south
+ctrl + alt - k : yabai -m window --swap north || yabai -m window --display north
+ctrl + alt - l : yabai -m window --swap east || yabai -m window --display east
 
 # Send Window to Space (Shift + Alt + [NUM])
 shift + alt - 1: yabai -m window --space 1
