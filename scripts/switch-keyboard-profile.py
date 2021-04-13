@@ -7,5 +7,9 @@ CLI_PATH = "/Library/Application Support/org.pqrs/Karabiner-Elements/bin/karabin
 BUILT_IN_PROFILE = "BuiltInKeyboard"
 EXTERNAL_PROFILE = "ExternalKeyboard"
 
-profile_to_switch_to = EXTERNAL_PROFILE if BUILT_IN_PROFILE in subprocess.run([CLI_PATH, "--show-current-profile-name"], stdout=subprocess.PIPE).stdout.decode('utf-8') else BUILT_IN_PROFILE
-subprocess.run([CLI_PATH, "--select-profile", profile_to_switch_to])
+if BUILT_IN_PROFILE in subprocess.run([CLI_PATH, "--show-current-profile-name"], stdout=subprocess.PIPE).stdout.decode('utf-8'):
+    subprocess.run([CLI_PATH, "--select-profile", EXTERNAL_PROFILE])
+    subprocess.run(["defaults", "write", "NSGlobalDomain", "com.apple.swipescrolldirection", "-bool", "false"])
+else:
+    subprocess.run([CLI_PATH, "--select-profile", BUILT_IN_PROFILE])
+    subprocess.run(["defaults", "write", "NSGlobalDomain", "com.apple.swipescrolldirection", "-bool", "true"])
