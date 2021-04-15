@@ -1,13 +1,8 @@
 #!/usr/bin/env bash
 
-if [ -f ~/.bash_local ]; then
-  source ~/.bash_local
-fi
-
 source ~/.bash/bash_aliases
 source ~/.bash/fzf_related
-source ~/.bash/utilities
-source ~/.bash/google_cloud
+source ~/.bash/utilities source ~/.bash/google_cloud
 source ~/.bash/k8s
 
 # enable color support of ls and also add handy aliases
@@ -45,3 +40,7 @@ fi
 
 # Colored Man Pages
 export MANPAGER="nvim -c 'set ft=man' -"
+
+if [ -f ~/.bash_local ]; then
+  source ~/.bash_local
+fi
