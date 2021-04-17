@@ -156,6 +156,10 @@ alt - s : yabai -m space --layout "$(yabai -m query --spaces --space | jq -r 'if
 alt - h : yabai -m window --focus "$(yabai -m query --spaces --space | jq -r 'if .type == "bsp" then "west" else "stack.prev" end')"
 alt - l : yabai -m window --focus "$(yabai -m query --spaces --space | jq -r 'if .type == "bsp" then "east" else "stack.next" end')"
 
+# Toggle Split
+
+alt - e : yabai -m window --toggle split
+
 # Next/Prev inspired from - https://anuj-chandra.medium.com/using-i3-like-tiling-window-managers-in-macos-with-yabai-ebf0e002b992
 
 # Next
