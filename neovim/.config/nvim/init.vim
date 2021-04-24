@@ -7,8 +7,6 @@ if has("nvim")
   Plug 'neoclide/coc.nvim', {'do': './install.sh nightly'}
 endif
 
-Plug 'mileszs/ack.vim'
-Plug 'rking/ag.vim' 
 Plug 'vim-airline/vim-airline' 
 Plug 'vim-airline/vim-airline-themes'
 Plug 'https://github.com/altercation/vim-colors-solarized.git'
@@ -16,19 +14,16 @@ Plug 'tomtom/tcomment_vim'
 Plug 'ctrlpvim/ctrlp.vim'
 Plug 'tpope/vim-fugitive'
 Plug 'fatih/vim-go'
-Plug 'othree/html5.vim'
 Plug 'moll/vim-node'
 Plug 'mtth/scratch.vim'
 Plug 'kana/vim-smartinput'
 Plug 'tpope/vim-surround'
 Plug 'majutsushi/tagbar'
-Plug 't-yuki/vim-go-coverlay'
 Plug 'scrooloose/nerdtree'
-Plug 'sendhil/vim-snippets'
 Plug 'easymotion/vim-easymotion'
 Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
 " Forked fzf.vim as I wanted to add a few options. At some submit back.
-Plug 'sendhil/fzf.vim'
+Plug 'junegunn/fzf.vim'
 Plug 'rakr/vim-one'
 Plug 'ryanoasis/vim-devicons'
 Plug 'Shougo/denite.nvim'
@@ -37,21 +32,10 @@ Plug 'Shougo/neomru.vim'
 Plug 'Xuyuanp/nerdtree-git-plugin'
 Plug 'airblade/vim-gitgutter'
 Plug 'Yggdroot/indentLine'
-Plug 'iamcco/markdown-preview.nvim', { 'do': { -> mkdp#util#install() }}
 Plug 'sebdah/vim-delve'
-Plug 'vim-ctrlspace/vim-ctrlspace'
+" Plug 'vim-ctrlspace/vim-ctrlspace'
 Plug 'sheerun/vim-polyglot'
 
-" Typescript
-" Plug 'MaxMEllon/vim-jsx-pretty'
-" Plug 'mhartington/nvim-typescript', {'do': './install.sh'}
-" Plug 'peitalin/vim-jsx-typescript'
-" Plug 'HerringtonDarkholme/yats.vim'
-
-
-if has("win32") 
-  Plug 'vim-scripts/mru.vim'
-endif
 
 call plug#end()
 
