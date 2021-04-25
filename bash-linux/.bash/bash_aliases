@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 
-alias ls="ls -G"
+if ! [ -x "$(command -v exa)" ]; then
+  alias ls="ls -G"
+else
+  alias ls="exa"
+  alias ll='exa -lah'
+fi
+
 alias clearderiveddata='rm -rf /Users/sendhil/Library/Developer/Xcode/DerivedData/*'
 alias projects='cd /Users/sendhil/Projects'
 alias tmux="TERM=screen-256color tmux"
