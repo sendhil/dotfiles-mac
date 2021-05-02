@@ -12,6 +12,8 @@ then
   ln -s /Applications/Hammerspoon.app/Contents/Resources/extensions/hs/ipc/share/man/man1/hs.1 /opt/homebrew/share/man/man1/hs.1
 fi
 
-sed 's/\/usr\/local\/bin\/jq/\/opt\/homebrew\/bin\/jq/' "$HOME/.hammerspoon/stackline/conf.lua" | sed 's/\/usr\/local\/bin\/yabai/\/opt\/homebrew\/bin\/yabai/' > "$HOME/.hammerspoon/stackline/temp-config.lua"
+sed 's/\/usr\/local\/bin\/jq/\/opt\/homebrew\/bin\/jq/' "$HOME/.hammerspoon/stackline/conf.lua" \
+  | sed 's/\/usr\/local\/bin\/yabai/\/opt\/homebrew\/bin\/yabai/' | \
+sed 's/showIcons.*/showIcons                = false/' > "$HOME/.hammerspoon/stackline/temp-config.lua"
 
 mv "$HOME/.hammerspoon/stackline/temp-config.lua" "$HOME/.hammerspoon/stackline/conf.lua"
