@@ -153,8 +153,9 @@ alt + shift - r : launchctl kickstart -k "gui/${UID}/homebrew.mxcl.yabai"
 
 # Stack Related
 alt - s : yabai -m space --layout "$(yabai -m query --spaces --space | jq -r 'if .type == "bsp" then "stack" else "bsp" end')"
-alt - h : yabai -m window --focus "$(yabai -m query --spaces --space | jq -r 'if .type == "bsp" then "west" else "stack.prev" end')"
-alt - l : yabai -m window --focus "$(yabai -m query --spaces --space | jq -r 'if .type == "bsp" then "east" else "stack.next" end')"
+
+alt - h : yabai -m window --focus stack.prev || yabai -m window --focus prev || yabai -m window --focus last
+alt - l : yabai -m window --focus stack.next || yabai -m window --focus next || yabai -m window --focus first
 
 # Toggle Split
 
