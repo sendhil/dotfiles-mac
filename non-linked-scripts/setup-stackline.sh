@@ -1,5 +1,12 @@
 #!/bin/bash -e
 
+
+touch ~/.hammerspoon/init.lua
+cd ~/.hammerspoon
+git clone https://github.com/AdamWagner/stackline.git ~/.hammerspoon/stackline
+echo 'stackline = require "stackline.stackline.stackline"' >> init.lua
+echo 'stackline:init()' >> init.lua
+
 # Just attempt to replicate what https://github.com/Hammerspoon/hammerspoon/blob/da2f41aa2c008c84a746ffc0d5a0d3291d6e5264/extensions/ipc/init.lua#L266 does.
 
 if [ ! \( -e "$HOME/.local/bin/hs" \) ]
