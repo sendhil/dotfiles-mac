@@ -1,3 +1,9 @@
 [submodule "tmux/plugins/tpm"]
 	path = tmux/plugins/tpm
 	url = https://github.com/tmux-plugins/tpm
+[submodule "tmux/.tmux/plugins/tmux-jump"]
+	path = tmux/.tmux/plugins/tmux-jump
+	url = https://github.com/schasse/tmux-jump
+[submodule "tmux/.tmux/plugins/tmux-yank"]
+	path = tmux/.tmux/plugins/tmux-yank
+	url = https://github.com/tmux-plugins/tmux-yank
