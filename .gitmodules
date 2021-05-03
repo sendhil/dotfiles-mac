@@ -1,3 +1,9 @@
 [submodule "tmux/plugins/tpm"]
 	path = tmux/plugins/tpm
 	url = https://github.com/tmux-plugins/tpm
+[submodule "hammerspoon/stackline"]
+	path = hammerspoon/stackline
+	url = https://github.com/AdamWagner/stackline.git
+[submodule "hammerspoon/.hammerspoon/stackline"]
+	path = hammerspoon/.hammerspoon/stackline
+	url = https://github.com/AdamWagner/stackline.git
