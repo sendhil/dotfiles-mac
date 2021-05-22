@@ -24,7 +24,7 @@ Plug 'easymotion/vim-easymotion'
 Plug 'justinmk/vim-sneak'
 Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
 " Forked fzf.vim as I wanted to add a few options. At some submit back.
-Plug 'junegunn/fzf.vim'
+Plug 'sendhil/fzf.vim'
 Plug 'rakr/vim-one'
 Plug 'ryanoasis/vim-devicons'
 Plug 'Shougo/denite.nvim'
@@ -34,7 +34,7 @@ Plug 'Xuyuanp/nerdtree-git-plugin'
 Plug 'airblade/vim-gitgutter'
 Plug 'Yggdroot/indentLine'
 Plug 'sebdah/vim-delve'
-" Plug 'vim-ctrlspace/vim-ctrlspace'
+Plug 'vim-ctrlspace/vim-ctrlspace'
 Plug 'sheerun/vim-polyglot'
 
 

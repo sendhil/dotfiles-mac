@@ -34,7 +34,7 @@ Plug 'easymotion/vim-easymotion'
 Plug 'justinmk/vim-sneak'
 Plug 'Shougo/neosnippet.vim'
 Plug 'vim-syntastic/syntastic'
-Plug 'junegunn/fzf.vim'
+Plug 'sendhil/fzf.vim'
 Plug 'rakr/vim-one'
 Plug 'ryanoasis/vim-devicons'
 Plug 'Shougo/denite.nvim'
@@ -46,7 +46,7 @@ Plug 'airblade/vim-gitgutter'
 Plug 'leafgarland/typescript-vim'
 Plug 'Yggdroot/indentLine'
 Plug 'sebdah/vim-delve'
-" Plug 'vim-ctrlspace/vim-ctrlspace'
+Plug 'vim-ctrlspace/vim-ctrlspace'
 
 " Typescript
 Plug 'mhartington/nvim-typescript', {'do': './install.sh'}
