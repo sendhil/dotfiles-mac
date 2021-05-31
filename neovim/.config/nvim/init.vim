@@ -36,6 +36,7 @@ Plug 'Yggdroot/indentLine'
 Plug 'sebdah/vim-delve'
 Plug 'vim-ctrlspace/vim-ctrlspace'
 Plug 'sheerun/vim-polyglot'
+Plug 'junegunn/vim-peekaboo'
 
 
 call plug#end()

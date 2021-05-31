@@ -119,5 +119,5 @@ function bat-allfilesrecursively {
 
 function timer() {
     n=$1
-		countdown "$n" && hs -c 'hs.alert.show("Timer is done", 5)'
+		countdown "$n" && hs -c 'hs.alert.show("Timer is done", 10)'
 }
