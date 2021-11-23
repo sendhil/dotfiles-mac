@@ -48,4 +48,7 @@ yabai -m config window_gap                   06
 yabai -m rule --add app="^Signal|Discord$" space=10
 yabai -m rule --add app="^System Preferences$" manage=off
 
+# float settings windows
+yabai -m rule --add title='Settings$' manage=off
+
 echo "yabai configuration loaded.."
