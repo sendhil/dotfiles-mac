@@ -133,6 +133,12 @@ ctrl + alt - j : yabai -m window --swap south || yabai -m window --display south
 ctrl + alt - k : yabai -m window --swap north || yabai -m window --display north
 ctrl + alt - l : yabai -m window --swap east || yabai -m window --display east
 
+# insertion points for new container - h/t https://cbrgm.net/post/2021-05-5-setup-macos/
+shift + alt - left : yabai -m window --insert west
+shift + alt - down : yabai -m window --insert south
+shift + alt - up : yabai -m window --insert north
+shift + alt - right : yabai -m window --insert east
+
 # Send Window to Space (Shift + Alt + [NUM])
 shift + alt - 1: yabai -m window --space 1
 shift + alt - 2: yabai -m window --space 2
@@ -154,8 +160,8 @@ alt + shift - r : launchctl kickstart -k "gui/${UID}/homebrew.mxcl.yabai"
 # Stack Related
 alt - s : yabai -m space --layout "$(yabai -m query --spaces --space | jq -r 'if .type == "bsp" then "stack" else "bsp" end')"
 
-alt - h : yabai -m window --focus stack.prev || yabai -m window --focus prev || yabai -m window --focus last
-alt - l : yabai -m window --focus stack.next || yabai -m window --focus next || yabai -m window --focus first
+alt - h : yabai-stack-navigator --prev
+alt - l : yabai-stack-navigator --next
 
 # Toggle Split
 
