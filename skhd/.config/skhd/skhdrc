@@ -134,10 +134,10 @@ ctrl + alt - k : yabai -m window --swap north || yabai -m window --display north
 ctrl + alt - l : yabai -m window --swap east || yabai -m window --display east
 
 # insertion points for new container - h/t https://cbrgm.net/post/2021-05-5-setup-macos/
-shift + alt - left : yabai -m window --insert west
-shift + alt - down : yabai -m window --insert south
-shift + alt - up : yabai -m window --insert north
-shift + alt - right : yabai -m window --insert east
+# shift + alt - left : yabai -m window --insert west
+# shift + alt - down : yabai -m window --insert south
+# shift + alt - up : yabai -m window --insert north
+# shift + alt - right : yabai -m window --insert east
 
 # Send Window to Space (Shift + Alt + [NUM])
 shift + alt - 1: yabai -m window --space 1
