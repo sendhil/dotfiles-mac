@@ -39,7 +39,7 @@ if [ -f ~/.local/bin/virtualenvwrapper_lazy.sh ]; then
 fi
 
 # Colored Man Pages
-export MANPAGER="nvim -c 'set ft=man' -"
+export MANPAGER='nvim +Man!'
 
 if [ -f ~/.bash_local ]; then
   source ~/.bash_local
