@@ -156,7 +156,7 @@ alt - 7: skhd -k "shift + alt + ctrl - 7" || yabai-navigation-utilities focus 7
 alt - 8: skhd -k "shift + alt + ctrl - 8" || yabai-navigation-utilities focus 8
 alt - 9: skhd -k "shift + alt + ctrl - 9" || yabai-navigation-utilities focus 9
 alt - 0: skhd -k "shift + alt + ctrl - 0" || yabai-navigation-utilities focus 0
-alt - 0x1B: skhd -k "shift + alt + ctrl - 0x1B" || yabai-navigation-utilities focus 11
+alt - 0x1B: yabai-navigation-utilities focus 11
 
 # This adjusts to an alt-tab experience which leans on yabai a little bit more 
 # as I find it to be more reliable than built in MacOS alt-tab. 
