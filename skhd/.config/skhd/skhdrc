@@ -146,17 +146,17 @@ ctrl + alt - l : yabai -m window --swap east || yabai -m window --display east
 # is without SIP disabled, yabai can't focus on a space, but it can focus on a window. In the case that I'm
 # trying to switch to a space without a window the MacOS fallback kicks in. This also adds the perk of being
 # able to focus between multiple monitors.
-alt - 1: yabai-navigation-utilities focus 1 || skhd -k "shift + alt + ctrl - 1"
-alt - 2: yabai-navigation-utilities focus 2 || skhd -k "shift + alt + ctrl - 2"
-alt - 3: yabai-navigation-utilities focus 3 || skhd -k "shift + alt + ctrl - 3"
-alt - 4: yabai-navigation-utilities focus 4 || skhd -k "shift + alt + ctrl - 4"
-alt - 5: yabai-navigation-utilities focus 5 || skhd -k "shift + alt + ctrl - 5"
-alt - 6: yabai-navigation-utilities focus 6 || skhd -k "shift + alt + ctrl - 6"
-alt - 7: yabai-navigation-utilities focus 7 || skhd -k "shift + alt + ctrl - 7"
-alt - 8: yabai-navigation-utilities focus 8 || skhd -k "shift + alt + ctrl - 8"
-alt - 9: yabai-navigation-utilities focus 9 || skhd -k "shift + alt + ctrl - 9"
-alt - 0: yabai-navigation-utilities focus 0 || skhd -k "shift + alt + ctrl - 0"
-alt - 0x1B: yabai-navigation-utilities focus 11 || skhd -k "shift + alt + ctrl - 0x1B"
+alt - 1: skhd -k "shift + alt + ctrl - 1" || yabai-navigation-utilities focus 1
+alt - 2: skhd -k "shift + alt + ctrl - 2" || yabai-navigation-utilities focus 2
+alt - 3: skhd -k "shift + alt + ctrl - 3" || yabai-navigation-utilities focus 3
+alt - 4: skhd -k "shift + alt + ctrl - 4" || yabai-navigation-utilities focus 4
+alt - 5: skhd -k "shift + alt + ctrl - 5" || yabai-navigation-utilities focus 5
+alt - 6: skhd -k "shift + alt + ctrl - 6" || yabai-navigation-utilities focus 6
+alt - 7: skhd -k "shift + alt + ctrl - 7" || yabai-navigation-utilities focus 7
+alt - 8: skhd -k "shift + alt + ctrl - 8" || yabai-navigation-utilities focus 8
+alt - 9: skhd -k "shift + alt + ctrl - 9" || yabai-navigation-utilities focus 9
+alt - 0: skhd -k "shift + alt + ctrl - 0" || yabai-navigation-utilities focus 0
+alt - 0x1B: skhd -k "shift + alt + ctrl - 0x1B" || yabai-navigation-utilities focus 11
 
 # This adjusts to an alt-tab experience which leans on yabai a little bit more 
 # as I find it to be more reliable than built in MacOS alt-tab. 
