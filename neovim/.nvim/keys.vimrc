@@ -58,19 +58,31 @@ vim.api.nvim_set_keymap('n', '<C-e>', [[<cmd>lua require('telescope.builtin').ol
 vim.api.nvim_set_keymap('n', '<leader>p', [[<cmd>lua require('telescope.builtin').commands()<CR>]], { noremap = true, silent = true })
 -- vim.api.nvim_set_keymap('n', '<leader>g', [[<cmd>lua _lazygit_toggle()<CR>]], { noremap = true, silent = true })
 
--- One <Esc> in insert mode instead of two to quit
 local actions = require('telescope.actions')
 require('telescope').setup{
   defaults = {
     mappings = {
       i = {
-        ["<esc>"] = actions.close,
+        ["<esc>"] = actions.close, -- One <Esc> in insert mode instead of two to quit
         ["<C-j>"] = actions.move_selection_next,
         ["<C-k>"] = actions.move_selection_previous,
       },
     },
+  },
+  extensions = {
+    fzf = {
+      fuzzy = true,                    -- false will only do exact matching
+      override_generic_sorter = true,  -- override the generic sorter
+      override_file_sorter = true,     -- override the file sorter
+      case_mode = "smart_case",        -- or "ignore_case" or "respect_case"
+                                       -- the default case_mode is "smart_case"
+    }
   }
 }
+
+-- To get fzf loaded and working with telescope, you need to call
+-- load_extension, somewhere after setup function:
+require('telescope').load_extension('fzf')
 
 -- Lazy Git
   local Terminal  = require('toggleterm.terminal').Terminal
