@@ -11,4 +11,8 @@ let g:lightline = {
       \ 'component_function': {
       \   'statusline': 'nvim_treesitter#statusline'
       \ },
+      \ 'enable' : {
+      \     'statusline': 1,
+      \     'tabline': 0,
+      \ },
       \ }

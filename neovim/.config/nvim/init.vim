@@ -26,6 +26,9 @@ Plug 'p00f/nvim-ts-rainbow'
 Plug 'nvim-treesitter/playground'
 Plug 'nvim-treesitter/nvim-treesitter-context'
 Plug 'fatih/vim-go'
+Plug 'akinsho/bufferline.nvim', { 'tag': 'v2.*' }
+Plug 'akinsho/toggleterm.nvim'
+
 
 Plug 'hrsh7th/nvim-cmp'
 Plug 'hrsh7th/cmp-nvim-lsp'

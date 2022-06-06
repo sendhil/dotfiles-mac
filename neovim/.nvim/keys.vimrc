@@ -6,8 +6,6 @@ else
 endif
 
 " List Navigation
-" map <expr> <C-n> (empty(getloclist(1))  ? ":cn" : ":lnext")."\n"
-" map <expr> <C-p> (empty(getloclist(0))  ? ":cp" : ":lp")."\n"
 map <expr> <C-n> (empty(getloclist(1))  ? ":cn" : ":lnext")."\n"
 map <expr> <C-p> (empty(getloclist(0))  ? ":cp" : ":lp")."\n"
 
@@ -58,6 +56,7 @@ vim.api.nvim_set_keymap('n', '<leader>sr', [[<cmd>lua require('telescope.builtin
 vim.api.nvim_set_keymap('n', '<leader>?', [[<cmd>lua require('telescope.builtin').oldfiles()<CR>]], { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', '<C-e>', [[<cmd>lua require('telescope.builtin').oldfiles()<CR>]], { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', '<leader>p', [[<cmd>lua require('telescope.builtin').commands()<CR>]], { noremap = true, silent = true })
+-- vim.api.nvim_set_keymap('n', '<leader>g', [[<cmd>lua _lazygit_toggle()<CR>]], { noremap = true, silent = true })
 
 -- One <Esc> in insert mode instead of two to quit
 local actions = require('telescope.actions')
@@ -72,5 +71,15 @@ require('telescope').setup{
     },
   }
 }
+
+-- Lazy Git
+  local Terminal  = require('toggleterm.terminal').Terminal
+  local lazygit = Terminal:new({ cmd = "lazygit", hidden = true, direction="float" })
+
+  function _lazygit_toggle()
+    lazygit:toggle()
+  end
+
+  vim.api.nvim_set_keymap('n', '<leader>g', [[<cmd>lua _lazygit_toggle()<CR>]], { noremap = true, silent = true })
 
 EOF

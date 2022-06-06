@@ -24,7 +24,44 @@ lua << EOF
   require'treesitter-context'.setup{
       enable = true, -- Enable this plugin (Can be enabled/disabled later via commands)
   }
+
+  require("bufferline").setup{
+    options = {
+      mode = "tabs",
+      diagnostics = "nvim_lsp",
+      separator_style = "slant",
+      offsets = {{filetype = "NvimTree", text = "File Explorer"}},
+      diagnostics_indicator = function(count, level, diagnostics_dict, context)
+        local s = " "
+        for e, n in pairs(diagnostics_dict) do
+          local sym = e == "error" and " "
+            or (e == "warning" and " " or "" )
+          s = s .. n .. sym
+        end
+        return s
+      end,
+    }
+  }
+
+  require("toggleterm").setup{
+    open_mapping = [[<c-\>]],
+    shade_terminals = false,
+  }
+
+  function _G.set_terminal_keymaps()
+    local opts = {noremap = true}
+    vim.api.nvim_buf_set_keymap(0, 't', '<esc>', [[<C-\><C-n>]], opts)
+    vim.api.nvim_buf_set_keymap(0, 't', 'jk', [[<C-\><C-n>]], opts)
+    vim.api.nvim_buf_set_keymap(0, 't', '<C-h>', [[<C-\><C-n><C-W>h]], opts)
+    vim.api.nvim_buf_set_keymap(0, 't', '<C-j>', [[<C-\><C-n><C-W>j]], opts)
+    vim.api.nvim_buf_set_keymap(0, 't', '<C-k>', [[<C-\><C-n><C-W>k]], opts)
+    vim.api.nvim_buf_set_keymap(0, 't', '<C-l>', [[<C-\><C-n><C-W>l]], opts)
+  end
+
+  -- if you only want these mappings for toggle term use term://*toggleterm#* instead
+  vim.cmd('autocmd! TermOpen term://* lua set_terminal_keymaps()')
 EOF
+
 
 source $HOME/.nvim/lsp.vimrc
 
@@ -52,3 +89,4 @@ set nocursorcolumn
 if executable("rg")
   let g:CtrlSpaceGlobCommand = 'rg --smart-case --hidden --follow --no-heading --files'
 endif 
+let g:CtrlSpaceUseTabline = 0

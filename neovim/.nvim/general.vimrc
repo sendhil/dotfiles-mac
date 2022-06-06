@@ -10,6 +10,7 @@ set softtabstop=2
 set expandtab
 set hidden
 set ruler
+set noshowmode
 
 " Some servers have issues with backup files, see #649
 set nobackup
