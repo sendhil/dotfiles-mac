@@ -60,6 +60,13 @@ lua << EOF
 
   -- if you only want these mappings for toggle term use term://*toggleterm#* instead
   vim.cmd('autocmd! TermOpen term://* lua set_terminal_keymaps()')
+
+
+  -- Auto Dark Mode
+  local auto_dark_mode = require('auto-dark-mode')
+  auto_dark_mode.setup({
+  })
+  auto_dark_mode.init()
 EOF
 
 

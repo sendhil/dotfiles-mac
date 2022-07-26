@@ -29,6 +29,7 @@ Plug 'fatih/vim-go'
 Plug 'akinsho/bufferline.nvim', { 'tag': 'v2.*' }
 Plug 'akinsho/toggleterm.nvim'
 Plug 'nvim-telescope/telescope-fzf-native.nvim', { 'do': 'make' }
+Plug 'f-person/auto-dark-mode.nvim'
 
 
 Plug 'hrsh7th/nvim-cmp'
