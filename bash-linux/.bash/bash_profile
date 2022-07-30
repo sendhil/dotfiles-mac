@@ -41,12 +41,16 @@ fi
 # Colored Man Pages
 export MANPAGER='nvim +Man!'
 
-# Dynamic Kitty Themes (Source - https://evantravers.com/articles/2019/07/30/toggling-kitty-and-neovim-background-using-osx-s-dark-mode-setting/)
-if [[ ( $(darkMode) =~ 'Dark' ) ]]; then
-  kitty @ set-colors --all --configured ~/.config/kitty/themes/Solarized\ Dark.conf
-else
-  kitty @ set-colors --all --configured ~/.config/kitty/themes/Solarized\ Light.conf
+
+if [[ $TERM = 'xterm-kitty' ]]; then
+  # Dynamic Kitty Themes (Source - https://evantravers.com/articles/2019/07/30/toggling-kitty-and-neovim-background-using-osx-s-dark-mode-setting/)
+  if [[ ( $(darkMode) =~ 'Dark' ) ]]; then
+    kitty @ set-colors --all --configured ~/.config/kitty/themes/Solarized\ Dark.conf
+  else
+    kitty @ set-colors --all --configured ~/.config/kitty/themes/Solarized\ Light.conf
+  fi
 fi
+
 
 if [ -f ~/.bash_local ]; then
   source ~/.bash_local
