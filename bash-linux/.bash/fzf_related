@@ -23,9 +23,7 @@ function fzfdir0() {
 }
 
 function cdf() {
-   local file
-   local dir
-   file=$(fzf +m -q "$1") && dir=$(dirname "$file") && cd "$dir"
+  cd $(fd -t d | fzf)    
 }
 
 function searchfilecontents() {
