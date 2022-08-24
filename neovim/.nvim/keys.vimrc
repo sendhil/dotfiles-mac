@@ -9,8 +9,8 @@ endif
 map <expr> <C-n> (empty(getloclist(1))  ? ":cn" : ":lnext")."\n"
 map <expr> <C-p> (empty(getloclist(0))  ? ":cp" : ":lp")."\n"
 
-nmap <Leader>f :Rg<CR>
-nmap <Leader>F :Rg
+nmap <Leader>f :Telescope live_grep<CR>
+nmap <Leader>F :Telescope live_grep
 
 map <leader>ew :NvimTreeToggle<CR>
 
