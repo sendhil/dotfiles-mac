@@ -67,6 +67,9 @@ lua << EOF
   auto_dark_mode.setup({
   })
   auto_dark_mode.init()
+
+  require("which-key").setup {
+  }
 EOF
 
 
