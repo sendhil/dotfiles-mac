@@ -49,6 +49,7 @@ yabai -m rule --add app="^Signal|Discord$" space=10
 yabai -m rule --add app="^System Preferences$" manage=off
 yabai -m rule --add app="^Calculator$" manage=off
 yabai -m rule --add app="^CleanShot" manage=off
+yabai -m rule --add app="^Blender" manage=off
 
 # float settings windows
 yabai -m rule --add title='Settings$' manage=off
