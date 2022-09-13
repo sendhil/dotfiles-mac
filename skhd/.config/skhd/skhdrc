@@ -179,7 +179,8 @@ shift + alt - 0x1B: yabai -m window --space 11
 # Fake Scratch Window Commands
 # 0x33 is Backspace
 alt - 0x33: yabai-navigation-utilities toggle
-shift + alt - 0x33: yabai-navigation-utilities store
+shift + alt - 0x33: yabai-navigation-utilities store | jq 'if .result == "added_window" then "Added Window" else "Removed Window" end' | xargs -n 1 -I {} hs -c 'hs.alert.show("{}", 2)'
+cmd + shift + alt - 0x33 : yabai-navigation-utilities list-scratch-windows | jq '.[] | .app' | xargs -n 1 -I {} hs -c 'hs.alert.show("{}", 2)'
 
 # Balance
 shift + alt - 0x18: yabai -m space --balance
