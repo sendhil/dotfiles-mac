@@ -31,6 +31,7 @@ Plug 'akinsho/toggleterm.nvim'
 Plug 'nvim-telescope/telescope-fzf-native.nvim', { 'do': 'make' }
 Plug 'f-person/auto-dark-mode.nvim'
 Plug 'folke/which-key.nvim'
+Plug 'ggandor/lightspeed.nvim'
 
 
 Plug 'hrsh7th/nvim-cmp'
