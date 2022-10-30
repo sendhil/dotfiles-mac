@@ -133,6 +133,8 @@ ctrl + alt - j : yabai -m window --swap south || yabai -m window --display south
 ctrl + alt - k : yabai -m window --swap north || yabai -m window --display north
 ctrl + alt - l : yabai -m window --swap east || yabai -m window --display east
 
+hyper - f13 : python3 -m yabai_navigation_utilities swap-displays 1 2
+
 # insertion points for new container - h/t https://cbrgm.net/post/2021-05-5-setup-macos/
 # shift + alt - left : yabai -m window --insert west
 # shift + alt - down : yabai -m window --insert south
