@@ -1,0 +1,329 @@
+{
+    "editor.fontSize": 16,
+    "editor.fontFamily": "Fira Code",
+    "editor.fontLigatures": true,
+    "editor.bracketPairColorization.enabled": true,
+    "vim.useCtrlKeys": true,
+    "vim.normalModeKeyBindings": [
+        {
+            "before": [
+                ":"
+            ],
+            "after": [],
+            "commands": [
+                {
+                    "command": "workbench.action.gotoLine",
+                    "args": []
+                }
+            ]
+        },
+        {
+            "before": [
+                "leader",
+                "r"
+            ],
+            "after": [],
+            "commands": [
+                {
+                    "command": "editor.action.referenceSearch.trigger",
+                    "args": []
+                }
+            ]
+        },
+        {
+            "before": [
+                "leader",
+                "c",
+                "t"
+            ],
+            "after": [],
+            "commands": [
+                {
+                    "command": "workbench.action.closeEditorsInGroup",
+                    "args": []
+                }
+            ]
+        },
+        {
+            "before": [
+                "leader",
+                "e",
+                "w"
+            ],
+            "after": [],
+            "commands": [
+                {
+                    "command": "workbench.files.action.focusFilesExplorer",
+                    "args": []
+                }
+            ]
+        },
+        {
+            "before": [
+                "\\",
+                "e"
+            ],
+            "after": [],
+            "commands": [
+                {
+                    "command": "workbench.files.action.focusFilesExplorer",
+                    "args": []
+                }
+            ]
+        },
+        {
+            "before": [
+                "leader",
+                "s",
+                "t"
+            ],
+            "after": [],
+            "commands": [
+                {
+                    "command": "workbench.action.files.showOpenedFileInNewWindow",
+                    "args": []
+                }
+            ]
+        },
+        {
+            "before": [
+                "g",
+                "r"
+            ],
+            "after": [],
+            "commands": [
+                {
+                    "command": "editor.action.referenceSearch.trigger",
+                    "args": []
+                }
+            ]
+        },
+        {
+            "before": [
+                "leader",
+                "g",
+                "d"
+            ],
+            "after": [],
+            "commands": [
+                {
+                    "command": "editor.action.goToTypeDefinition",
+                    "args": []
+                }
+            ]
+        },
+        {
+            "before": [
+                "leader",
+                "g",
+                "i"
+            ],
+            "after": [],
+            "commands": [
+                {
+                    "command": "editor.action.goToImplementation",
+                    "args": []
+                }
+            ]
+        },
+        {
+            "before": [
+                "T"
+            ],
+            "after": [],
+            "commands": [
+                {
+                    "command": "workbench.action.terminal.toggleTerminal",
+                    "args": []
+                }
+            ]
+        },
+        {
+            "before": [
+                "leader",
+                "j"
+            ],
+            "after": [],
+            "commands": [
+                {
+                    "command": "editor.action.marker.next",
+                    "args": []
+                }
+            ]
+        },
+        {
+            "before": [
+                "leader",
+                "k"
+            ],
+            "after": [],
+            "commands": [
+                {
+                    "command": "editor.action.marker.prev",
+                    "args": []
+                }
+            ]
+        },
+        {
+            "before": [
+                "leader",
+                "t"
+            ],
+            "after": [],
+            "commands": [
+                {
+                    "command": "workbench.action.toggleSidebarVisibility",
+                    "args": []
+                }
+            ]
+        },
+        {
+            "before": [
+                "[",
+                "d"
+            ],
+            "after": [],
+            "commands": [
+                {
+                    "command": "editor.action.marker.prev",
+                    "args": []
+                }
+            ]
+        },
+        {
+            "before": [
+                "]",
+                "d"
+            ],
+            "after": [],
+            "commands": [
+                {
+                    "command": "editor.action.marker.next",
+                    "args": []
+                }
+            ]
+        },
+        {
+            "before": [
+                "\\",
+                "\\"
+            ],
+            "after": [],
+            "commands": [
+                {
+                    "command": "editor.action.commentLine",
+                    "args": []
+                }
+            ]
+        },
+        {
+            "before": [
+                "\\",
+                "t"
+            ],
+            "after": [],
+            "commands": [
+                {
+                    "command": "workbench.actions.view.problems",
+                    "args": []
+                }
+            ]
+        },
+        {
+            "before": [
+                "K"
+            ],
+            "commands": [
+                {
+                    "command": "workbench.actions.view.problems",
+                    "args": []
+                }
+            ]
+        }
+    ],
+    "vim.visualModeKeyBindings": [
+        {
+            "before": [
+                "\\",
+                "\\"
+            ],
+            "after": [],
+            "commands": [
+                {
+                    "command": "editor.action.commentLine",
+                    "args": []
+                }
+            ]
+        },
+    ],
+    "vim.useSystemClipboard": true,
+    "vim.leader": ",",
+    "vim.easymotion": true,
+    "terminal.integrated.shellArgs.osx": [
+        "-l"
+    ],
+    "terminal.integrated.fontSize": 16,
+    "terminal.integrated.fontFamily": "Fira Code",
+    "typescript.implementationsCodeLens.enabled": true,
+    "workbench.colorTheme": "Solarized Light",
+    "workbench.preferredDarkColorTheme": "Nord",
+    "workbench.preferredLightColorTheme": "Solarized Light",
+    "window.autoDetectColorScheme": true,
+    "debug.allowBreakpointsEverywhere": true,
+    "workbench.iconTheme": "vscode-icons",
+    "vsicons.dontShowNewVersionMessage": true,
+    "terminal.integrated.shell.windows": "C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+    "go.buildOnSave": "package",
+    "go.lintOnSave": "package",
+    "go.vetOnSave": "package",
+    "go.useCodeSnippetsOnFunctionSuggest": true,
+    "go.formatTool": "goimports",
+    "workbench.sideBar.location": "left",
+    "python.linting.pylintEnabled": false,
+    "python.linting.flake8Enabled": true,
+    "python.linting.mypyEnabled": true,
+    "python.formatting.provider": "yapf",
+    "go.useLanguageServer": true,
+    "terminal.integrated.shellArgs.linux": [
+        "-l"
+    ],
+    "window.enableMenuBarMnemonics": false,
+    "window.customMenuBarAltFocus": false,
+    "C_Cpp.updateChannel": "Insiders",
+    "editor.minimap.enabled": false,
+    "gitProjectManager.baseProjectsFolders": [
+        "~/src"
+    ],
+    "go.autocompleteUnimportedPackages": true,
+    "terminal.integrated.shell.linux": "/usr/bin/zsh",
+    "fileExplorerMenu.confirmFolderDeletion": false,
+    "[dockerfile]": {
+        "editor.quickSuggestions": {
+            "strings": true
+        }
+    },
+    "editor.suggest.showStatusBar": true,
+    "vim.sneak": true,
+    "workbench.editorAssociations": {
+        "*.ipynb": "jupyter-notebook"
+    },
+    "editor.formatOnSave": true,
+    "terminal.integrated.tabs.enabled": true,
+    "terminal.integrated.enableBell": true,
+    "python.languageServer": "Pylance",
+    "notebook.cellToolbarLocation": {
+        "default": "right",
+        "jupyter-notebook": "left"
+    },
+    "jupyter.askForKernelRestart": false,
+    "go.toolsManagement.autoUpdate": true,
+    "python.defaultInterpreterPath": "/opt/homebrew/bin/python3",
+    "git.autofetch": true,
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/.mypy_cache": true
+    },
+    "editor.inlayHints.enabled": "off",
+    "Lua.telemetry.enable": false,
+    "gitlens.mode.active": "review"
+}
