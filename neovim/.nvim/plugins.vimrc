@@ -70,8 +70,15 @@ lua << EOF
 
   require("which-key").setup {
   }
+
+  require("fidget").setup{}
+
+  require('lsp_signature').setup(cfg)
+
+  vim.notify = require("notify")
 EOF
 
+let g:vista_default_executive = 'nvim_lsp'
 
 source $HOME/.nvim/lsp.vimrc
 

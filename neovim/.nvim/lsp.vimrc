@@ -30,7 +30,7 @@ local on_attach = function(_, bufnr)
 end
 
 -- Enable the following language servers
-local servers = { 'clangd', 'rust_analyzer', 'pyright', 'tsserver', 'gopls', 'sumneko_lua' }
+local servers = { 'clangd', 'rust_analyzer', 'pyright', 'tsserver', 'gopls', 'lua_ls' }
 for _, lsp in ipairs(servers) do
   nvim_lsp[lsp].setup {
     on_attach = on_attach,

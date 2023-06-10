@@ -70,7 +70,14 @@ endif
 
 syntax enable
 set background=dark
-colorscheme one
+
+if strftime('%H') < 19
+  set background=light
+else
+  set background=dark
+endif
+
+colorscheme catppuccin
 let $NVIM_TUI_ENABLE_TRUE_COLOR=1
 set termguicolors
 set listchars=tab:▸\ ,eol:¬

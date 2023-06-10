@@ -22,11 +22,10 @@ Plug 'vim-ctrlspace/vim-ctrlspace'
 Plug 'junegunn/fzf.vim'
 Plug 'junegunn/fzf'
 Plug 'itchyny/lightline.vim'
-Plug 'p00f/nvim-ts-rainbow'
 Plug 'nvim-treesitter/playground'
 Plug 'nvim-treesitter/nvim-treesitter-context'
 Plug 'fatih/vim-go'
-Plug 'akinsho/bufferline.nvim', { 'tag': 'v2.*' }
+Plug 'akinsho/bufferline.nvim'
 Plug 'akinsho/toggleterm.nvim'
 Plug 'nvim-telescope/telescope-fzf-native.nvim', { 'do': 'make' }
 Plug 'f-person/auto-dark-mode.nvim'
@@ -41,10 +40,27 @@ Plug 'hrsh7th/cmp-path'
 Plug 'hrsh7th/cmp-cmdline'
 Plug 'L3MON4D3/LuaSnip'
 Plug 'saadparwaiz1/cmp_luasnip'
+Plug 'jabirali/vim-tmux-yank'
+Plug 'j-hui/fidget.nvim', { 'tag': 'legacy' }
+Plug 'folke/twilight.nvim'
+Plug 'folke/zen-mode.nvim'
+Plug 'yamatsum/nvim-cursorline'
+Plug 'RRethy/vim-illuminate'
 
-
+"
 " Themes
 Plug 'rakr/vim-one'
+Plug 'folke/tokyonight.nvim', { 'branch' : 'main' }
+Plug 'shaunsingh/nord.nvim'
+Plug 'navarasu/onedark.nvim'
+Plug 'catppuccin/nvim'
+Plug 'cpea2506/one_monokai.nvim'
+Plug 'marko-cerovac/material.nvim'
+Plug 'ray-x/lsp_signature.nvim'
+Plug 'rcarriga/nvim-notify'
+Plug 'MattesGroeger/vim-bookmarks'
+Plug 'tom-anders/telescope-vim-bookmarks.nvim'
+
 
 " Untriaged
 

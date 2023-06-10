@@ -26,12 +26,24 @@ nmap <silent> <F5> :set spell!<CR>
 
 nmap \e :NvimTreeToggle<CR>
 nmap \t :TroubleToggle<CR>
+nmap \T :Twilight<CR>
+nmap \z :ZenMode<CR>
+nmap \v :Vista!<CR>
 " nmap \t :TagbarToggle<CR> #TODO - Bind to new plugin
 
 xmap \\ :Commentary<CR>
 nmap \\ :Commentary<CR>
 
 nmap <Leader>p :Commands<CR>
+
+let g:bookmark_no_default_key_mappings = 1
+nmap <Leader>bt <Plug>BookmarkToggle
+nmap <Leader>ba <Plug>BookmarkAnnotate
+nmap <Leader>bl :Telescope vim_bookmarks current_file<CR>
+nmap <Leader>bL :Telescope vim_bookmarks all<CR>
+nmap <Leader>bj <Plug>BookmarkNext
+nmap <Leader>bk <Plug>BookmarkPrev
+
 
 " Man Pages
 au FileType man nmap gd :Man<CR>
@@ -87,6 +99,7 @@ require('telescope').setup{
 -- To get fzf loaded and working with telescope, you need to call
 -- load_extension, somewhere after setup function:
 require('telescope').load_extension('fzf')
+require('telescope').load_extension('vim_bookmarks')
 
 -- Lazy Git
   local Terminal  = require('toggleterm.terminal').Terminal
