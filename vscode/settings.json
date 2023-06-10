@@ -239,6 +239,24 @@
                     "args": []
                 }
             ]
+        },
+        {
+            "before": [
+                "<leader>",
+                "m"
+            ],
+            "commands": [
+                "bookmarks.toggle"
+            ]
+        },
+        {
+            "before": [
+                "<leader>",
+                "b"
+            ],
+            "commands": [
+                "bookmarks.list"
+            ]
         }
     ],
     "vim.visualModeKeyBindings": [
@@ -325,5 +343,8 @@
     },
     "editor.inlayHints.enabled": "off",
     "Lua.telemetry.enable": false,
-    "gitlens.mode.active": "review"
+    "gitlens.mode.active": "review",
+    "notebook.lineNumbers": "on",
+    "notebook.output.textLineLimit": 60,
+    "npm.keybindingsChangedWarningShown": true
 }
