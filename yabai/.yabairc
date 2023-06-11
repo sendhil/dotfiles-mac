@@ -1,7 +1,6 @@
 #!/usr/bin/env sh
 
-# the scripting-addition must be loaded manually if
-# you are running yabai on macOS Big Sur. Uncomment
+# the scripting-addition must be loaded manually if you are running yabai on macOS Big Sur. Uncomment
 # the following line to have the injection performed
 # when the config is executed during startup.
 #
@@ -51,6 +50,7 @@ yabai -m rule --add app="^System Settings$" manage=off
 yabai -m rule --add app="^Calculator$" manage=off
 yabai -m rule --add app="^CleanShot" manage=off
 yabai -m rule --add app="^Blender" manage=off
+yabai -m rule --add app="^Alfred Preferences$" manage=off
 
 # float settings windows
 yabai -m rule --add title='Settings$' manage=off
