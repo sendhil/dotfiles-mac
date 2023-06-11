@@ -112,7 +112,8 @@ alt - return : /Applications/Kitty.app/Contents/MacOS/kitty --single-instance -d
 # cmd + shift - return : open -na "Google Chrome" --args --new-window
 
 # # close focused window
-shift + alt - q : yabai -m window --close
+# shift + alt - q : yabai -m window --close
+shift + alt - q : skhd -k "cmd - q"
 #
 # focus window
 # next/prev defined in stack section below so as to make things more consistent when using a stack
@@ -197,8 +198,8 @@ alt + shift - r : launchctl kickstart -k "gui/${UID}/homebrew.mxcl.yabai"
 # Stack Related
 alt - s : yabai -m space --layout "$(yabai -m query --spaces --space | jq -r 'if .type == "bsp" then "stack" else "bsp" end')"
 
-alt - h : yabai-stack-navigator --prev
-alt - l : yabai-stack-navigator --next
+alt - h : python3 -m yabai_stack_navigator --prev
+alt - l : python3 -m yabai_stack_navigator --next
 
 # Toggle Split
 
