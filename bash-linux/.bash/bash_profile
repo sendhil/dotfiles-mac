@@ -45,7 +45,7 @@ export MANPAGER='nvim +Man!'
 if [[ $TERM = 'xterm-kitty' ]]; then
   # Dynamic Kitty Themes (Source - https://evantravers.com/articles/2019/07/30/toggling-kitty-and-neovim-background-using-osx-s-dark-mode-setting/)
   if [[ ( $(darkMode) =~ 'Dark' ) ]]; then
-    kitty @ set-colors --all --configured ~/.config/kitty/themes/Solarized\ Dark.conf
+    kitty @ set-colors --all --configured ~/.config/kitty/themes/Nord.conf
   else
     kitty @ set-colors --all --configured ~/.config/kitty/themes/Solarized\ Light.conf
   fi
