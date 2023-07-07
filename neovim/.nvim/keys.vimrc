@@ -69,6 +69,12 @@ vim.api.nvim_set_keymap('n', 'gr', [[<cmd>lua require('telescope.builtin').lsp_r
 vim.api.nvim_set_keymap('n', '<leader>?', [[<cmd>lua require('telescope.builtin').oldfiles()<CR>]], { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', '<C-e>', [[<cmd>lua require('telescope.builtin').oldfiles()<CR>]], { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', '<leader>p', [[<cmd>lua require('telescope.builtin').commands()<CR>]], { noremap = true, silent = true })
+vim.api.nvim_set_keymap(
+  "n",
+  "<space>fb",
+  ":Telescope file_browser<CR>",
+  { noremap = true }
+)
 -- vim.api.nvim_set_keymap('n', '<leader>g', [[<cmd>lua _lazygit_toggle()<CR>]], { noremap = true, silent = true })
 
 -- LSP Shortcuts are in lsp.vimrc atm
@@ -100,6 +106,7 @@ require('telescope').setup{
 -- load_extension, somewhere after setup function:
 require('telescope').load_extension('fzf')
 require('telescope').load_extension('vim_bookmarks')
+require("telescope").load_extension('file_browser')
 
 -- Lazy Git
   local Terminal  = require('toggleterm.terminal').Terminal

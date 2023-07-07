@@ -46,8 +46,9 @@ Plug 'folke/twilight.nvim'
 Plug 'folke/zen-mode.nvim'
 Plug 'yamatsum/nvim-cursorline'
 Plug 'RRethy/vim-illuminate'
+Plug 'nvim-telescope/telescope-file-browser.nvim'
 
-"
+
 " Themes
 Plug 'rakr/vim-one'
 Plug 'folke/tokyonight.nvim', { 'branch' : 'main' }
