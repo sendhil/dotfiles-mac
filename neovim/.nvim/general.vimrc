@@ -71,13 +71,15 @@ endif
 syntax enable
 set background=dark
 
-if strftime('%H') < 19
-  set background=light
-else
-  set background=dark
-endif
+" if strftime('%H') < 19
+"   set background=light
+" else
+"   set background=dark
+" endif
 
-colorscheme catppuccin
+" colorscheme catppuccin
+colorscheme tokyonight-night
+
 let $NVIM_TUI_ENABLE_TRUE_COLOR=1
 set termguicolors
 set listchars=tab:▸\ ,eol:¬
@@ -85,9 +87,33 @@ set listchars=tab:▸\ ,eol:¬
 " Formats JSON
 com! FormatJSON %!python -m json.tool
 
+" https://vimrcfu.com/snippet/143
+command! Ctabs call s:Ctabs()
+function! s:Ctabs()
+  let files = {}
+  for entry in getqflist()
+    let filename = bufname(entry.bufnr)
+    let files[filename] = 1
+  endfor
+
+  for file in keys(files)
+    silent exe "tabedit ".file
+  endfor
+endfunction
+
 lua << EOF
 
 require 'nvim-tree'.setup {
   hijack_netrw = true,
 }
+
+local create_cmd = vim.api.nvim_create_user_command
+
+create_cmd("ToggleBackground", function()
+  if vim.o.background == 'dark' then
+    vim.cmd'set bg=light'
+  else
+    vim.cmd'set bg=dark'
+  end
+end, {})
 EOF

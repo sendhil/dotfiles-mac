@@ -22,17 +22,16 @@ Plug 'vim-ctrlspace/vim-ctrlspace'
 Plug 'junegunn/fzf.vim'
 Plug 'junegunn/fzf'
 Plug 'itchyny/lightline.vim'
+Plug 'p00f/nvim-ts-rainbow'
 Plug 'nvim-treesitter/playground'
 Plug 'nvim-treesitter/nvim-treesitter-context'
 Plug 'fatih/vim-go'
 Plug 'akinsho/bufferline.nvim'
 Plug 'akinsho/toggleterm.nvim'
 Plug 'nvim-telescope/telescope-fzf-native.nvim', { 'do': 'make' }
-Plug 'f-person/auto-dark-mode.nvim'
+" Plug 'f-person/auto-dark-mode.nvim'
 Plug 'folke/which-key.nvim'
 Plug 'ggandor/lightspeed.nvim'
-
-
 Plug 'hrsh7th/nvim-cmp'
 Plug 'hrsh7th/cmp-nvim-lsp'
 Plug 'hrsh7th/cmp-buffer'
@@ -47,6 +46,11 @@ Plug 'folke/zen-mode.nvim'
 Plug 'yamatsum/nvim-cursorline'
 Plug 'RRethy/vim-illuminate'
 Plug 'nvim-telescope/telescope-file-browser.nvim'
+Plug 'pocco81/high-str.nvim'
+Plug 'folke/todo-comments.nvim'
+Plug 'github/copilot.vim'
+Plug 'tom-anders/telescope-vim-bookmarks.nvim'
+Plug 'nvim-telescope/telescope-ui-select.nvim'
 
 
 " Themes
@@ -60,7 +64,6 @@ Plug 'marko-cerovac/material.nvim'
 Plug 'ray-x/lsp_signature.nvim'
 Plug 'rcarriga/nvim-notify'
 Plug 'MattesGroeger/vim-bookmarks'
-Plug 'tom-anders/telescope-vim-bookmarks.nvim'
 
 
 " Untriaged

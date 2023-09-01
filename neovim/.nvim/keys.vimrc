@@ -20,7 +20,7 @@ nnoremap <leader>ov :exe ':silent !code %'<CR>:redraw!<CR>
 map <leader>ct :tabclose<CR>
 map <leader>st :tab split<CR>
 
-nmap <leader>. :CtrlPTag<CR> " TODO: Update
+" nmap <leader>. :CtrlPTag<CR> " TODO: Update
 
 nmap <silent> <F5> :set spell!<CR>
 
@@ -29,7 +29,6 @@ nmap \t :TroubleToggle<CR>
 nmap \T :Twilight<CR>
 nmap \z :ZenMode<CR>
 nmap \v :Vista!<CR>
-" nmap \t :TagbarToggle<CR> #TODO - Bind to new plugin
 
 xmap \\ :Commentary<CR>
 nmap \\ :Commentary<CR>
@@ -43,6 +42,7 @@ nmap <Leader>bl :Telescope vim_bookmarks current_file<CR>
 nmap <Leader>bL :Telescope vim_bookmarks all<CR>
 nmap <Leader>bj <Plug>BookmarkNext
 nmap <Leader>bk <Plug>BookmarkPrev
+nmap <Leader>scp :Copilot panel<CR>
 
 
 " Man Pages
@@ -63,12 +63,14 @@ vim.api.nvim_set_keymap('n', '<leader>sh', [[<cmd>lua require('telescope.builtin
 vim.api.nvim_set_keymap('n', '<leader>sd', [[<cmd>lua require('telescope.builtin').grep_string()<CR>]], { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', '<leader>sp', [[<cmd>lua require('telescope.builtin').live_grep()<CR>]], { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', '<leader>so', [[<cmd>lua require('telescope.builtin').tags{ only_current_buffer = true }<CR>]], { noremap = true, silent = true })
+vim.api.nvim_set_keymap('n', '<leader>.', [[<cmd>lua require('telescope.builtin').lsp_code_actions(require('telescope.themes').get_cursor())<CR>]], { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', '<leader>sca', [[<cmd>lua require('telescope.builtin').lsp_code_actions(require('telescope.themes').get_cursor())<CR>]], { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', '<leader>sr', [[<cmd>lua require('telescope.builtin').lsp_references(require('telescope.themes').get_dropdown())<CR>]], { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', 'gr', [[<cmd>lua require('telescope.builtin').lsp_references(require('telescope.themes').get_dropdown())<CR>]], { noremap = true, silent = true })
-vim.api.nvim_set_keymap('n', '<leader>?', [[<cmd>lua require('telescope.builtin').oldfiles()<CR>]], { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', '<C-e>', [[<cmd>lua require('telescope.builtin').oldfiles()<CR>]], { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', '<leader>p', [[<cmd>lua require('telescope.builtin').commands()<CR>]], { noremap = true, silent = true })
+--vim.api.nvim_set_keymap('n', '<leader>ss', [[<cmd>lua require('telescope.builtin').search()<CR>]], { noremap = true, silent = true })
+vim.api.nvim_set_keymap('n', '<leader>sr', [[<cmd>lua require('telescope.builtin').resume()<CR>]], { noremap = true, silent = true })
 vim.api.nvim_set_keymap(
   "n",
   "<space>fb",
@@ -88,8 +90,11 @@ require('telescope').setup{
         ["<esc>"] = actions.close, -- One <Esc> in insert mode instead of two to quit
         ["<C-j>"] = actions.move_selection_next,
         ["<C-k>"] = actions.move_selection_previous,
+        ["<C-Q>"] = actions.send_to_qflist + actions.open_qflist,
+        ["<C-q>"] = actions.send_selected_to_qflist + actions.open_qflist,
       },
     },
+    path_display= { "smart" },
   },
   extensions = {
     fzf = {
@@ -106,7 +111,6 @@ require('telescope').setup{
 -- load_extension, somewhere after setup function:
 require('telescope').load_extension('fzf')
 require('telescope').load_extension('vim_bookmarks')
-require("telescope").load_extension('file_browser')
 
 -- Lazy Git
   local Terminal  = require('toggleterm.terminal').Terminal
