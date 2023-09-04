@@ -10,7 +10,6 @@ map <expr> <C-n> (empty(getloclist(1))  ? ":cn" : ":lnext")."\n"
 map <expr> <C-p> (empty(getloclist(0))  ? ":cp" : ":lp")."\n"
 
 nmap <Leader>f :Telescope live_grep<CR>
-nmap <Leader>F :Telescope live_grep
 
 map <leader>ew :NvimTreeToggle<CR>
 
@@ -43,6 +42,8 @@ nmap <Leader>bL :Telescope vim_bookmarks all<CR>
 nmap <Leader>bj <Plug>BookmarkNext
 nmap <Leader>bk <Plug>BookmarkPrev
 nmap <Leader>scp :Copilot panel<CR>
+nnoremap <C-W><C-M> <Cmd>WinShift<CR>
+nnoremap <C-W>m <Cmd>WinShift<CR>
 
 
 " Man Pages
@@ -57,7 +58,6 @@ lua << EOF
 vim.api.nvim_set_keymap('n', '<leader>sa', [[<cmd>lua require('telescope.builtin').builtin()<CR>]], { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', '<leader><space>', [[<cmd>lua require('telescope.builtin').buffers()<CR>]], { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', '<leader>t', [[<cmd>lua require('telescope.builtin').find_files()<CR>]], { noremap = true, silent = true })
-vim.api.nvim_set_keymap('n', '<leader>sf', [[<cmd>lua require('telescope.builtin').find_files()<CR>]], { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', '<leader>sb', [[<cmd>lua require('telescope.builtin').current_buffer_fuzzy_find()<CR>]], { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', '<leader>sh', [[<cmd>lua require('telescope.builtin').help_tags()<CR>]], { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', '<leader>sd', [[<cmd>lua require('telescope.builtin').grep_string()<CR>]], { noremap = true, silent = true })
@@ -73,7 +73,7 @@ vim.api.nvim_set_keymap('n', '<leader>p', [[<cmd>lua require('telescope.builtin'
 vim.api.nvim_set_keymap('n', '<leader>sr', [[<cmd>lua require('telescope.builtin').resume()<CR>]], { noremap = true, silent = true })
 vim.api.nvim_set_keymap(
   "n",
-  "<space>fb",
+  "<leader>sf",
   ":Telescope file_browser<CR>",
   { noremap = true }
 )
@@ -90,12 +90,11 @@ require('telescope').setup{
         ["<esc>"] = actions.close, -- One <Esc> in insert mode instead of two to quit
         ["<C-j>"] = actions.move_selection_next,
         ["<C-k>"] = actions.move_selection_previous,
-        ["<C-Q>"] = actions.send_to_qflist + actions.open_qflist,
         ["<C-q>"] = actions.send_selected_to_qflist + actions.open_qflist,
+        ["<C-l>"] = actions.send_selected_to_loclist + actions.open_loclist,
       },
     },
-    path_display= { "smart" },
-  },
+    path_display= { "smart" }, },
   extensions = {
     fzf = {
       fuzzy = true,                    -- false will only do exact matching

@@ -13,8 +13,108 @@ lua << EOF
       max_file_lines = nil, -- Do not enable for files with more than n lines, int
       -- colors = {}, -- table of hex strings
       -- termcolors = {} -- table of colour name strings
-    }
+    },
+
+    textobjects = {
+      select = {
+        enable = true,
+
+        -- Automatically jump forward to textobjects, similar to targets.vim
+        lookahead = true,
+
+        keymaps = {
+          -- You can use the capture groups defined in textobjects.scm
+          ["af"] = "@function.outer",
+          ["if"] = "@function.inner",
+          ["ac"] = "@class.outer",
+          -- you can optionally set descriptions to the mappings (used in the desc parameter of nvim_buf_set_keymap
+          ["ic"] = { query = "@class.inner", desc = "Select inner part of a class region" },
+          ["aa"] = "@parameter.outer",
+          ["ia"] = "@parameter.inner",
+          ["a/"] = "@comment.outer",
+          ["i/"] = "@comment.inner",
+          ["a="] = "@assignment.outer",
+          ["i="] = "@assignment.inner",
+        },
+        -- You can choose the select mode (default is charwise 'v')
+        selection_modes = {
+          ['@parameter.outer'] = 'v', -- charwise
+          ['@function.outer'] = 'V', -- linewise
+          ['@class.outer'] = '<c-v>', -- blockwise
+          ['@assignment.outer'] = '<c-v>', -- charwise
+          ['@assignment.inner'] = '<c-v>', -- charwise
+        },
+        -- If you set this to `true` (default is `false`) then any textobject is
+        -- extended to include preceding or succeeding whitespace. Succeeding
+        -- whitespace has priority in order to act similarly to eg the built-in
+        -- `ap`. Can also be a function (see above).
+        include_surrounding_whitespace = false,
+      },
+      lsp_interop = {
+        enable = true,
+        border = 'none',
+        floating_preview_opts = {},
+        peek_definition_code = {
+          ["<leader>df"] = "@function.outer",
+          ["<leader>dF"] = "@class.outer",
+        },
+      },
+      swap = {
+        enable = true,
+        swap_next = {
+          ["<leader>a"] = "@parameter.inner",
+        },
+        swap_previous = {
+          ["<leader>A"] = "@parameter.inner",
+        },
+      },
+      move = {
+        enable = true,
+        set_jumps = true, -- whether to set jumps in the jumplist
+        goto_next_start = {
+            ["]m"] = "@function.outer",
+            ["]]"] = { query = "@class.outer", desc = "Next class start" },
+            --
+            -- You can use regex matching (i.e. lua pattern) and/or pass a list in a "query" key to group multiple queires.
+            -- ["]o"] = "@loop.*",
+            ["]o"] = { query = { "@loop.inner", "@loop.outer" } },
+            --
+            -- You can pass a query group to use query from `queries/<lang>/<query_group>.scm file in your runtime path.
+            -- Below example nvim-treesitter's `locals.scm` and `folds.scm`. They also provide highlights.scm and indent.scm.
+            ["]s"] = { query = "@scope", query_group = "locals", desc = "Next scope" },
+            ["]z"] = { query = "@fold", query_group = "folds", desc = "Next fold" },
+            ["]d"] = "@conditional.outer",
+          },
+          goto_next_end = {
+            ["]M"] = "@function.outer",
+            ["]["] = "@class.outer",
+            ["]D"] = "@conditional.outer",
+          },
+          goto_previous_start = {
+            ["[m"] = "@function.outer",
+            ["[["] = "@class.outer",
+            ["[o"] = { query = { "@loop.inner", "@loop.outer" } },
+            ["[d"] = "@conditional.outer",
+          },
+          goto_previous_end = {
+            ["[M"] = "@function.outer",
+            ["[]"] = "@class.outer",
+            ["[D"] = "@conditional.outer",
+          },
+      },
+    },
   }
+
+local ts_repeat_move = require "nvim-treesitter.textobjects.repeatable_move"
+
+-- Repeat movement with ; and ,
+-- ensure ; goes forward and , goes backward regardless of the last direction
+-- vim.keymap.set({ "n", "x", "o" }, ";", ts_repeat_move.repeat_last_move_next)
+-- vim.keymap.set({ "n", "x", "o" }, ",", ts_repeat_move.repeat_last_move_previous)
+
+-- vim way: ; goes to the direction you were moving.
+vim.keymap.set({ "n", "x", "o" }, ";", ts_repeat_move.repeat_last_move)
+vim.keymap.set({ "n", "x", "o" }, ",", ts_repeat_move.repeat_last_move_opposite)
 
   require("indent_blankline").setup {
     char = "|",
@@ -67,6 +167,7 @@ lua << EOF
   require('fidget').setup{}
 
   require('lsp_signature').setup(cfg)
+  vim.notify = require("notify")
 
   require('todo-comments').setup{}
 
@@ -74,32 +175,46 @@ lua << EOF
   require('telescope').load_extension('fzf')
   require('telescope').load_extension('ui-select')
 
-  vim.notify = require("notify")
+  require('leap').add_default_mappings()
+  require('zen-mode').setup({
+    plugins = {
+      twilight = { enabled = false },
+    }
+  })
+
+local wilder = require('wilder')
+wilder.setup({modes = {':', '?'}})
+
+wilder.set_option('renderer', wilder.popupmenu_renderer({
+  highlighter = wilder.basic_highlighter(),
+  left = {' ', wilder.popupmenu_devicons()},
+  right = {' ', wilder.popupmenu_scrollbar()},
+}))
+
+require("winshift").setup({})
+
+-- nvim-ufo setup
+
+vim.o.foldcolumn = '1' -- '0' is not bad
+vim.o.foldlevel = 99 -- Using ufo provider need a large value, feel free to decrease the value
+vim.o.foldlevelstart = 99
+vim.o.foldenable = true
+
+-- Using ufo provider need remap `zR` and `zM`. If Neovim is 0.6.1, remap yourself
+vim.keymap.set('n', 'zR', require('ufo').openAllFolds)
+vim.keymap.set('n', 'zM', require('ufo').closeAllFolds)
+vim.keymap.set('n', '<space>', 'za')
+
+require('ufo').setup({
+    provider_selector = function(bufnr, filetype, buftype)
+        return {'treesitter', 'indent'}
+    end
+})
 EOF
 
 let g:vista_default_executive = 'nvim_lsp'
 
 source $HOME/.nvim/lsp.vimrc
-
-let g:NERDTreeShowHidden=1
-let g:NERDTreeQuitOnOpen = 1 
-
-set hidden
-
-" Some servers have issues with backup files, see #649
-set nobackup
-set nowritebackup
-" Better display for messages
-set cmdheight=2
-" Smaller updatetime for CursorHold & CursorHoldI
-set updatetime=300
-" don't give |ins-completion-menu| messages.
-set shortmess+=c
-" always show signcolumns
-set signcolumn=yes
-
-" Hacks to fix the syntax coloring problem with vim-go. See https://github.com/fatih/vim-go/issues/145.
-set nocursorcolumn
 
 " Ctrl-Space
 if executable("rg")

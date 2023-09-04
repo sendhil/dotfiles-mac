@@ -25,7 +25,6 @@ set updatetime=300
 
 " don't give |ins-completion-menu| messages.
 set shortmess+=c
-
 " always show signcolumns
 set signcolumn=yes
 
@@ -62,14 +61,7 @@ if has("gui_macvim")
   set macligatures
 endif
 
-" Solarized Theme Settings
-" if !has('gui_running')
-"   " This fixes an issue with tmux
-"   let g:solarized_visibility = "high" 
-" end
-
 syntax enable
-set background=dark
 
 " if strftime('%H') < 19
 "   set background=light
@@ -78,7 +70,9 @@ set background=dark
 " endif
 
 " colorscheme catppuccin
+
 colorscheme tokyonight-night
+set background=dark
 
 let $NVIM_TUI_ENABLE_TRUE_COLOR=1
 set termguicolors

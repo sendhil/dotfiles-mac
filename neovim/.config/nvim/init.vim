@@ -29,9 +29,7 @@ Plug 'fatih/vim-go'
 Plug 'akinsho/bufferline.nvim'
 Plug 'akinsho/toggleterm.nvim'
 Plug 'nvim-telescope/telescope-fzf-native.nvim', { 'do': 'make' }
-" Plug 'f-person/auto-dark-mode.nvim'
 Plug 'folke/which-key.nvim'
-Plug 'ggandor/lightspeed.nvim'
 Plug 'hrsh7th/nvim-cmp'
 Plug 'hrsh7th/cmp-nvim-lsp'
 Plug 'hrsh7th/cmp-buffer'
@@ -51,7 +49,18 @@ Plug 'folke/todo-comments.nvim'
 Plug 'github/copilot.vim'
 Plug 'tom-anders/telescope-vim-bookmarks.nvim'
 Plug 'nvim-telescope/telescope-ui-select.nvim'
+Plug 'MattesGroeger/vim-bookmarks'
+Plug 'ray-x/lsp_signature.nvim'
+Plug 'rcarriga/nvim-notify'
 
+Plug 'kevinhwang91/nvim-bqf'
+Plug 'sindrets/diffview.nvim'
+Plug 'ggandor/leap.nvim'
+Plug 'nvim-treesitter/nvim-treesitter-textobjects'
+Plug 'gelguy/wilder.nvim'
+Plug 'sindrets/winshift.nvim'
+Plug 'kevinhwang91/nvim-ufo' 
+Plug 'kevinhwang91/promise-async'
 
 " Themes
 Plug 'rakr/vim-one'
@@ -61,10 +70,9 @@ Plug 'navarasu/onedark.nvim'
 Plug 'catppuccin/nvim'
 Plug 'cpea2506/one_monokai.nvim'
 Plug 'marko-cerovac/material.nvim'
-Plug 'ray-x/lsp_signature.nvim'
-Plug 'rcarriga/nvim-notify'
-Plug 'MattesGroeger/vim-bookmarks'
-
+Plug 'sainnhe/sonokai'
+Plug 'sainnhe/everforest'
+Plug 'rmehri01/onenord.nvim'
 
 " Untriaged
 
