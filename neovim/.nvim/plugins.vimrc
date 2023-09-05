@@ -14,40 +14,54 @@ lua << EOF
       -- colors = {}, -- table of hex strings
       -- termcolors = {} -- table of colour name strings
     },
-
     textobjects = {
       select = {
         enable = true,
 
-        -- Automatically jump forward to textobjects, similar to targets.vim
+        -- Automatically jump forward to textobj, similar to targets.vim
         lookahead = true,
 
         keymaps = {
           -- You can use the capture groups defined in textobjects.scm
-          ["af"] = "@function.outer",
-          ["if"] = "@function.inner",
-          ["ac"] = "@class.outer",
-          -- you can optionally set descriptions to the mappings (used in the desc parameter of nvim_buf_set_keymap
-          ["ic"] = { query = "@class.inner", desc = "Select inner part of a class region" },
+          ["am"] = "@function.outer",
+          ["im"] = "@function.inner",
+          ["al"] = "@class.outer",
+          -- You can optionally set descriptions to the mappings (used in the desc parameter of
+          -- nvim_buf_set_keymap) which plugins like which-key display
+          ["il"] = { query = "@class.inner", desc = "Select inner part of a class region" },
+          ["ab"] = "@block.outer",
+          ["ib"] = "@block.inner",
+          ["ad"] = "@conditional.outer",
+          ["id"] = "@conditional.inner",
+          ["ao"] = "@loop.outer",
+          ["io"] = "@loop.inner",
           ["aa"] = "@parameter.outer",
           ["ia"] = "@parameter.inner",
-          ["a/"] = "@comment.outer",
-          ["i/"] = "@comment.inner",
-          ["a="] = "@assignment.outer",
-          ["i="] = "@assignment.inner",
+          ["af"] = "@call.outer",
+          ["if"] = "@call.inner",
+          ["ac"] = "@comment.outer",
+          ["at"] = "@attribute.outer",
+          ["it"] = "@attribute.inner",
+          ["as"] = "@statement.outer",
+          ["is"] = "@statement.outer",
         },
         -- You can choose the select mode (default is charwise 'v')
-        selection_modes = {
-          ['@parameter.outer'] = 'v', -- charwise
-          ['@function.outer'] = 'V', -- linewise
-          ['@class.outer'] = '<c-v>', -- blockwise
-          ['@assignment.outer'] = '<c-v>', -- charwise
-          ['@assignment.inner'] = '<c-v>', -- charwise
-        },
-        -- If you set this to `true` (default is `false`) then any textobject is
-        -- extended to include preceding or succeeding whitespace. Succeeding
+        --
+        -- Can also be a function which gets passed a table with the keys
+        -- * query_string: eg '@function.inner'
+        -- * method: eg 'v' or 'o'
+        -- and should return the mode ('v', 'V', or '<c-v>') or a table
+        -- mapping query_strings to modes.
+        -- selection_modes = treesitter_selection_mode,
+        -- if you set this to `true` (default is `false`) then any textobject is
+        -- extended to include preceding or succeeding whitespace. succeeding
         -- whitespace has priority in order to act similarly to eg the built-in
-        -- `ap`. Can also be a function (see above).
+        -- `ap`.
+        --
+        -- can also be a function which gets passed a table with the keys
+        -- * query_string: eg '@function.inner'
+        -- * selection_mode: eg 'v'
+        -- and should return true of false
         include_surrounding_whitespace = false,
       },
       lsp_interop = {
@@ -62,48 +76,106 @@ lua << EOF
       swap = {
         enable = true,
         swap_next = {
-          ["<leader>a"] = "@parameter.inner",
+          [")m"] = "@function.outer",
+          [")c"] = "@comment.outer",
+          [")a"] = "@parameter.inner",
+          [")b"] = "@block.outer",
+          [")C"] = "@class.outer",
         },
         swap_previous = {
-          ["<leader>A"] = "@parameter.inner",
+          ["(m"] = "@function.outer",
+          ["(c"] = "@comment.outer",
+          ["(a"] = "@parameter.inner",
+          ["(b"] = "@block.outer",
+          ["(C"] = "@class.outer",
         },
       },
       move = {
         enable = true,
         set_jumps = true, -- whether to set jumps in the jumplist
         goto_next_start = {
-            ["]m"] = "@function.outer",
-            ["]]"] = { query = "@class.outer", desc = "Next class start" },
-            --
-            -- You can use regex matching (i.e. lua pattern) and/or pass a list in a "query" key to group multiple queires.
-            -- ["]o"] = "@loop.*",
-            ["]o"] = { query = { "@loop.inner", "@loop.outer" } },
-            --
-            -- You can pass a query group to use query from `queries/<lang>/<query_group>.scm file in your runtime path.
-            -- Below example nvim-treesitter's `locals.scm` and `folds.scm`. They also provide highlights.scm and indent.scm.
-            ["]s"] = { query = "@scope", query_group = "locals", desc = "Next scope" },
-            ["]z"] = { query = "@fold", query_group = "folds", desc = "Next fold" },
-            ["]d"] = "@conditional.outer",
-          },
-          goto_next_end = {
-            ["]M"] = "@function.outer",
-            ["]["] = "@class.outer",
-            ["]D"] = "@conditional.outer",
-          },
-          goto_previous_start = {
-            ["[m"] = "@function.outer",
-            ["[["] = "@class.outer",
-            ["[o"] = { query = { "@loop.inner", "@loop.outer" } },
-            ["[d"] = "@conditional.outer",
-          },
-          goto_previous_end = {
-            ["[M"] = "@function.outer",
-            ["[]"] = "@class.outer",
-            ["[D"] = "@conditional.outer",
-          },
+          ["]m"] = "@function.outer",
+          ["]f"] = "@call.outer",
+          ["]d"] = "@conditional.outer",
+          ["]o"] = "@loop.outer",
+          ["]s"] = "@statement.outer",
+          ["]a"] = "@parameter.outer",
+          ["]c"] = "@comment.outer",
+          ["]b"] = "@block.outer",
+          ["]l"] = { query = "@class.outer", desc = "next class start" },
+          ["]t"] = "@attribute.outer",
+          ["]]m"] = "@function.inner",
+          ["]]f"] = "@call.inner",
+          ["]]d"] = "@conditional.inner",
+          ["]]o"] = "@loop.inner",
+          ["]]a"] = "@parameter.inner",
+          ["]]b"] = "@block.inner",
+          ["]]l"] = { query = "@class.inner", desc = "next class start" },
+          ["]]t"] = "@attribute.inner",
+        },
+        goto_next_end = {
+          ["]M"] = "@function.outer",
+          ["]F"] = "@call.outer",
+          ["]D"] = "@conditional.outer",
+          ["]O"] = "@loop.outer",
+          ["]S"] = "@statement.outer",
+          ["]A"] = "@parameter.outer",
+          ["]C"] = "@comment.outer",
+          ["]B"] = "@block.outer",
+          ["]L"] = "@class.outer",
+          ["]T"] = "@attribute.outer",
+          ["]]M"] = "@function.inner",
+          ["]]F"] = "@call.inner",
+          ["]]D"] = "@conditional.inner",
+          ["]]O"] = "@loop.inner",
+          ["]]A"] = "@parameter.inner",
+          ["]]B"] = "@block.inner",
+          ["]]L"] = "@class.inner",
+          ["]]T"] = "@attribute.inner",
+        },
+        goto_previous_start = {
+          ["[m"] = "@function.outer",
+          ["[f"] = "@call.outer",
+          ["[d"] = "@conditional.outer",
+          ["[o"] = "@loop.outer",
+          ["[s"] = "@statement.outer",
+          ["[a"] = "@parameter.outer",
+          ["[c"] = "@comment.outer",
+          ["[b"] = "@block.outer",
+          ["[l"] = "@class.outer",
+          ["[t"] = "@attribute.outer",
+          ["[[m"] = "@function.inner",
+          ["[[f"] = "@call.inner",
+          ["[[d"] = "@conditional.inner",
+          ["[[o"] = "@loop.inner",
+          ["[[a"] = "@parameter.inner",
+          ["[[b"] = "@block.inner",
+          ["[[l"] = "@class.inner",
+          ["[[t"] = "@attribute.inner",
+        },
+        goto_previous_end = {
+          ["[M"] = "@function.outer",
+          ["[F"] = "@call.outer",
+          ["[D"] = "@conditional.outer",
+          ["[O"] = "@loop.outer",
+          ["[S"] = "@statement.outer",
+          ["[A"] = "@parameter.outer",
+          ["[C"] = "@comment.outer",
+          ["[B"] = "@block.outer",
+          ["[L"] = "@class.outer",
+          ["[T"] = "@attribute.outer",
+          ["[[M"] = "@function.inner",
+          ["[[F"] = "@call.inner",
+          ["[[D"] = "@conditional.inner",
+          ["[[O"] = "@loop.inner",
+          ["[[A"] = "@parameter.inner",
+          ["[[B"] = "@block.inner",
+          ["[[L"] = "@class.inner",
+          ["[[T"] = "@attribute.inner",
+        },
       },
-    },
   }
+}
 
 local ts_repeat_move = require "nvim-treesitter.textobjects.repeatable_move"
 
