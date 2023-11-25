@@ -52,6 +52,7 @@ yabai -m rule --add app="^CleanShot" manage=off
 yabai -m rule --add app="^Blender" manage=off
 yabai -m rule --add app="^Alfred Preferences$" manage=off
 yabai -m rule --add app="^Steam$" manage=off
+yabai -m rule --add app="^Stickies$" manage=off
 
 # float settings windows
 yabai -m rule --add title='Settings$' manage=off

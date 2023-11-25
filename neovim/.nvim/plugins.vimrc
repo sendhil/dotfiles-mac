@@ -276,12 +276,14 @@ vim.o.foldenable = true
 vim.keymap.set('n', 'zR', require('ufo').openAllFolds)
 vim.keymap.set('n', 'zM', require('ufo').closeAllFolds)
 vim.keymap.set('n', '<space>', 'za')
+require('lsp-format').setup()
 
 require('ufo').setup({
     provider_selector = function(bufnr, filetype, buftype)
         return {'treesitter', 'indent'}
     end
 })
+
 EOF
 
 let g:vista_default_executive = 'nvim_lsp'
@@ -293,3 +295,5 @@ if executable("rg")
   let g:CtrlSpaceGlobCommand = 'rg --smart-case --hidden --follow --no-heading --files'
 endif 
 let g:CtrlSpaceUseTabline = 0
+
+
