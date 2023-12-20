@@ -47,10 +47,15 @@ if [[ $TERM = 'xterm-kitty' ]]; then
   if [[ ( $(darkMode) =~ 'Dark' ) ]]; then
     kitty @ set-colors --all --configured ~/.config/kitty/themes/Nord.conf
   else
-    kitty @ set-colors --all --configured ~/.config/kitty/themes/Solarized\ Light.conf
+    kitty @ set-colors --all --configured ~/.config/kitty/themes/Nord.conf
+    # kitty @ set-colors --all --configured ~/.config/kitty/themes/Solarized\ Light.conf
   fi
 fi
 
+# Load PyEnv
+export PYENV_ROOT="$HOME/.pyenv"
+command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init -)"
 
 if [ -f ~/.bash_local ]; then
   source ~/.bash_local
