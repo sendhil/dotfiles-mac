@@ -188,7 +188,16 @@ local ts_repeat_move = require "nvim-treesitter.textobjects.repeatable_move"
 vim.keymap.set({ "n", "x", "o" }, ";", ts_repeat_move.repeat_last_move)
 vim.keymap.set({ "n", "x", "o" }, ",", ts_repeat_move.repeat_last_move_opposite)
 
-  require("ibl").setup{}
+  -- require("ibl").setup{}
+require("ibl").setup {
+    indent = { char = "|" },
+    exclude = {
+      buftypes = { "terminal" },
+    },
+    scope = {
+      enabled = false,
+    },
+}
 
   require'treesitter-context'.setup{
       enable = true, -- Enable this plugin (Can be enabled/disabled later via commands)
