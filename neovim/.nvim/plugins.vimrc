@@ -290,6 +290,8 @@ require('ufo').setup({
     end
 })
 
+require('toggle_lsp_diagnostics').init()
+
 EOF
 
 let g:vista_default_executive = 'nvim_lsp'

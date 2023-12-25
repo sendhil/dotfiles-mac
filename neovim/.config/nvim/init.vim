@@ -63,6 +63,7 @@ Plug 'kevinhwang91/nvim-ufo'
 Plug 'kevinhwang91/promise-async'
 Plug 'onsails/lspkind.nvim'
 Plug 'lukas-reineke/lsp-format.nvim'
+Plug 'WhoIsSethDaniel/toggle-lsp-diagnostics.nvim'
 
 " Themes
 Plug 'rakr/vim-one'
