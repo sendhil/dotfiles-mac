@@ -110,4 +110,8 @@ create_cmd("ToggleBackground", function()
     vim.cmd'set bg=dark'
   end
 end, {})
+
+create_cmd("ToggleFloat", function()
+  vim.cmd'ToggleTerm direction=float' 
+end, {})
 EOF
