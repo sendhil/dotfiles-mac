@@ -29,12 +29,22 @@ local on_attach = function(_, bufnr)
 end
 
 -- Enable the following language servers
-local servers = { 'clangd', 'rust_analyzer', 'pyright', 'tsserver', 'gopls', 'lua_ls' }
+local servers = { 'clangd', 'rust_analyzer', 'pyright', 'tsserver', 'gopls', 'lua_ls', 'sourcekit' }
 for _, lsp in ipairs(servers) do
   nvim_lsp[lsp].setup {
     on_attach = on_attach,
   }
 end
+
+-- nvim_lsp.sourcekit.setup {
+--     capabilities = {
+--         workspace = {
+--             didChangeWatchedFiles = {
+--                 dynamicRegistration = true,
+--             },
+--         },
+--     },
+-- }
 
 -- Set completeopt to have a better completion experience
 vim.o.completeopt = 'menu,menuone,noselect'
