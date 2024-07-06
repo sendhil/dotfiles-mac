@@ -172,6 +172,7 @@ alt-r = 'mode resize'
 # See: https://nikitabobko.github.io/AeroSpace/guide#binding-modes
 [mode.alternate.binding]
 esc = ['reload-config', 'mode main']
+m = 'mode monitors'
 r = ['flatten-workspace-tree', 'mode main'] # reset layout
 f = ['layout floating tiling', 'mode main'] # Toggle between floating and tiling layout
 
@@ -185,11 +186,6 @@ alt-shift-j = ['join-with down', 'mode main']
 alt-shift-k = ['join-with up', 'mode main']
 alt-shift-l = ['join-with right', 'mode main']
 
-alt-1='workspace 11'
-alt-2='workspace 12'
-alt-3='workspace 13'
-alt-4='workspace 14'
-
 [mode.resize.binding]
 h = 'resize width -50'
 j = 'resize height +50'
@@ -199,6 +195,18 @@ l = 'resize width +50'
 enter = 'mode main'
 esc = 'mode main'
 
+[mode.monitors.binding]
+esc='mode main'
+
+alt-h = 'focus-monitor left'
+alt-j = 'focus-monitor down'
+alt-k = 'focus-monitor up'
+alt-l = 'focus-monitor right'
+
+alt-shift-h = 'move-node-to-monitor left'
+alt-shift-j = 'move-node-to-monitor down'
+alt-shift-k = 'move-node-to-monitor up'
+alt-shift-l = 'move-node-to-monitor right'
 
 [[on-window-detected]]
 if.app-id = 'com.microsoft.VSCode'
