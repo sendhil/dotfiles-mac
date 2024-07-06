@@ -140,6 +140,8 @@ alt-7 = 'workspace 7'
 alt-8 = 'workspace 8'
 alt-9 = 'workspace 9'
 alt-0 = 'workspace 10'
+alt-minus = 'workspace 11'
+
 # right-alt-1='workspace 11'
 # right-alt-2='workspace 11'
 
