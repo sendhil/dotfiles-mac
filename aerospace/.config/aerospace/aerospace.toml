@@ -1,6 +1,5 @@
 # Place a copy of this config to ~/.aerospace.toml
 # After that, you can edit ~/.aerospace.toml to your liking
-
 # It's not necessary to copy all keys to your config.
 # If the key is missing in your config, "default-config.toml" will serve as a fallback
 
@@ -212,40 +211,70 @@ alt-shift-l = 'move-node-to-monitor right'
 
 [[on-window-detected]]
 if.app-id = 'com.microsoft.VSCode'
+if.during-aerospace-startup=true
 run = ['move-node-to-workspace 2']
 
 [[on-window-detected]]
 if.app-id = 'net.kovidgoyal.kitty'
+if.during-aerospace-startup=true
 run = ['move-node-to-workspace 3']
 
 [[on-window-detected]]
 if.app-id = 'md.obsidian'
+if.during-aerospace-startup=true
 run = ['move-node-to-workspace 9']
 
 [[on-window-detected]]
 if.app-id = 'net.whatsapp.WhatsApp'
+if.during-aerospace-startup=true
 run = ['move-node-to-workspace 10']
 
 [[on-window-detected]]
 if.app-id = 'org.whispersystems.signal-desktop'
+if.during-aerospace-startup=true
 run = ['move-node-to-workspace 10']
 
 [[on-window-detected]]
 if.app-id = 'com.hnc.Discord'
+if.during-aerospace-startup=true
 run = ['move-node-to-workspace 10']
 
 [[on-window-detected]]
 if.app-id = 'com.apple.dt.Xcode'
+if.during-aerospace-startup=true
 run = ['move-node-to-workspace 2']
 
 [[on-window-detected]]
 if.app-id = 'com.google.Chrome'
+if.during-aerospace-startup=true
 run = ['move-node-to-workspace 1']
 
 [[on-window-detected]]
 if.app-id = 'com.apple.MobileSMS'
-run = ['move-node-to-workspace 0']
+if.during-aerospace-startup=true
+run = ['move-node-to-workspace 10']
 
 [[on-window-detected]]
 if.app-id = 'com.kapeli.dashdoc'
+if.during-aerospace-startup=true
 run = ['layout floating']
+
+[[on-window-detected]]
+if.app-id = 'workplace-desktop'
+if.during-aerospace-startup=true
+run = ['move-node-to-workspace 10']
+
+[[on-window-detected]]
+if.app-id = 'com.googlecode.iterm2'
+if.during-aerospace-startup=true
+run = ['move-node-to-workspace 3']
+
+[[on-window-detected]]
+if.app-id = 'com.macromates.Textmate'
+if.during-aerospace-startup=true
+run = ['move-node-to-workspace 4']
+
+[[on-window-detected]]
+if.app-id = 'com.omnigroup.OmniFocus4'
+if.during-aerospace-startup=true
+run = ['move-node-to-workspace 8']
