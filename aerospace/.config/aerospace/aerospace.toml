@@ -52,7 +52,7 @@ key-mapping.preset = 'qwerty'
 12 = ['DELL S2722QC', 'Built-in']        # Main monitor
 13 = ['Built-in', 'DELL S2722QC']        # Main monitor
 14 = ['Built-in', 'DELL S2722QC']        # Main monitor
-15 = ['Virtual']
+# 15 = ['Virtual']
 
 # 3 = 'secondary'                  # Non-main monitor in case when there are only two monitors
 # 4 = 'built-in'                   # Case insensitive regex substring
@@ -113,10 +113,10 @@ alt-e = 'layout tiles horizontal vertical'
 alt-s = 'layout accordion horizontal vertical'
 
 # See: https://nikitabobko.github.io/AeroSpace/commands#focus
-alt-h = 'focus left'
+alt-h = 'focus left --boundaries all-monitors-outer-frame'
 alt-j = 'focus down'
 alt-k = 'focus up'
-alt-l = 'focus right'
+alt-l = 'focus right --boundaries all-monitors-outer-frame'
 
 alt-shift-space = 'layout floating tiling' # 'floating toggle' in i3
 
