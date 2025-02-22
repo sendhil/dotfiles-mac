@@ -45,8 +45,8 @@ Plug 'RRethy/vim-illuminate'
 Plug 'nvim-telescope/telescope-file-browser.nvim'
 Plug 'pocco81/high-str.nvim'
 Plug 'folke/todo-comments.nvim'
-Plug 'zbirenbaum/copilot.lua'
-Plug 'zbirenbaum/copilot-cmp'
+" Plug 'zbirenbaum/copilot.lua'
+" Plug 'zbirenbaum/copilot-cmp'
 Plug 'tom-anders/telescope-vim-bookmarks.nvim'
 Plug 'nvim-telescope/telescope-ui-select.nvim'
 Plug 'MattesGroeger/vim-bookmarks'
@@ -76,6 +76,7 @@ Plug 'marko-cerovac/material.nvim'
 Plug 'sainnhe/sonokai'
 Plug 'sainnhe/everforest'
 Plug 'rmehri01/onenord.nvim'
+Plug 'overcache/NeoSolarized'
 
 " Untriaged
 

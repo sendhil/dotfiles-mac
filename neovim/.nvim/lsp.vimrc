@@ -63,8 +63,8 @@ end
 -- vim.g.copilot_assume_mapped = true
 -- vim.g.copilot_tab_fallback = ""
 
-require('copilot').setup()
-require('copilot_cmp').setup()
+-- require('copilot').setup()
+-- require('copilot_cmp').setup()
 
 
 cmp.setup {
@@ -114,7 +114,7 @@ cmp.setup {
     end, { "i", "s" }),
   },
   sources = {
-    { name = 'copilot' },
+--   { name = 'copilot' },
     { name = 'nvim_lsp' },
     { name = 'luasnip' },
   },
