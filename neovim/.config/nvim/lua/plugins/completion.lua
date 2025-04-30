@@ -39,7 +39,8 @@ return {
                 },
                 completion = {
                     menu = {
-                        auto_show = true,
+                        -- Disable automatic cmdline completion menu to allow typing full patterns without interruption
+                        auto_show = false,
                     },
                 }
             },
