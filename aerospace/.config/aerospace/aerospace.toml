@@ -279,6 +279,7 @@ run = ['move-node-to-workspace 4']
 if.app-id = 'com.omnigroup.OmniFocus4'
 if.during-aerospace-startup=true
 run = ['move-node-to-workspace 8']
+
 [[on-window-detected]]
 if.app-id = 'com.epicgames.EpicGamesLauncher'
 run = ['layout floating']
