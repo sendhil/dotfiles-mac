@@ -41,7 +41,7 @@ nmap <Leader>bl :Telescope vim_bookmarks current_file<CR>
 nmap <Leader>bL :Telescope vim_bookmarks all<CR>
 nmap <Leader>bj <Plug>BookmarkNext
 nmap <Leader>bk <Plug>BookmarkPrev
-nmap <Leader>scp :Copilot panel<CR>
+" nmap <Leader>scp :Copilot panel<CR>
 nnoremap <C-W><C-M> <Cmd>WinShift<CR>
 nnoremap <C-W>m <Cmd>WinShift<CR>
 
