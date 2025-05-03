@@ -172,9 +172,44 @@ return {
   {
     "ggandor/leap.nvim",
     event = { "VeryLazy" },
+
+    -- keep Leap’s normal default mappings
     config = function()
       require("leap").add_default_mappings()
     end,
+
+    -- ── key‑bindings ──────────────────────────────────────────────────────────────
+    keys = {
+      -- clever‑R   (incremental Treesitter node selection)
+      {
+        "R",
+        function()
+          local leap = require("leap")
+
+          -- copy the plugin defaults so we don’t mutate them globally
+          local sk = vim.deepcopy(leap.opts.special_keys)
+          local sl = {}
+
+          -- make R/r behave like “repeat next/prev target”
+          sk.next_target = vim.fn.flatten(vim.list_extend({ "R" }, { sk.next_target }))
+          sk.prev_target = vim.fn.flatten(vim.list_extend({ "r" }, { sk.prev_target }))
+
+          -- keep safe_labels, but drop the two traversal keys we just added
+          for _, label in ipairs(vim.deepcopy(leap.opts.safe_labels)) do
+            if label ~= "R" and label ~= "r" then
+              table.insert(sl, label)
+            end
+          end
+
+          -- fire up Leap’s incremental Treesitter node selector
+          require("leap.treesitter").select({
+            opts = { special_keys = sk, safe_labels = sl },
+          })
+        end,
+        mode = { "n", "x", "o" },
+        desc = "Leap TS incremental select (clever‑R)",
+      },
+    },
   },
   {
     "akinsho/toggleterm.nvim",
