@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
-if ! [ -x "$(command -v exa)" ]; then
+if ! [ -x "$(command -v eza)" ]; then
   alias ls="ls -G"
 else
-  alias ls="exa"
-  alias ll='exa -lah'
+  alias ls="eza"
+  alias ll='eza -lah'
 fi
 
 alias clearderiveddata='rm -rf /Users/sendhil/Library/Developer/Xcode/DerivedData/*'
