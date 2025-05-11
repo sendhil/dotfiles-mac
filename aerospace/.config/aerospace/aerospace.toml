@@ -261,7 +261,7 @@ if.app-id = 'com.kapeli.dashdoc'
 run = ['layout floating']
 
 [[on-window-detected]]
-if.app-id = 'workplace-desktop'
+if.app-id = 'com.tinyspec.slackmacapp'
 if.during-aerospace-startup=true
 run = ['move-node-to-workspace 10']
 
@@ -274,6 +274,11 @@ run = ['move-node-to-workspace 3']
 if.app-id = 'com.macromates.Textmate'
 if.during-aerospace-startup=true
 run = ['move-node-to-workspace 4']
+
+[[on-window-detected]]
+if.app-id = 'com.microsoft.Outlook'
+if.during-aerospace-startup=true
+run = ['move-node-to-workspace 6']
 
 [[on-window-detected]]
 if.app-id = 'com.omnigroup.OmniFocus4'
