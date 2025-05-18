@@ -397,13 +397,63 @@ return {
 	{
 		"mfussenegger/nvim-dap",
 		dependencies = {
-			"rcarriga/nvim-dap-ui",
-			"theHamsta/nvim-dap-virtual-text",
-			"nvim-neotest/nvim-nio",
+			{ "rcarriga/nvim-dap-ui" },
+			{ "theHamsta/nvim-dap-virtual-text" },
+			{ "leoluz/nvim-dap-go" },
+			{ "nvim-neotest/nvim-nio" },
 		},
+
 		config = function()
-			require("dapui").setup()
-			require("nvim-dap-virtual-text").setup()
+			---------------------------------------------------------------------------
+			-- 1.  Basic setups -------------------------------------------------------
+			---------------------------------------------------------------------------
+			local dap, dapui = require("dap"), require("dapui")
+
+			dapui.setup({}) -- defaults are fine to start
+			require("nvim-dap-virtual-text").setup({})
+			require("dap-go").setup({}) -- populates ‘debug test’ etc. configs
+
+			-- Auto-open/close UI panels
+			dap.listeners.after.event_initialized["dapui_auto"] = function()
+				dapui.open()
+			end
+			dap.listeners.before.event_terminated["dapui_auto"] = function()
+				dapui.close()
+			end
+			dap.listeners.before.event_exited["dapui_auto"] = function()
+				dapui.close()
+			end
+
+			dap.adapters.go = function(callback, _)
+				local port = tonumber(vim.fn.input("Delve TCP port › ", "40000"))
+				callback({ type = "server", host = "127.0.0.1", port = port })
+			end
+
+			dap.configurations.go = {
+				{
+					name = "Attach (remote)",
+					type = "go",
+					request = "attach",
+					mode = "remote",
+					-- optional: map paths if the code runs in a container
+					-- substitutePath = { { from = "${workspaceFolder}", to =  "/app" } },
+				},
+				-- dap-go already adds: “Debug ↪ file”, “Debug ↪ test”, “Debug ↪ pkg” …
+			}
+
+			---------------------------------------------------------------------------
+			-- 4.  Handy keymaps ------------------------------------------------------
+			---------------------------------------------------------------------------
+			local map = vim.keymap.set
+			map("n", "<F5>", dap.continue, { desc = "DAP continue/attach" })
+			map("n", "<F10>", dap.step_over, { desc = "DAP step over" })
+			map("n", "<F11>", dap.step_into, { desc = "DAP step into" })
+			map("n", "<F12>", dap.step_out, { desc = "DAP step out" })
+			map("n", "<leader>b", dap.toggle_breakpoint, { desc = "DAP toggle bp" })
+			map("n", "<leader>B", function()
+				dap.set_breakpoint(vim.fn.input("Breakpoint condition › "))
+			end, { desc = "DAP conditional bp" })
+			map("n", "<leader>du", dapui.toggle, { desc = "DAP UI toggle" })
 		end,
 	},
 	{
