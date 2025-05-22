@@ -22,7 +22,7 @@ try
 				click checkbox "Natural scrolling" of group 1 of scroll area 1 of group 1 of group 2 of splitter group 1 of group 1 of window "Trackpad"
 				
 				
-				click menu item "Close" of menu "File" of menu bar item "File" of menu bar 1
+				click menu item "Quit System Settings" of menu "System Settings" of menu bar item "System Settings" of menu bar 1
 			end tell
 		end tell
 	end if
