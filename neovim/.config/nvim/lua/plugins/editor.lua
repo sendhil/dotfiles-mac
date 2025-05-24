@@ -485,4 +485,37 @@ return {
 		ft = { "go", "gomod" },
 		build = ':lua require("go.install").update_all_sync()', -- if you need to install/update all binaries
 	},
+	{
+		"athar-qadri/scratchpad.nvim",
+		event = "VeryLazy",
+		dependencies = { "nvim-lua/plenary.nvim" }, -- don't forget to add this one if you don't have it yet!
+		config = function()
+			require("scratchpad"):setup({
+				settings = {
+					sync_on_ui_close = true,
+				},
+			})
+		end,
+		keys = {
+			{
+				"\\s",
+				function()
+					local scratchpad = require("scratchpad")
+					scratchpad.ui:new_scratchpad()
+				end,
+				desc = "open scratchpad",
+			},
+		},
+	},
+	{
+		"tveskag/nvim-blame-line",
+		event = "VeryLazy",
+		keys = {
+			{ "<Leader>gb", "<cmd>ToggleBlameLine<CR>", mode = "n", desc = "Toggle Git Blame" },
+		},
+	},
+	{
+		"almo7aya/openingh.nvim",
+		event = "VeryLazy",
+	},
 }
