@@ -1,0 +1,9 @@
+[default_session]
+startup_command = "nvim -c 'lua require(\"telescope.builtin\").find_files()'"
+preview_command = "eza --all --git --icons --color=always {}"
+
+[[session]]
+name = "neovim config"
+path = "~/src/dotfiles-mac/neovim/.config/nvim"
+startup_command = "nvim -c 'lua require(\"telescope.builtin\").find_files()'"
+preview_command = "bat --color=always ~/c/dotfiles/.config/tmux/tmux.conf"
