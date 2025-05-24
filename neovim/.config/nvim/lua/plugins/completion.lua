@@ -25,7 +25,7 @@ return {
             --
             -- See the full "keymap" documentation for information on defining your own keymap.
             keymap = {
-                preset = 'default',
+                preset = 'super-tab',  -- use tab to accept suggestions, arrows for navigation
                 ['<CR>'] = { 'accept', 'fallback' },
             },
 
