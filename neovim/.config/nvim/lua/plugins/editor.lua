@@ -507,4 +507,11 @@ return {
 			},
 		},
 	},
+	{
+		"tveskag/nvim-blame-line",
+		event = "VeryLazy",
+		keys = {
+			{ "<Leader>gb", "<cmd>ToggleBlameLine<CR>", mode = "n", desc = "Toggle Git Blame" },
+		},
+	},
 }
