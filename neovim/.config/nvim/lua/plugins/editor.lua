@@ -514,4 +514,8 @@ return {
 			{ "<Leader>gb", "<cmd>ToggleBlameLine<CR>", mode = "n", desc = "Toggle Git Blame" },
 		},
 	},
+	{
+		"almo7aya/openingh.nvim",
+		event = "VeryLazy",
+	},
 }
