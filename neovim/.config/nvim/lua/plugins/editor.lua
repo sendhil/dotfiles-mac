@@ -449,11 +449,13 @@ return {
 			map("n", "<F10>", dap.step_over, { desc = "DAP step over" })
 			map("n", "<F11>", dap.step_into, { desc = "DAP step into" })
 			map("n", "<F12>", dap.step_out, { desc = "DAP step out" })
-			map("n", "<leader>b", dap.toggle_breakpoint, { desc = "DAP toggle bp" })
+			map("n", "<F9>", dap.toggle_breakpoint, { desc = "DAP toggle bp" })
 			map("n", "<leader>B", function()
 				dap.set_breakpoint(vim.fn.input("Breakpoint condition › "))
 			end, { desc = "DAP conditional bp" })
 			map("n", "<leader>du", dapui.toggle, { desc = "DAP UI toggle" })
+
+			vim.fn.sign_define("DapBreakpoint", { text = "🛑", texthl = "", linehl = "", numhl = "" })
 		end,
 	},
 	{
@@ -517,5 +519,23 @@ return {
 	{
 		"almo7aya/openingh.nvim",
 		event = "VeryLazy",
+	},
+	{
+		"pwntester/octo.nvim",
+		commit = "f09ff9413652e3c06a6817ba6284591c00121fe0",
+		pin = true,
+		event = "VeryLazy",
+		dependencies = {
+			"nvim-lua/plenary.nvim",
+			"nvim-telescope/telescope.nvim",
+			"nvim-tree/nvim-web-devicons",
+		},
+		config = function()
+			require("octo").setup({
+				suppress_missing_scope = {
+					projects_v2 = true,
+				},
+			})
+		end,
 	},
 }
