@@ -1,0 +1,3 @@
+/vendor/**        # top-level vendor
+**/vendor/**      # any nested vendor folder (Go modules)
+!**/vendor/.keep  # but keep a marker file if you rely on it
