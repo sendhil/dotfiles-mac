@@ -27,6 +27,7 @@ return {
 						},
 					},
 					path_display = { "smart" },
+					file_ignore_patterns = { "vendor/" },
 				},
 				extensions = {
 					fzf = {
