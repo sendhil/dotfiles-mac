@@ -179,7 +179,7 @@ return {
 
 		-- keep Leap’s normal default mappings
 		config = function()
-			require("leap").add_default_mappings()
+			require("leap").set_default_mappings()
 		end,
 
 		-- ── key‑bindings ──────────────────────────────────────────────────────────────
