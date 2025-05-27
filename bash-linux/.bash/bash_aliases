@@ -11,7 +11,6 @@ alias clearderiveddata='rm -rf /Users/sendhil/Library/Developer/Xcode/DerivedDat
 alias projects='cd /Users/sendhil/Projects'
 alias tmux="TERM=screen-256color tmux"
 alias findfile='find . -name '
-alias src='cd ~/src'
 alias tree="tree -C"
 alias weather="curl wttr.in"
 
