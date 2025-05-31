@@ -45,3 +45,7 @@ vim.keymap.set("n", "<leader>cd", function()
 	vim.cmd("cd " .. dir)
 	vim.notify("cd → " .. dir, vim.log.levels.INFO, { title = "Working Directory" })
 end, { noremap = true, silent = true, desc = "cd to file dir" })
+
+vim.keymap.set("n", "<leader>cf", function()
+	vim.fn.setreg("+", vim.fn.expand("%:p"))
+end, { silent = true })
