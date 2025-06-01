@@ -422,17 +422,31 @@ return {
 				dapui.close()
 			end
 
-			dap.adapters.go = function(callback, _)
-				local port = tonumber(vim.fn.input("Delve TCP port › ", "40000"))
-				callback({ type = "server", host = "127.0.0.1", port = port })
+			dap.adapters.go = function(callback, config)
+				if config.request == "attach" then
+					local port = config.port or tonumber(vim.fn.input("Delve TCP port › ", "2345"))
+					callback({ type = "server", host = config.host or "127.0.0.1", port = port })
+				else
+					callback({
+						type = "server",
+						host = "127.0.0.1",
+						port = "${port}",
+						executable = {
+							command = "dlv",
+							args = { "dap", "-l", "127.0.0.1:${port}" },
+						},
+					})
+				end
 			end
 
 			dap.configurations.go = {
 				{
-					name = "Attach (remote)",
+					name = "Attach (remote: localhost:2345)",
 					type = "go",
 					request = "attach",
 					mode = "remote",
+					host = "127.0.0.1",
+					port = 2345,
 					-- optional: map paths if the code runs in a container
 					-- substitutePath = { { from = "${workspaceFolder}", to =  "/app" } },
 				},
