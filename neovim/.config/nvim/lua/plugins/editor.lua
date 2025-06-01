@@ -161,8 +161,8 @@ return {
 		"tpope/vim-commentary",
 		event = { "VeryLazy" },
 		keys = {
-			{ "\\\\", "<cmd>Commentary<CR>", mode = "x", desc = "Toggle comment (visual mode)" },
-			{ "\\\\", "<cmd>Commentary<CR>", mode = "n", desc = "Toggle comment (normal mode)" },
+			{ "\\\\", "<Plug>Commentary",     mode = "x", desc = "Toggle comment (visual mode)" },
+			{ "\\\\", "<Plug>CommentaryLine", mode = "n", desc = "Toggle comment (normal mode)" },
 		},
 	},
 	{
