@@ -22,12 +22,12 @@ return {
 							["<esc>"] = actions.close, -- One <Esc> to quit
 							["<C-j>"] = actions.move_selection_next,
 							["<C-k>"] = actions.move_selection_previous,
+							["<leader>q"] = actions.send_to_qflist + actions.open_qflist,
 							["<C-q>"] = actions.send_selected_to_qflist + actions.open_qflist,
 							["<C-l>"] = actions.send_selected_to_loclist + actions.open_loclist,
 						},
 					},
 					path_display = { "smart" },
-					file_ignore_patterns = { "vendor/" },
 				},
 				extensions = {
 					fzf = {
