@@ -19,6 +19,7 @@ vim.o.tabstop = 2 -- Number of spaces per tab
 vim.o.shiftwidth = 2 -- Number of spaces for auto-indent
 vim.o.softtabstop = 2 -- Number of spaces for soft tabstop
 vim.o.expandtab = true -- Convert tabs to spaces
+vim.o.showtabline = 2
 
 -- Buffer behavior
 vim.o.hidden = true -- Allow buffer switching without saving
