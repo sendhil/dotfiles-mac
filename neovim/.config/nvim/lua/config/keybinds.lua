@@ -49,3 +49,7 @@ end, { noremap = true, silent = true, desc = "cd to file dir" })
 vim.keymap.set("n", "<leader>cf", function()
 	vim.fn.setreg("+", vim.fn.expand("%:p"))
 end, { silent = true })
+
+vim.keymap.set("n", "<C-\\>", function()
+	vim.cmd("ToggleFloat")
+end, { silent = true, desc = "Toggle Floating Window" })
