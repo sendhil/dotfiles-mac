@@ -161,7 +161,7 @@ return {
 		"tpope/vim-commentary",
 		event = { "VeryLazy" },
 		keys = {
-			{ "\\\\", "<Plug>Commentary",     mode = "x", desc = "Toggle comment (visual mode)" },
+			{ "\\\\", "<Plug>Commentary", mode = "x", desc = "Toggle comment (visual mode)" },
 			{ "\\\\", "<Plug>CommentaryLine", mode = "n", desc = "Toggle comment (normal mode)" },
 		},
 	},
@@ -221,7 +221,7 @@ return {
 		version = "*",
 		config = function()
 			require("toggleterm").setup({
-				open_mapping = [[<C-\>]], -- Bind Ctrl-\ to toggle the terminal'
+				--open_mapping = [[<C-\>]], -- Bind Ctrl-\ to toggle the terminal'
 				shade_terminals = false,
 			})
 
@@ -386,10 +386,10 @@ return {
 			"TmuxNavigatorProcessList",
 		},
 		keys = {
-			{ "<c-h>", "<cmd><C-U>TmuxNavigateLeft<cr>" },
-			{ "<c-j>", "<cmd><C-U>TmuxNavigateDown<cr>" },
-			{ "<c-k>", "<cmd><C-U>TmuxNavigateUp<cr>" },
-			{ "<c-l>", "<cmd><C-U>TmuxNavigateRight<cr>" },
+			{ "<c-h>", "<cmd>TmuxNavigateLeft<cr>" },
+			{ "<c-j>", "<cmd>TmuxNavigateDown<cr>" },
+			{ "<c-k>", "<cmd>TmuxNavigateUp<cr>" },
+			{ "<c-l>", "<cmd>TmuxNavigateRight<cr>" },
 		},
 	},
 	{
@@ -543,5 +543,14 @@ return {
 				},
 			})
 		end,
+	},
+	{
+		"nvzone/floaterm",
+		dependencies = "nvzone/volt",
+		-- keys = {
+		-- 	{ "<C-\\>", "<cmd>FloatermToggle<CR>", desc = "Toggle Floaterm" },
+		-- },
+		opts = {},
+		cmd = "FloatermToggle",
 	},
 }
