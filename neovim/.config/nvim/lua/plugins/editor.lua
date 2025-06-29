@@ -368,6 +368,12 @@ return {
 			vim.keymap.set("n", "zM", ufo.closeAllFolds, { desc = "Close all folds" })
 			vim.keymap.set("n", "<space>", "za", { desc = "Toggle fold" })
 
+			-- vim.api.nvim_create_autocmd("InsertLeave", {
+			-- 	callback = function()
+			-- 		vim.cmd("normal! zv") -- Keep folds open at cursor
+			-- 	end,
+			-- })
+
 			-- Setup UFO with Treesitter and Indent as providers
 			ufo.setup({
 				provider_selector = function(bufnr, filetype, buftype)
@@ -530,7 +536,6 @@ return {
 		"pwntester/octo.nvim",
 		commit = "f09ff9413652e3c06a6817ba6284591c00121fe0",
 		pin = true,
-		event = "VeryLazy",
 		dependencies = {
 			"nvim-lua/plenary.nvim",
 			"nvim-telescope/telescope.nvim",
