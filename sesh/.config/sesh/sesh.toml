@@ -3,7 +3,12 @@ startup_command = "nvim -c 'lua require(\"telescope.builtin\").find_files()'"
 preview_command = "eza --all --git --icons --color=always {}"
 
 [[session]]
-name = "neovim config"
+name = "Neovim Config"
 path = "~/src/dotfiles-mac/neovim/.config/nvim"
 startup_command = "nvim -c 'lua require(\"telescope.builtin\").find_files()'"
 preview_command = "bat --color=always ~/c/dotfiles/.config/tmux/tmux.conf"
+
+[[session]]
+name = "GitHub Dashboard"
+path = "~/src"
+startup_command = "gh dash"
