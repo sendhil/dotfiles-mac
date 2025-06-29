@@ -151,6 +151,7 @@ return {
 				desc = "Telescope: Resume Last Picker",
 			},
 			{ "<leader>sf", "<cmd>Telescope file_browser<CR>", desc = "Telescope: File Browser" },
+			{ "<leader>ga", "<cmd>Octo actions<CR>", desc = "Telescope: GitHub Actions" },
 		},
 	},
 }
