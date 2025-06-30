@@ -161,8 +161,8 @@ return {
 		"tpope/vim-commentary",
 		event = { "VeryLazy" },
 		keys = {
-			{ "\\\\", "<Plug>Commentary", mode = "x", desc = "Toggle comment (visual mode)" },
-			{ "\\\\", "<Plug>CommentaryLine", mode = "n", desc = "Toggle comment (normal mode)" },
+			{ "<leader>\\", "<Plug>Commentary", mode = "x", desc = "Toggle comment (visual mode)" },
+			{ "<leader>\\", "<Plug>CommentaryLine", mode = "n", desc = "Toggle comment (normal mode)" },
 		},
 	},
 	{
@@ -368,11 +368,11 @@ return {
 			vim.keymap.set("n", "zM", ufo.closeAllFolds, { desc = "Close all folds" })
 			vim.keymap.set("n", "<space>", "za", { desc = "Toggle fold" })
 
-			-- vim.api.nvim_create_autocmd("InsertLeave", {
-			-- 	callback = function()
-			-- 		vim.cmd("normal! zv") -- Keep folds open at cursor
-			-- 	end,
-			-- })
+			vim.api.nvim_create_autocmd("InsertLeave", {
+				callback = function()
+					vim.cmd("normal! zv") -- Keep folds open at cursor
+				end,
+			})
 
 			-- Setup UFO with Treesitter and Indent as providers
 			ufo.setup({
