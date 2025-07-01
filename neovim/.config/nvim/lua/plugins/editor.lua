@@ -88,6 +88,7 @@ return {
 		keys = {
 			{ "\\t", "<cmd>Trouble diagnostics toggle<cr>", desc = "Diagnostics (Trouble)" },
 			{ "<leader>xx", "<cmd>Trouble diagnostics toggle<cr>", desc = "Diagnostics (Trouble)" },
+			{ "<leader>xT", "<cmd>TroubleTelescope<cr>", desc = "Trouble Mode Picker (Telescope)" },
 			{ "<leader>xX", "<cmd>Trouble diagnostics toggle filter.buf=0<cr>", desc = "Buffer Diagnostics (Trouble)" },
 			{ "<leader>cs", "<cmd>Trouble symbols toggle<cr>", desc = "Symbols (Trouble)" },
 			{
@@ -95,8 +96,22 @@ return {
 				"<cmd>Trouble lsp toggle<cr>",
 				desc = "LSP references/definitions/... (Trouble)",
 			},
-			{ "<leader>xL", "<cmd>Trouble loclist toggle<cr>", desc = "Location List (Trouble)" },
-			{ "<leader>xQ", "<cmd>Trouble qflist toggle<cr>", desc = "Quickfix List (Trouble)" },
+			{
+				"<leader>xl",
+				function()
+					vim.cmd("lclose")
+					vim.cmd("Trouble loclist toggle")
+				end,
+				desc = "Location List (Trouble)",
+			},
+			{
+				"<leader>xq",
+				function()
+					vim.cmd("cclose")
+					vim.cmd("Trouble qflist toggle")
+				end,
+				desc = "Quickfix List (Trouble)",
+			},
 			{
 				"[q",
 				function()

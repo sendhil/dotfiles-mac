@@ -4,8 +4,6 @@ return {
 	{ "nvim-telescope/telescope-file-browser.nvim" },
 	{
 		"nvim-telescope/telescope.nvim",
-		tag = "0.1.8",
-		-- or                              , branch = '0.1.x',
 		dependencies = {
 			"nvim-lua/plenary.nvim",
 			"nvim-telescope/telescope-fzf-native.nvim",
@@ -14,6 +12,40 @@ return {
 		},
 		config = function()
 			local actions = require("telescope.actions")
+			local trouble = require("trouble")
+
+			-- Custom actions that send to qflist/loclist and open Trouble
+			local send_to_qflist_and_trouble = function(prompt_bufnr)
+				actions.send_to_qflist(prompt_bufnr)
+				vim.schedule(function()
+					vim.cmd("cclose")
+					vim.cmd("Trouble qflist toggle")
+				end)
+			end
+
+			local send_selected_to_qflist_and_trouble = function(prompt_bufnr)
+				actions.send_selected_to_qflist(prompt_bufnr)
+				vim.schedule(function()
+					vim.cmd("cclose")
+					vim.cmd("Trouble qflist toggle")
+				end)
+			end
+
+			local send_to_loclist_and_trouble = function(prompt_bufnr)
+				actions.send_to_loclist(prompt_bufnr)
+				vim.schedule(function()
+					vim.cmd("lclose")
+					vim.cmd("Trouble loclist toggle")
+				end)
+			end
+
+			local send_selected_to_loclist_and_trouble = function(prompt_bufnr)
+				actions.send_selected_to_loclist(prompt_bufnr)
+				vim.schedule(function()
+					vim.cmd("lclose")
+					vim.cmd("Trouble loclist toggle")
+				end)
+			end
 
 			require("telescope").setup({
 				defaults = {
@@ -22,10 +54,10 @@ return {
 							["<esc>"] = actions.close, -- One <Esc> to quit
 							["<C-j>"] = actions.move_selection_next,
 							["<C-k>"] = actions.move_selection_previous,
-							["<leader>q"] = actions.send_to_qflist + actions.open_qflist,
-							["<leader>l"] = actions.send_to_loclist + actions.open_loclist,
-							["<C-q>"] = actions.send_selected_to_qflist + actions.open_qflist,
-							["<C-l>"] = actions.send_selected_to_loclist + actions.open_loclist,
+							["<leader>q"] = send_to_qflist_and_trouble,
+							["<leader>l"] = send_to_loclist_and_trouble,
+							["<C-q>"] = send_selected_to_qflist_and_trouble,
+							["<C-l>"] = send_selected_to_loclist_and_trouble,
 						},
 					},
 					path_display = { "smart" },
@@ -44,6 +76,68 @@ return {
 			-- load_extension, somewhere after setup function:
 			require("telescope").load_extension("fzf")
 			require("telescope").load_extension("vim_bookmarks")
+
+			-- Custom Telescope picker for Trouble modes
+			local pickers = require("telescope.pickers")
+			local finders = require("telescope.finders")
+			local conf = require("telescope.config").values
+			local actions_state = require("telescope.actions.state")
+
+			local trouble_telescope = function(opts)
+				opts = opts or {}
+				
+				-- Define Trouble modes with descriptions
+				local modes = {
+					{ name = "diagnostics", desc = "Diagnostics" },
+					{ name = "fzf", desc = "FzfLua results" },
+					{ name = "fzf_files", desc = "FzfLua files" },
+					{ name = "loclist", desc = "Location List" },
+					{ name = "lsp", desc = "LSP definitions, references, implementations, type definitions, and declarations" },
+					{ name = "lsp_command", desc = "LSP Command" },
+					{ name = "lsp_declarations", desc = "LSP Declarations" },
+					{ name = "lsp_definitions", desc = "LSP Definitions" },
+					{ name = "lsp_document_symbols", desc = "Document Symbols" },
+					{ name = "lsp_implementations", desc = "LSP Implementations" },
+					{ name = "lsp_incoming_calls", desc = "LSP Incoming Calls" },
+					{ name = "lsp_outgoing_calls", desc = "LSP Outgoing Calls" },
+					{ name = "lsp_references", desc = "LSP References" },
+					{ name = "lsp_type_definitions", desc = "LSP Type Definitions" },
+					{ name = "qflist", desc = "Quickfix List" },
+					{ name = "quickfix", desc = "Quickfix List" },
+					{ name = "symbols", desc = "Document Symbols" },
+					{ name = "telescope", desc = "Telescope results" },
+					{ name = "telescope_files", desc = "Telescope files" },
+					{ name = "todo", desc = "Todo Comments" },
+				}
+				
+				pickers.new(opts, {
+					prompt_title = "Trouble Modes",
+					finder = finders.new_table({
+						results = modes,
+						entry_maker = function(entry)
+							return {
+								value = entry.name,
+								display = string.format("%-30s %s", entry.name, entry.desc),
+								ordinal = entry.name .. " " .. entry.desc,
+							}
+						end,
+					}),
+					sorter = conf.generic_sorter(opts),
+					attach_mappings = function(prompt_bufnr, map)
+						actions.select_default:replace(function()
+							actions.close(prompt_bufnr)
+							local selection = actions_state.get_selected_entry()
+							if selection then
+								vim.cmd("Trouble " .. selection.value .. " toggle")
+							end
+						end)
+						return true
+					end,
+				}):find()
+			end
+
+			-- Make it available as a command
+			vim.api.nvim_create_user_command("TroubleTelescope", trouble_telescope, {})
 		end,
 		keys = {
 			{
