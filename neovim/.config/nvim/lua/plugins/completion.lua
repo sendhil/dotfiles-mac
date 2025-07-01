@@ -91,6 +91,7 @@ return {
 				lua_ls = {},
 				sourcekit = {},
 				buf_ls = {},
+				yamlls = {},
 			},
 		},
 		config = function(_, opts)
