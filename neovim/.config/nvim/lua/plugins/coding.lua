@@ -99,6 +99,7 @@ return {
 				adapters = {
 					openai = function()
 						return require("codecompanion.adapters").extend("openai", {
+							url = vim.env.CODECOMPANION_URL or nil,
 							schema = {
 								model = {
 									default = "o3-mini",
