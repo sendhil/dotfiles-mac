@@ -23,7 +23,6 @@ bindkey "^R" history-incremental-search-backward
 bindkey '^x^e' edit-command-line
 
 export REVIEW_BASE=master
-export NVM_DIR="/Users/sendhil/.nvm"
 
 export BAT_THEME="TwoDark"
 export PATH=/opt/homebrew/bin:~/.cargo/bin:$GOPATH/bin:$GOROOT/bin:~/src/google-cloud-sdk/bin:~/.local/bin:$HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin:~/Library/Python/3.9/bin:~/go/bin:$PATH
