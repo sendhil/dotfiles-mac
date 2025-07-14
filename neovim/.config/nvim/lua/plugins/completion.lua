@@ -83,7 +83,9 @@ return {
 		dependencies = { "saghen/blink.cmp" },
 		opts = {
 			servers = {
-				clangd = {},
+				clangd = {
+					filetypes = { "c", "cpp", "objc", "objcpp", "cuda", "hpp" },
+				},
 				rust_analyzer = {},
 				pyright = {},
 				ts_ls = {},
