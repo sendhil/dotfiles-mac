@@ -84,7 +84,21 @@ return {
 		opts = {
 			servers = {
 				clangd = {
+					-- Tell clangd where compile_commands.json lives
 					filetypes = { "c", "cpp", "objc", "objcpp", "cuda", "hpp" },
+					cmd = {
+						"clangd",
+						"--background-index",
+						"--clang-tidy",
+						"--completion-style=detailed",
+						"--header-insertion=iwyu",
+						"--compile-commands-dir=build",
+						-- uncomment if you need libc++ on macOS
+						-- "--query-driver=/usr/bin/clang++,/opt/homebrew/bin/clang++"
+					},
+					init_options = {
+						clangdFileStatus = true,
+					},
 				},
 				rust_analyzer = {},
 				pyright = {},
