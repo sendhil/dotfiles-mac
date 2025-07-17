@@ -91,9 +91,9 @@ return {
 				ts_ls = {},
 				gopls = {},
 				lua_ls = {},
-				sourcekit = {},
 				buf_ls = {},
 				yamlls = {},
+				nil_ls = {},
 			},
 		},
 		config = function(_, opts)
