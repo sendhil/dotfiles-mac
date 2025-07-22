@@ -573,4 +573,9 @@ return {
 		opts = {},
 		cmd = "FloatermToggle",
 	},
+	{
+		"stevearc/overseer.nvim",
+		event = "VeryLazy",
+		opts = {},
+	},
 }
