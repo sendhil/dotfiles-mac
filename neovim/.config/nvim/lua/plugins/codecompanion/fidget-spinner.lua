@@ -40,8 +40,9 @@ function M:pop_progress_handle(id)
 end
 
 function M:create_progress_handle(request)
+  local strategy_text = request.data.strategy and (" (" .. request.data.strategy .. ")") or ""
   return progress.handle.create({
-    title = " Requesting assistance (" .. request.data.strategy .. ")",
+    title = " Requesting assistance" .. strategy_text,
     message = "In progress...",
     lsp_client = {
       name = M:llm_role_title(request.data.adapter),
@@ -62,7 +63,7 @@ function M:report_exit_status(handle, request)
   if request.data.status == "success" then
     handle.message = "Completed"
   elseif request.data.status == "error" then
-    handle.message = " Error"
+    handle.message = " Error"
   else
     handle.message = "󰜺 Cancelled"
   end
