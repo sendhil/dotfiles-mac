@@ -57,4 +57,4 @@ gitconfig:
 
 .PHONY: prestow
 prestow:
-	@./non-linked-scripts/clear-out-files-before-stow.sh
+	@./scripts/clear-out-files-before-stow.sh
