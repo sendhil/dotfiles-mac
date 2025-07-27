@@ -34,7 +34,7 @@ make stow-tmux      # Install only tmux config
 - `hammerspoon` - macOS automation
 - `karabiner` - Keyboard customization
 - `kitty` - Terminal emulator configuration
-- `neovim` - Neovim configuration
+- `neovim` - Neovim configuration (see [Neovim Setup](#neovim-setup) for dependencies)
 - `prezto` - Zsh configuration framework
 - `sesh` - Session management
 - `skhd` - Simple hotkey daemon
@@ -72,3 +72,84 @@ If you have existing configuration files that might conflict:
 ```bash
 make prestow  # Cleans out existing files before stowing
 ```
+
+## Neovim Setup
+
+The Neovim configuration requires several dependencies to work properly. You have two options:
+
+### Option 1: Automated Setup
+
+Run the appropriate setup script for your operating system:
+
+#### macOS
+```bash
+./scripts/setup-neovim-deps-mac.sh
+```
+
+#### Linux (Ubuntu/Debian)
+```bash
+./scripts/setup-neovim-deps-linux.sh
+```
+
+These scripts will install:
+- Core dependencies (git, make, gcc, fzf, ripgrep, fd, etc.)
+- Language runtimes (Go, Node.js via fnm, Rust via rustup, Python)
+- System tools (clangd, clang-tidy on Linux)
+- Package managers (Homebrew on macOS, uses apt on Linux)
+
+### Option 2: Manual Setup
+
+If you prefer to have more control over what gets installed:
+
+1. **Check what's already installed:**
+   ```bash
+   # macOS
+   ./scripts/check-neovim-deps-mac.sh
+   
+   # Linux
+   ./scripts/check-neovim-deps-linux.sh
+   ```
+
+2. **Install missing dependencies** based on the check script output
+
+3. **Install the Neovim configuration:**
+   ```bash
+   make stow-neovim
+   ```
+
+4. **Open Neovim and install language servers/tools:**
+   ```bash
+   nvim
+   # Inside Neovim:
+   :Mason                 # Open Mason UI to manually install tools
+   :MasonToolsInstall     # Install configured formatters/linters
+   ```
+
+### Dependencies Overview
+
+**Core Requirements:**
+- Neovim 0.9+ (latest version recommended)
+- Git
+- C compiler (gcc/clang)
+- Make
+- Python 3 with pipx
+- Node.js (via fnm - Fast Node Manager)
+- Go
+- Rust toolchain (via rustup)
+
+**Search & Navigation:**
+- fzf - Fuzzy finder
+- ripgrep - Fast grep alternative
+- fd - Fast find alternative
+
+**Optional but Recommended:**
+- GitHub CLI (gh) - For GitHub integration
+- clangd - C/C++ language server
+- clang-tidy - C/C++ linter
+
+### Troubleshooting
+
+- Run `:checkhealth` inside Neovim to diagnose issues
+- Check Mason logs with `:MasonLog` if language servers fail to install
+- On ARM64 Linux, some tools are installed system-wide instead of via Mason
+- If you see errors on first launch, try `:Lazy sync` to ensure all plugins are installed
