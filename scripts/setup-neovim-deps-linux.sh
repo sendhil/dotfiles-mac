@@ -29,6 +29,7 @@ sudo apt install -y \
   make \
   gcc \
   g++ \
+  clangd \
   python3 \
   python3-pip \
   pipx \
