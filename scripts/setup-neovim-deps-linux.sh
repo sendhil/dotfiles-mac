@@ -30,6 +30,7 @@ sudo apt install -y \
   gcc \
   g++ \
   clangd \
+  clang-tidy \
   python3 \
   python3-pip \
   pipx \

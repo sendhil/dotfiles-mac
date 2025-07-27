@@ -60,10 +60,9 @@ return {
       require("mason-tool-installer").setup({
         ensure_installed = {
           "black",
-          "ruff",
+          "ruff", 
           "gofumpt",
           "goimports",
-          "clang-tidy",
         },
         auto_update = false,
         run_on_start = false, -- Don't auto-install on startup

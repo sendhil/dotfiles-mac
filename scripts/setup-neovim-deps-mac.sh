@@ -27,7 +27,8 @@ brew install \
     fd \
     python3 \
     pipx \
-    go
+    go \
+    llvm
 
 echo "📦 Installing fnm (Fast Node Manager)..."
 brew install fnm
@@ -66,6 +67,9 @@ fi
 
 echo "🐍 Ensuring pipx is in PATH..."
 pipx ensurepath
+
+echo "🔧 Note: clang-tidy is included with LLVM. You may need to add LLVM to your PATH:"
+echo "   echo 'export PATH=\"/opt/homebrew/opt/llvm/bin:\$PATH\"' >> ~/.zshrc"
 
 echo "✅ Core dependencies installation complete!"
 echo ""
