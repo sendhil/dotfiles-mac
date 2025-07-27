@@ -1,8 +1,7 @@
 return {
   {
     "williamboman/mason.nvim",
-    lazy = false,
-    priority = 100,
+    event = "VeryLazy",
     config = function()
       require("mason").setup({
         ui = {
@@ -20,7 +19,7 @@ return {
   },
   {
     "williamboman/mason-lspconfig.nvim",
-    lazy = false,
+    event = "VeryLazy",
     dependencies = { "williamboman/mason.nvim" },
     config = function()
       require("mason-lspconfig").setup({
@@ -35,12 +34,13 @@ return {
           "yamlls",
           -- "nil_ls", -- Comment out for now, might not be available
         },
-        automatic_installation = true,
+        automatic_installation = false, -- Don't auto-install
       })
     end,
   },
   {
     "WhoIsSethDaniel/mason-tool-installer.nvim",
+    event = "VeryLazy",
     dependencies = { "williamboman/mason.nvim" },
     config = function()
       require("mason-tool-installer").setup({
@@ -52,8 +52,7 @@ return {
           "clang-tidy",
         },
         auto_update = false,
-        run_on_start = true,
-        start_delay = 3000, -- 3 seconds delay before auto-install
+        run_on_start = false, -- Don't auto-install on startup
       })
     end,
   },
