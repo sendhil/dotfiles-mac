@@ -12,9 +12,6 @@ return {
           }
         }
       })
-      
-      -- Don't auto-install in the main Mason config
-      -- Let mason-lspconfig and mason-tool-installer handle it
     end,
   },
   {
@@ -30,7 +27,7 @@ return {
           "ts_ls",
           "gopls",
           "lua_ls",
-          "bufls",
+          "buf",
           "yamlls",
           -- "nil_ls", -- Comment out for now, might not be available
         },

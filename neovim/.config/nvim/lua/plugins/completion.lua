@@ -109,7 +109,7 @@ return {
 				ts_ls = {},
 				gopls = {},
 				lua_ls = {},
-				buf_ls = {},
+				buf = {},
 				yamlls = {},
 				nil_ls = {},
 			},
