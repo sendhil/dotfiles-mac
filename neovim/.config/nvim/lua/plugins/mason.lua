@@ -24,14 +24,21 @@ return {
           "clangd",
           "rust_analyzer",
           "pyright",
-          "ts_ls",
+          "ts_ls", 
           "gopls",
           "lua_ls",
-          "buf",
+          "buf_ls", -- Use lspconfig name here
           "yamlls",
           -- "nil_ls", -- Comment out for now, might not be available
         },
         automatic_installation = false, -- Don't auto-install
+        -- This handles the mapping between lspconfig names and mason names
+        handlers = {
+          -- Default handler
+          function(server_name)
+            require("lspconfig")[server_name].setup({})
+          end,
+        },
       })
     end,
   },
