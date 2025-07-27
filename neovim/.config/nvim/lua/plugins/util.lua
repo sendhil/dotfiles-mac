@@ -15,10 +15,6 @@ return {
     {
       "sindrets/diffview.nvim",
       event = "VeryLazy"
-    },
-    {
-      "mason-org/mason.nvim",
-      opts = { ensure_installed = { "goimports", "gofumpt" } },
     }
   }
 }

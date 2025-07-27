@@ -3,6 +3,10 @@ return {
     "williamboman/mason.nvim",
     cmd = "Mason",
     build = ":MasonUpdate",
+    event = "VeryLazy",
+    dependencies = {
+      "williamboman/mason-lspconfig.nvim",
+    },
     opts = {
       ensure_installed = {
         -- Language servers
@@ -50,14 +54,41 @@ return {
     end,
   },
   {
+    "williamboman/mason-lspconfig.nvim",
+    dependencies = { "williamboman/mason.nvim" },
+    config = function()
+      require("mason-lspconfig").setup({
+        ensure_installed = {
+          "clangd",
+          "rust_analyzer",
+          "pyright",
+          "ts_ls",
+          "gopls",
+          "lua_ls",
+          "bufls",
+          "yamlls",
+          "nil_ls",
+        },
+        automatic_installation = true,
+      })
+    end,
+  },
+  {
     "WhoIsSethDaniel/mason-tool-installer.nvim",
     dependencies = { "williamboman/mason.nvim" },
-    opts = {
-      ensure_installed = {
-        -- Add any additional tools here
-      },
-      auto_update = false,
-      run_on_start = true,
-    },
+    config = function()
+      require("mason-tool-installer").setup({
+        ensure_installed = {
+          "black",
+          "ruff",
+          "gofumpt",
+          "goimports",
+          "clang-tidy",
+        },
+        auto_update = false,
+        run_on_start = true,
+        start_delay = 3000, -- 3 seconds delay before auto-install
+      })
+    end,
   },
 }
