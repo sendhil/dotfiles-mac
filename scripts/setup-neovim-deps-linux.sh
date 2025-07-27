@@ -44,12 +44,42 @@ echo "📦 Installing Neovim from official release..."
 NVIM_VERSION=$(curl -s https://api.github.com/repos/neovim/neovim/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
 echo "   Latest Neovim version: $NVIM_VERSION"
 
-# Download and install Neovim
+# Download and install Neovim based on architecture
 cd /tmp
-wget https://github.com/neovim/neovim/releases/download/${NVIM_VERSION}/nvim-linux64.tar.gz
-sudo tar -C /opt -xzf nvim-linux64.tar.gz
-sudo ln -sf /opt/nvim-linux64/bin/nvim /usr/local/bin/nvim
-rm nvim-linux64.tar.gz
+
+# Check if ARM64 tarball exists (available from v0.10.0+)
+ARM64_URL="https://github.com/neovim/neovim/releases/download/${NVIM_VERSION}/nvim-linux64.tar.gz"
+if [ "$ARCH" = "arm64" ]; then
+    # Try ARM64-specific build first
+    ARM64_SPECIFIC_URL="https://github.com/neovim/neovim/releases/download/${NVIM_VERSION}/nvim-linux-arm64.tar.gz"
+    if wget --spider "$ARM64_SPECIFIC_URL" 2>/dev/null; then
+        echo "   Downloading Neovim ARM64 build..."
+        wget "$ARM64_SPECIFIC_URL" -O nvim.tar.gz
+        sudo tar -C /opt -xzf nvim.tar.gz
+        sudo ln -sf /opt/nvim-linux-arm64/bin/nvim /usr/local/bin/nvim
+    else
+        # Fallback: Build from source for ARM64
+        echo "   No ARM64 build available. Building from source..."
+        sudo apt install -y ninja-build gettext cmake
+        
+        # Clone and build
+        git clone https://github.com/neovim/neovim
+        cd neovim
+        git checkout ${NVIM_VERSION}
+        make CMAKE_BUILD_TYPE=Release
+        sudo make install
+        cd ..
+        rm -rf neovim
+    fi
+    rm -f nvim.tar.gz
+else
+    # For x86_64, use the standard tarball
+    echo "   Downloading Neovim x86_64 build..."
+    wget "$ARM64_URL" -O nvim.tar.gz
+    sudo tar -C /opt -xzf nvim.tar.gz
+    sudo ln -sf /opt/nvim-linux64/bin/nvim /usr/local/bin/nvim
+    rm nvim.tar.gz
+fi
 cd -
 
 # Install fnm (Fast Node Manager)
