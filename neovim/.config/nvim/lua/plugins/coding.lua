@@ -40,7 +40,6 @@ return {
 			},
 			{
 				"OXY2DEV/markview.nvim",
-				lazy = false,
 				dependencies = { "nvim-treesitter/nvim-treesitter" },
 				opts = {
 					preview = {
@@ -85,7 +84,7 @@ return {
 				},
 				strategies = {
 					chat = {
-						adapter = "openai",
+						adapter = vim.env.CODECOMPANION_ADAPTER or "openai",
 						slash_commands = {
 							["buffer"] = {
 								keymaps = {
@@ -95,22 +94,66 @@ return {
 								},
 							},
 						},
+						tools = {
+							opts = {
+								auto_submit_errors = true, -- Send any errors to the LLM automatically?
+								auto_submit_success = true, -- Send any successful output to the LLM automatically?
+								default_tools = {
+									"cmd_runner",
+									"create_file",
+									"file_search",
+									"get_changed_files",
+									"grep_search",
+									"insert_edit_into_file",
+									"read_file",
+									"fetch_webpage",
+									"search_web",
+								},
+							},
+						},
 					},
 					inline = {
-						adapter = "openai",
+						adapter = vim.env.CODECOMPANION_ADAPTER or "openai",
 					},
 					cmd = {
-						adapter = "openai",
+						adapter = vim.env.CODECOMPANION_ADAPTER or "openai",
 					},
 				},
 				adapters = {
 					openai = function()
 						return require("codecompanion.adapters").extend("openai", {
-							url = vim.env.CODECOMPANION_URL or nil,
+							url = vim.env.CODECOMPANION_OPENAI_URL or nil,
 							schema = {
 								model = {
 									default = "o3-mini",
 								},
+							},
+						})
+					end,
+					openai_compatible = function()
+						return require("codecompanion.adapters").extend("openai_compatible", {
+							env = {
+								url = vim.env.CODECOMPANION_OPENAI_COMPATIBLE_URL or nil,
+								api_key = vim.env.CODECOMPANION_OPENAI_COMPATIBLE_URL_API_KEY or nil,
+							},
+							schema = {
+								model = {
+									default = "anthropic.claude-3-7-sonnet-20250219-v1:0",
+								},
+							},
+						})
+					end,
+					tavily = function()
+						return require("codecompanion.adapters").extend("tavily", {
+							env = {
+								api_key = vim.env.TAVILY_API_KEY or nil,
+							},
+						})
+					end,
+					jina = function()
+						return require("codecompanion.adapters").extend("jina", {
+							env = {
+								api_key = vim.env.JINA_API_KEY or nil,
 							},
 						})
 					end,
