@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  neovim:
+    build:
+      context: ../..
+      dockerfile: docker/neovim/Dockerfile
+    image: dotfiles-neovim:latest
+    container_name: neovim-dev
+    stdin_open: true
+    tty: true
+    environment:
+      - TERM=xterm-256color
+    # Run as the nvimuser to ensure proper permissions
+    user: nvimuser
+    
+    volumes:
+      # Mount local Neovim config for live editing
+      - ../../neovim/.config/nvim:/home/nvimuser/.config/nvim:cached
+      
+      # Persist Mason installations
+      - neovim-mason:/home/nvimuser/.local/share/nvim/mason
+      
+      # Persist Neovim data (shada, undo, etc.)
+      - neovim-data:/home/nvimuser/.local/share/nvim
+      - neovim-state:/home/nvimuser/.local/state/nvim
+      - neovim-cache:/home/nvimuser/.cache/nvim
+      
+      # Optional: Mount a workspace directory
+      # - ./workspace:/home/nvimuser/workspace
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 2G
+    
+    # Network configuration for LSPs that need external access
+    networks:
+      - neovim-net
+    
+    # Healthcheck
+    healthcheck:
+      test: ["CMD", "nvim", "--version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  neovim-mason:
+    name: neovim-mason-data
+  neovim-data:
+    name: neovim-local-data
+  neovim-state:
+    name: neovim-state-data
+  neovim-cache:
+    name: neovim-cache-data
+
+networks:
+  neovim-net:
+    driver: bridge

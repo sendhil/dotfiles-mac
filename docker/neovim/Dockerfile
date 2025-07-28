@@ -1,0 +1,140 @@
+# Multi-stage Dockerfile for Neovim development environment
+FROM ubuntu:22.04 AS base
+
+# Avoid interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install basic dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    make \
+    gcc \
+    g++ \
+    clangd \
+    clang-tidy \
+    python3 \
+    python3-pip \
+    pipx \
+    curl \
+    wget \
+    unzip \
+    fzf \
+    ripgrep \
+    fd-find \
+    sudo \
+    locales \
+    && rm -rf /var/lib/apt/lists/*
+
+# Generate locale
+RUN locale-gen en_US.UTF-8
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US:en
+ENV LC_ALL=en_US.UTF-8
+
+# Create a non-root user
+RUN useradd -m -s /bin/bash nvimuser && \
+    echo "nvimuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+USER nvimuser
+WORKDIR /home/nvimuser
+
+# Install Neovim (latest stable) - handle different architectures
+RUN cd /tmp && \
+    NVIM_VERSION=$(curl -s https://api.github.com/repos/neovim/neovim/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/') && \
+    ARCH=$(uname -m) && \
+    if [ "$ARCH" = "aarch64" ]; then \
+        # ARM64 binary is available as nvim-linux-arm64 \
+        wget https://github.com/neovim/neovim/releases/download/${NVIM_VERSION}/nvim-linux-arm64.tar.gz && \
+        tar -xzf nvim-linux-arm64.tar.gz && \
+        sudo mv nvim-linux-arm64 /opt/ && \
+        sudo ln -sf /opt/nvim-linux-arm64/bin/nvim /usr/local/bin/nvim && \
+        rm nvim-linux-arm64.tar.gz; \
+    else \
+        wget https://github.com/neovim/neovim/releases/download/${NVIM_VERSION}/nvim-linux64.tar.gz && \
+        tar -xzf nvim-linux64.tar.gz && \
+        sudo mv nvim-linux64 /opt/ && \
+        sudo ln -sf /opt/nvim-linux64/bin/nvim /usr/local/bin/nvim && \
+        rm nvim-linux64.tar.gz; \
+    fi
+
+# Install fnm (Fast Node Manager)
+RUN curl -fsSL https://fnm.vercel.app/install | bash && \
+    export PATH="/home/nvimuser/.local/share/fnm:$PATH" && \
+    eval "$(fnm env --use-on-cd)" && \
+    fnm install --lts && \
+    fnm default lts-latest
+
+# Install Rust
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
+    . "$HOME/.cargo/env" && \
+    rustup component add rust-analyzer
+
+# Install Go - handle different architectures
+RUN cd /tmp && \
+    GO_VERSION=$(curl -s https://go.dev/VERSION?m=text | head -n 1) && \
+    ARCH=$(uname -m) && \
+    if [ "$ARCH" = "aarch64" ]; then \
+        GO_ARCH="arm64"; \
+    else \
+        GO_ARCH="amd64"; \
+    fi && \
+    wget -q https://go.dev/dl/${GO_VERSION}.linux-${GO_ARCH}.tar.gz && \
+    sudo tar -C /usr/local -xzf ${GO_VERSION}.linux-${GO_ARCH}.tar.gz && \
+    rm ${GO_VERSION}.linux-${GO_ARCH}.tar.gz
+
+# Install GitHub CLI - handle different architectures
+RUN cd /tmp && \
+    GH_VERSION=$(curl -s https://api.github.com/repos/cli/cli/releases/latest | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/') && \
+    ARCH=$(uname -m) && \
+    if [ "$ARCH" = "aarch64" ]; then \
+        GH_ARCH="arm64"; \
+    else \
+        GH_ARCH="amd64"; \
+    fi && \
+    wget https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_${GH_ARCH}.tar.gz && \
+    tar -xzf gh_${GH_VERSION}_linux_${GH_ARCH}.tar.gz && \
+    sudo mv gh_${GH_VERSION}_linux_${GH_ARCH}/bin/gh /usr/local/bin/ && \
+    rm -rf gh_${GH_VERSION}_linux_${GH_ARCH}*
+
+# Setup pipx
+RUN pipx ensurepath
+
+# Create fd symlink
+RUN sudo ln -sf $(which fdfind) /usr/local/bin/fd
+
+# Create necessary directories with proper permissions
+RUN mkdir -p /home/nvimuser/.config \
+    /home/nvimuser/.cache/nvim \
+    /home/nvimuser/.local/share/nvim \
+    /home/nvimuser/.local/state/nvim \
+    /home/nvimuser/.local/share/nvim/mason \
+    /home/nvimuser/.local/share/nvim/mason/registries \
+    /home/nvimuser/.local/share/nvim/mason/registries/github && \
+    chown -R nvimuser:nvimuser /home/nvimuser
+
+# Copy Neovim configuration
+COPY --chown=nvimuser:nvimuser neovim/.config/nvim /home/nvimuser/.config/nvim
+
+# Copy entrypoint script
+COPY --chown=nvimuser:nvimuser docker/neovim/entrypoint.sh /home/nvimuser/entrypoint.sh
+RUN chmod +x /home/nvimuser/entrypoint.sh
+
+# Setup shell environment
+RUN echo 'export PATH="/home/nvimuser/.local/share/fnm:$PATH"' >> ~/.bashrc && \
+    echo 'eval "$(fnm env --use-on-cd)"' >> ~/.bashrc && \
+    echo 'export PATH="$PATH:/usr/local/go/bin"' >> ~/.bashrc && \
+    echo 'export PATH="$PATH:$HOME/go/bin"' >> ~/.bashrc && \
+    echo 'source "$HOME/.cargo/env"' >> ~/.bashrc && \
+    echo 'export PATH="$PATH:$HOME/.local/bin"' >> ~/.bashrc
+
+# Configure Git for the user
+RUN git config --global user.name "nvimuser" && \
+    git config --global user.email "nvimuser@docker.local" && \
+    git config --global init.defaultBranch main
+
+# Pre-download Lazy.nvim to speed up first run
+RUN git clone --filter=blob:none --branch=stable https://github.com/folke/lazy.nvim.git \
+    ~/.local/share/nvim/lazy/lazy.nvim
+
+ENTRYPOINT ["/home/nvimuser/entrypoint.sh"]
+CMD ["nvim"]

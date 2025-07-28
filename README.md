@@ -153,3 +153,31 @@ If you prefer to have more control over what gets installed:
 - Check Mason logs with `:MasonLog` if language servers fail to install
 - On ARM64 Linux, some tools are installed system-wide instead of via Mason
 - If you see errors on first launch, try `:Lazy sync` to ensure all plugins are installed
+
+## Try It Out
+
+Want to test the Neovim configuration without installing dependencies? You have several options:
+
+### Option 1: Docker Hub (Quickest)
+```bash
+# Run Neovim directly from Docker Hub
+docker run -it --rm sendhil/neovim-dev
+
+# Run with your current directory mounted
+docker run -it --rm -v $(pwd):/workspace sendhil/neovim-dev
+```
+
+### Option 2: Docker Compose (Local Build)
+```bash
+cd docker/neovim
+docker-compose up -d
+docker-compose exec neovim nvim
+```
+
+### Option 3: Colima (macOS)
+```bash
+./scripts/setup-colima-neovim.sh
+colima-nvim nvim
+```
+
+See [docker/neovim/README.md](docker/neovim/README.md) for detailed instructions.

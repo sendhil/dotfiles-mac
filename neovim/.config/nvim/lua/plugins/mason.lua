@@ -29,7 +29,7 @@ return {
         "ts_ls", 
         "gopls",
         "lua_ls",
-        "buf_ls", -- Use lspconfig name here
+        "buf_ls",
         "yamlls",
         -- "nil_ls", -- Comment out for now, might not be available
       }
