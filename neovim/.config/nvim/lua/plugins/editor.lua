@@ -366,37 +366,37 @@ return {
 			{ "<C-W>m", "<Cmd>WinShift<CR>", mode = "n", desc = "Activate WinShift" },
 		},
 	},
-	{
-		"kevinhwang91/nvim-ufo",
-		dependencies = { "kevinhwang91/promise-async" },
-		event = "VeryLazy",
-		config = function()
-			local ufo = require("ufo")
+	-- {
+	-- 	"kevinhwang91/nvim-ufo",
+	-- 	dependencies = { "kevinhwang91/promise-async" },
+	-- 	event = "VeryLazy",
+	-- 	config = function()
+	-- 		local ufo = require("ufo")
 
-			vim.o.foldcolumn = "1" -- Show fold column
-			vim.o.foldlevel = 99 -- Start with all folds open
-			vim.o.foldlevelstart = 99 -- Open most folds on start
-			vim.o.foldenable = true -- Enable folding
+	-- 		vim.o.foldcolumn = "1" -- Show fold column
+	-- 		vim.o.foldlevel = 99 -- Start with all folds open
+	-- 		vim.o.foldlevelstart = 99 -- Open most folds on start
+	-- 		vim.o.foldenable = true -- Enable folding
 
-			-- Keybindings for UFO folding
-			vim.keymap.set("n", "zR", ufo.openAllFolds, { desc = "Open all folds" })
-			vim.keymap.set("n", "zM", ufo.closeAllFolds, { desc = "Close all folds" })
-			vim.keymap.set("n", "<space>", "za", { desc = "Toggle fold" })
+	-- 		-- Keybindings for UFO folding
+	-- 		vim.keymap.set("n", "zR", ufo.openAllFolds, { desc = "Open all folds" })
+	-- 		vim.keymap.set("n", "zM", ufo.closeAllFolds, { desc = "Close all folds" })
+	-- 		vim.keymap.set("n", "<space>", "za", { desc = "Toggle fold" })
 
-			vim.api.nvim_create_autocmd("InsertLeave", {
-				callback = function()
-					vim.cmd("normal! zv") -- Keep folds open at cursor
-				end,
-			})
+	-- 		vim.api.nvim_create_autocmd("InsertLeave", {
+	-- 			callback = function()
+	-- 				vim.cmd("normal! zv") -- Keep folds open at cursor
+	-- 			end,
+	-- 		})
 
-			-- Setup UFO with Treesitter and Indent as providers
-			ufo.setup({
-				provider_selector = function(bufnr, filetype, buftype)
-					return { "treesitter", "indent" }
-				end,
-			})
-		end,
-	},
+	-- 		-- Setup UFO with Treesitter and Indent as providers
+	-- 		ufo.setup({
+	-- 			provider_selector = function(bufnr, filetype, buftype)
+	-- 				return { "treesitter", "indent" }
+	-- 			end,
+	-- 		})
+	-- 	end,
+	-- },
 	{
 		"christoomey/vim-tmux-navigator",
 		cmd = {
