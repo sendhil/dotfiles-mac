@@ -160,11 +160,13 @@ Want to test the Neovim configuration without installing dependencies? You have 
 
 ### Option 1: Docker Hub (Quickest)
 ```bash
-# Run Neovim directly from Docker Hub
+# Run directly from Docker Hub (drops you into bash)
 docker run -it --rm sendhil/neovim-dev
 
-# Run with your current directory mounted
-docker run -it --rm -v $(pwd):/workspace sendhil/neovim-dev
+# Run directly from Docker Hub and launch into nvim
+docker run -it --rm sendhil/neovim-dev nvim
+
+# Run with your current directory mounted docker run -it --rm -v $(pwd):/workspace sendhil/neovim-dev
 ```
 
 ### Option 2: Docker Compose (Local Build)

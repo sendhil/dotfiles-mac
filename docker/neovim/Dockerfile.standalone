@@ -140,4 +140,4 @@ RUN git clone --filter=blob:none --branch=stable https://github.com/folke/lazy.n
 # The entrypoint script handles this automatically
 
 ENTRYPOINT ["/home/nvimuser/entrypoint.sh"]
-CMD ["nvim"]
+CMD ["/bin/bash"]
