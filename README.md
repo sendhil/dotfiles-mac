@@ -156,8 +156,6 @@ If you prefer to have more control over what gets installed:
 
 ## Try It Out
 
-Want to test the Neovim configuration without installing dependencies? You have several options:
-
 ### Option 1: Docker Hub (Quickest)
 ```bash
 # Run directly from Docker Hub (drops you into bash)
