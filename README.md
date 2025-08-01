@@ -164,7 +164,8 @@ docker run -it --rm sendhil/neovim-dev
 # Run directly from Docker Hub and launch into nvim
 docker run -it --rm sendhil/neovim-dev nvim
 
-# Run with your current directory mounted docker run -it --rm -v $(pwd):/workspace sendhil/neovim-dev
+# Run with your current directory mounted 
+docker run -it --rm -v $(pwd):/workspace sendhil/neovim-dev
 ```
 
 ### Option 2: Docker Compose (Local Build)
