@@ -5,8 +5,11 @@ A pre-configured Neovim development environment in Docker with language servers,
 ## Quick Start
 
 ```bash
-# Run Neovim directly
+# Run interactive shell
 docker run -it --rm sendhil/neovim-dev
+
+# Run Neovim directly
+docker run -it --rm sendhil/neovim-dev nvim
 
 # Run with your workspace mounted
 docker run -it --rm -v $(pwd):/workspace sendhil/neovim-dev

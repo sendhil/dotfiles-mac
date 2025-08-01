@@ -6,6 +6,9 @@
 # Source the environment
 source ~/.bashrc
 
+# Ensure Go is in PATH
+export PATH="$PATH:/usr/local/go/bin:$HOME/go/bin"
+
 # Colors for output
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
@@ -15,18 +18,11 @@ NC='\033[0m' # No Color
 # First-time setup check
 if [ ! -f ~/.config/nvim/.docker-initialized ]; then
     echo -e "${BLUE}🚀 First-time setup detected!${NC}"
-    echo -e "${YELLOW}Installing Neovim plugins (this may take a minute)...${NC}"
-    
-    # Install plugins
-    nvim --headless -c "autocmd User LazyDone quitall" -c "Lazy sync" 2>/dev/null || {
-        echo -e "${YELLOW}⚠️  Some plugins may have failed to install.${NC}"
-        echo "You can manually run ':Lazy sync' inside Neovim to retry."
-    }
+    echo -e "${YELLOW}Neovim will install plugins on first launch.${NC}"
+    echo -e "${YELLOW}This may take a minute when you first run 'nvim'.${NC}"
     
     # Mark as initialized
     touch ~/.config/nvim/.docker-initialized
-    
-    echo -e "${GREEN}✓ Initial setup complete!${NC}"
     echo ""
 fi
 

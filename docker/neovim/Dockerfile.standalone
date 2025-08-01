@@ -80,7 +80,8 @@ RUN cd /tmp && \
     fi && \
     wget -q https://go.dev/dl/${GO_VERSION}.linux-${GO_ARCH}.tar.gz && \
     sudo tar -C /usr/local -xzf ${GO_VERSION}.linux-${GO_ARCH}.tar.gz && \
-    rm ${GO_VERSION}.linux-${GO_ARCH}.tar.gz
+    rm ${GO_VERSION}.linux-${GO_ARCH}.tar.gz && \
+    /usr/local/go/bin/go version
 
 # Install GitHub CLI - handle different architectures
 RUN cd /tmp && \
