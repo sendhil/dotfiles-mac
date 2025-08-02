@@ -137,11 +137,18 @@ else
   echo "✓ Rust already installed"
 fi
 
-pipx install vectorcode
-
 # Setup pipx path
 echo "🐍 Ensuring pipx is in PATH..."
 pipx ensurepath
+
+# Install uv (modern Python package manager)
+echo "📦 Installing uv (modern Python package manager)..."
+curl -LsSf https://astral.sh/uv/install.sh | sh
+source "$HOME/.cargo/env"
+
+# Install vectorcode via uv
+echo "🤖 Installing vectorcode via uv..."
+uv tool install vectorcode
 
 # Create fd symlink (Ubuntu/Debian calls it fdfind)
 if command -v fdfind &>/dev/null && ! command -v fd &>/dev/null; then

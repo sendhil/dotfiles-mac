@@ -191,15 +191,26 @@ check_mason_tool "gofumpt" "Go formatter" "gofumpt"
 check_mason_tool "goimports" "Go imports formatter" "goimports"
 
 echo ""
-echo "Python Tools (via pipx):"
-echo "-----------------------"
+echo "Python Tools:"
+echo "-------------"
 if command -v pipx &> /dev/null; then
-    if pipx list 2>/dev/null | grep -q "vectorcode"; then
-        echo -e "${GREEN}✓${NC} vectorcode - AI coding assistant"
-    else
-        echo -e "${YELLOW}⚠${NC} vectorcode - AI coding assistant"
-        echo "  └─ Run: pipx install vectorcode"
-    fi
+    echo -e "${GREEN}✓${NC} pipx - Python app installer"
+else
+    echo -e "${YELLOW}⚠${NC} pipx - Python app installer"
+fi
+
+if command -v uv &> /dev/null; then
+    echo -e "${GREEN}✓${NC} uv - Modern Python package manager"
+else
+    echo -e "${YELLOW}⚠${NC} uv - Modern Python package manager"
+    echo "  └─ Run: curl -LsSf https://astral.sh/uv/install.sh | sh"
+fi
+
+if command -v vectorcode &> /dev/null; then
+    echo -e "${GREEN}✓${NC} vectorcode - AI coding assistant"
+else
+    echo -e "${YELLOW}⚠${NC} vectorcode - AI coding assistant"
+    echo "  └─ Run: uv tool install vectorcode"
 fi
 
 echo ""

@@ -68,6 +68,13 @@ fi
 echo "🐍 Ensuring pipx is in PATH..."
 pipx ensurepath
 
+echo "📦 Installing uv (modern Python package manager)..."
+curl -LsSf https://astral.sh/uv/install.sh | sh
+source "$HOME/.cargo/env"
+
+echo "🤖 Installing vectorcode via uv..."
+uv tool install vectorcode
+
 echo "🔧 Note: clang-tidy is included with LLVM. You may need to add LLVM to your PATH:"
 echo "   echo 'export PATH=\"/opt/homebrew/opt/llvm/bin:\$PATH\"' >> ~/.zshrc"
 

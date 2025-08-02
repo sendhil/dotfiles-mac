@@ -166,6 +166,23 @@ docker run -it --rm sendhil/neovim-dev nvim
 
 # Run with your current directory mounted 
 docker run -it --rm -v $(pwd):/workspace sendhil/neovim-dev
+
+# Run with your home directory mounted
+docker run -it --rm -v $HOME:/workspace sendhil/neovim-dev
+
+# Run with persistent plugin/Mason data
+docker run -it --rm \
+  -v neovim-data:/home/nvimuser/.local/share/nvim \
+  -v neovim-mason:/home/nvimuser/.local/share/nvim/mason \
+  -v $(pwd):/workspace \
+  sendhil/neovim-dev
+
+# Run with BOTH persistent data AND home directory mounted
+docker run -it --rm \
+  -v neovim-data:/home/nvimuser/.local/share/nvim \
+  -v neovim-mason:/home/nvimuser/.local/share/nvim/mason \
+  -v $HOME:/workspace \
+  sendhil/neovim-dev
 ```
 
 ### Option 2: Docker Compose (Local Build)

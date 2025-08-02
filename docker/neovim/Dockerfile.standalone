@@ -100,6 +100,11 @@ RUN cd /tmp && \
 # Setup pipx
 RUN pipx ensurepath
 
+# Install uv (modern Python package manager) and vectorcode
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
+    export PATH="$HOME/.local/bin:$PATH" && \
+    $HOME/.local/bin/uv tool install vectorcode
+
 # Create fd symlink
 RUN sudo ln -sf $(which fdfind) /usr/local/bin/fd
 
@@ -137,8 +142,26 @@ RUN git config --global user.name "nvimuser" && \
 RUN git clone --filter=blob:none --branch=stable https://github.com/folke/lazy.nvim.git \
     ~/.local/share/nvim/lazy/lazy.nvim
 
-# Note: Plugins will be installed on first run to avoid build timeouts
-# The entrypoint script handles this automatically
+# Install Neovim plugins with timeout and better error handling
+RUN timeout 600 nvim --headless "+Lazy! sync" +qa 2>&1 || \
+    echo "Warning: Some plugins may have failed to install"
+
+# Install all Mason tools via mason-tool-installer
+# First source all the environments to ensure tools are in PATH
+RUN /bin/bash -c "\
+    source ~/.bashrc && \
+    source ~/.cargo/env && \
+    export PATH=\"\$HOME/.local/share/fnm:\$PATH\" && \
+    eval \"\$(fnm env --use-on-cd)\" && \
+    export PATH=\"\$PATH:/usr/local/go/bin\" && \
+    echo 'PATH check:' && \
+    which node || echo 'node not found' && \
+    which go || echo 'go not found' && \
+    which cargo || echo 'cargo not found' && \
+    timeout 600 nvim --headless \
+        '+Lazy load mason.nvim mason-tool-installer.nvim' \
+        '+lua vim.defer_fn(function() vim.cmd(\"MasonToolsInstall\") end, 1000)' \
+        '+lua vim.defer_fn(function() vim.cmd(\"qa\") end, 30000)'"
 
 ENTRYPOINT ["/home/nvimuser/entrypoint.sh"]
 CMD ["/bin/bash"]

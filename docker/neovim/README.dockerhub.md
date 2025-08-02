@@ -55,20 +55,37 @@ docker run -it --rm \
 
 ### Interactive Development
 ```bash
-# Start an interactive shell
+# Start an interactive shell (drops into bash)
 docker run -it --rm sendhil/neovim-dev
+
+# Start Neovim directly
+docker run -it --rm sendhil/neovim-dev nvim
 
 # Inside the container
 nvim                    # Start Neovim
-:Mason                  # Manage language servers
-:MasonToolsInstall      # Install configured tools
+:Mason                  # Manage language servers (already pre-installed)
 :checkhealth            # Verify setup
 ```
 
 ### Edit Files in Current Directory
 ```bash
 # Mount current directory as workspace
-docker run -it --rm -v $(pwd):/workspace sendhil/neovim-dev nvim /workspace
+docker run -it --rm -v $(pwd):/workspace sendhil/neovim-dev
+
+# Open a specific file
+docker run -it --rm -v $(pwd):/workspace sendhil/neovim-dev nvim /workspace/file.py
+```
+
+### Mount Your Home Directory
+```bash
+# Mount entire home directory (be careful with permissions)
+docker run -it --rm -v $HOME:/workspace sendhil/neovim-dev
+
+# Mount specific subdirectories
+docker run -it --rm \
+  -v $HOME/projects:/workspace/projects \
+  -v $HOME/Documents:/workspace/documents \
+  sendhil/neovim-dev
 ```
 
 ### Persistent Configuration
@@ -77,19 +94,27 @@ docker run -it --rm -v $(pwd):/workspace sendhil/neovim-dev nvim /workspace
 docker volume create neovim-data
 docker volume create neovim-mason
 
-# Run with persistent volumes
+# Run with persistent volumes and current directory
 docker run -it --rm \
   -v neovim-data:/home/nvimuser/.local/share/nvim \
   -v neovim-mason:/home/nvimuser/.local/share/nvim/mason \
   -v $(pwd):/workspace \
   sendhil/neovim-dev
+
+# Run with persistent volumes AND home directory mounted
+docker run -it --rm \
+  -v neovim-data:/home/nvimuser/.local/share/nvim \
+  -v neovim-mason:/home/nvimuser/.local/share/nvim/mason \
+  -v $HOME:/workspace \
+  sendhil/neovim-dev
 ```
 
 ### Custom Git Configuration
 ```bash
-# Mount your git config
+# Mount your git config (read-only for safety)
 docker run -it --rm \
   -v ~/.gitconfig:/home/nvimuser/.gitconfig:ro \
+  -v ~/.ssh:/home/nvimuser/.ssh:ro \
   -v $(pwd):/workspace \
   sendhil/neovim-dev
 ```
@@ -115,10 +140,11 @@ The included Neovim configuration features:
 
 ## Tips
 
-1. **First Run**: Plugins are pre-installed, but you may need to run `:Lazy sync` if any fail
-2. **Language Servers**: Use `:Mason` to install additional language servers
-3. **Updates**: Pull the latest image regularly for updates
+1. **Everything Pre-installed**: All plugins and language servers are pre-installed and ready to use
+2. **Additional Tools**: Use `:Mason` to install any additional language servers not included by default
+3. **Updates**: Pull the latest image regularly for updates: `docker pull sendhil/neovim-dev`
 4. **Performance**: Use volumes for better performance with large codebases
+5. **File Access**: Files are mounted under `/workspace` when using volume mounts
 
 ## Source
 

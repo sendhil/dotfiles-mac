@@ -4,7 +4,37 @@ This directory contains Docker configurations for running Neovim in a containeri
 
 ## Quick Start
 
-### Using Docker Compose (Recommended)
+### Using Docker Hub (Pre-built Image)
+
+```bash
+# Run interactive shell (drops into bash)
+docker run -it --rm sendhil/neovim-dev
+
+# Run Neovim directly
+docker run -it --rm sendhil/neovim-dev nvim
+
+# Run with current directory mounted
+docker run -it --rm -v $(pwd):/workspace sendhil/neovim-dev
+
+# Run with home directory mounted
+docker run -it --rm -v $HOME:/workspace sendhil/neovim-dev
+
+# Run with persistent data volumes
+docker run -it --rm \
+  -v neovim-data:/home/nvimuser/.local/share/nvim \
+  -v neovim-mason:/home/nvimuser/.local/share/nvim/mason \
+  -v $(pwd):/workspace \
+  sendhil/neovim-dev
+
+# Run with BOTH persistent data AND home directory mounted
+docker run -it --rm \
+  -v neovim-data:/home/nvimuser/.local/share/nvim \
+  -v neovim-mason:/home/nvimuser/.local/share/nvim/mason \
+  -v $HOME:/workspace \
+  sendhil/neovim-dev
+```
+
+### Using Docker Compose (Local Build)
 
 ```bash
 # Build and start the container
@@ -17,19 +47,15 @@ docker-compose exec neovim nvim
 docker-compose exec neovim bash
 ```
 
-### Using Docker Directly
+### Building Locally
 
 ```bash
-# Build the image
-docker build -t neovim-dev -f docker/neovim/Dockerfile .
+# Build the standalone image
+cd /path/to/dotfiles-mac
+docker build -f docker/neovim/Dockerfile.standalone -t neovim-dev .
 
-# Run interactively
+# Run your local build
 docker run -it --rm neovim-dev
-
-# Run with local config mounted
-docker run -it --rm \
-  -v $(pwd)/neovim/.config/nvim:/home/nvimuser/.config/nvim \
-  neovim-dev
 ```
 
 ## Features
@@ -53,10 +79,11 @@ docker run -it --rm \
 ### What's Included
 
 - **Base OS**: Ubuntu 22.04
-- **Neovim**: Latest stable version
+- **Neovim**: Latest stable version with full configuration
 - **Languages**: Go, Node.js (via fnm), Rust, Python 3
-- **Tools**: git, fzf, ripgrep, fd, GitHub CLI
+- **Tools**: git, fzf, ripgrep, fd, GitHub CLI, uv, vectorcode
 - **Compilers**: gcc, g++, clangd, clang-tidy
+- **Pre-installed**: All plugins and language servers configured in mason.lua
 
 ### Architecture Support
 
