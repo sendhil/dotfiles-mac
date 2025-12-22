@@ -88,6 +88,22 @@ function tm() {
   session=$(tmux list-sessions -F "#{session_name}" 2>/dev/null | fzf --exit-0) &&  tmux $change -t "$session" || echo "No sessions found."
 }
 
+# zm - create new zellij session, or switch to existing one.
+# `zm` will allow you to select your zellij session via fzf.
+# `zm dev` will attach to the dev session (if it exists), else it will create it.
+
+function zm() {
+  if [ -n "$ZELLIJ" ]; then
+    echo "Already inside a zellij session."
+    return
+  fi
+  if [ $1 ]; then
+    zellij attach "$1" 2>/dev/null || zellij --session "$1"
+    return
+  fi
+  session=$(zellij list-sessions -n 2>/dev/null | awk '{print $1}' | fzf --exit-0) && zellij attach "$session" || echo "No sessions found."
+}
+
 function fzfp() {
   fzf --preview '[[ $(file --mime {}) =~ binary ]] &&
     echo {} is a binary file ||

@@ -1,5 +1,5 @@
 # List of all packages
-PACKAGES = kitty neovim skhd bash-linux bat yabai karabiner tmux prezto hammerspoon aerospace sesh fd direnv
+PACKAGES = kitty neovim skhd bash-linux bat yabai karabiner tmux prezto hammerspoon aerospace sesh fd direnv wezterm zellij
 
 .PHONY: all
 all: stow gitconfig
