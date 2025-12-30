@@ -11,6 +11,8 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
+fpath=(/opt/homebrew/share/zsh/site-functions $fpath)
+
 source "${ZDOTDIR:-$HOME}/.zprezto/init.zsh"
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.

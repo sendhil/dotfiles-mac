@@ -199,3 +199,26 @@ colima-nvim nvim
 ```
 
 See [docker/neovim/README.md](docker/neovim/README.md) for detailed instructions.
+
+## Zsh/Prezto Troubleshooting
+
+### Tab Completion Errors for Homebrew Tools
+
+If you see errors like `_eza: function definition file not found` or `_bat: function definition file not found` when pressing tab:
+
+**Cause:** Zprezto's completion cache doesn't include Homebrew's completion directory.
+
+**Fix:**
+
+1. Ensure your `~/.zshrc` has the Homebrew fpath **before** the zprezto init line:
+   ```bash
+   fpath=(/opt/homebrew/share/zsh/site-functions $fpath)
+   source "${ZDOTDIR:-$HOME}/.zprezto/init.zsh"
+   ```
+
+2. Clear the completion caches:
+   ```bash
+   rm -f ~/.cache/prezto/zcompdump* ~/.zcompdump*
+   ```
+
+3. Open a new terminal session.
