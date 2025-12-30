@@ -27,10 +27,18 @@ return {
     config = function()
       require("mason-tool-installer").setup({
         ensure_installed = {
+          -- LSP servers
+          "lua-language-server",
+          "pyright",
+          "typescript-language-server",
+          "gopls",
+          "rust-analyzer",
+          -- Formatters
           "black",
-          "ruff", 
           "gofumpt",
           "goimports",
+          -- Linters
+          "ruff",
         },
         auto_update = false,
         run_on_start = false, -- Don't auto-install on startup
