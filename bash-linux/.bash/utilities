@@ -122,6 +122,10 @@ function timer() {
   countdown "$n" && hs -c 'displayMessageOnAllScreens("Timer is done", 10)'
 }
 
+function zm_clear() {
+  zellij list-sessions --no-formatting | awk '/EXITED/ {print $1}' | xargs -n 1 zellij delete-session
+}
+
 zoxide_refresh_src() {
   # adjust depth if you want to include nested projects
   find ~/src -maxdepth 1 -type d -print0 | xargs -0 zoxide add
