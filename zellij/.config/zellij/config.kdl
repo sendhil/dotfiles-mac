@@ -22,6 +22,12 @@ keybinds {
     }
     pane {
         bind "Ctrl a" { ToggleTab; SwitchToMode "Normal"; }
+        bind "?" {
+            LaunchOrFocusPlugin "status-bar" {
+                floating true
+                move_to_focused_tab true
+            };
+        }
         bind "h" "Left" { MoveFocus "Left"; }
         bind "l" "Right" { MoveFocus "Right"; }
         bind "j" "Down" { MoveFocus "Down"; }
@@ -38,6 +44,16 @@ keybinds {
         bind "e" { TogglePaneEmbedOrFloating; SwitchToMode "Normal"; }
         bind "c" { SwitchToMode "RenamePane"; PaneNameInput 0;}
         bind "i" { TogglePanePinned; SwitchToMode "Normal"; }
+        bind "t" {
+            LaunchOrFocusPlugin "file:~/.config/zellij/plugins/zellij-sessionizer.wasm" {
+                floating true
+                move_to_focused_tab true
+                cwd "/"
+                root_dirs "/Users/sendhil/src;/Users/sendhil/src/anduril"
+                session_layout "default"
+            };
+            SwitchToMode "Normal";
+        }
 
         // Quasi Mimicking Tmux
         bind "1" { GoToTab 1; SwitchToMode "Normal"; }
@@ -246,12 +262,17 @@ plugins {
     configuration location="zellij:configuration"
     plugin-manager location="zellij:plugin-manager"
     about location="zellij:about"
+    zjstatus-hints location="https://github.com/b0o/zjstatus-hints/releases/latest/download/zjstatus-hints.wasm" {
+        max_length 0
+        overflow_str "..."
+        pipe_name "zjstatus_hints"
+        hide_in_base_mode true
+    }
 }
 
 // Plugins to load in the background when a new session starts
 load_plugins {
-  // "file:/path/to/my-plugin.wasm"
-  // "https://example.com/my-plugin.wasm"
+    zjstatus-hints
 }
 
 // Choose what to do when zellij receives SIGTERM, SIGINT, SIGQUIT or SIGHUP
@@ -284,7 +305,7 @@ load_plugins {
 //   - true (default)
 //   - false
 //
-// pane_frames true
+pane_frames false
 
 // Toggle between having Zellij lay out panes according to a predefined set of layouts whenever possible
 // Options:

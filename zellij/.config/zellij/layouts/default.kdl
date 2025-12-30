@@ -1,0 +1,38 @@
+layout {
+    default_tab_template {
+        children
+        pane size=1 borderless=true {
+            plugin location="file:~/.config/zellij/plugins/zjstatus.wasm" {
+                format_left   "{mode}#[fg=#89B4FA,bg=#181825,bold] {session}#[bg=#181825] {tabs}"
+                format_center "#[fg=#6C7086,bg=#181825]{pipe_zjstatus_hints}"
+                format_right  "{datetime}"
+                format_space  "#[bg=#181825]"
+                format_hide_on_overlength "true"
+                format_precedence "crl"
+
+                pipe_zjstatus_hints_format "{output}"
+
+                mode_normal        "#[bg=#89B4FA] "
+                mode_tmux          "#[bg=#ffc387] "
+                mode_locked        "#[bg=#6C7086] "
+                mode_resize        "#[bg=#F38BA8] "
+                mode_pane          "#[bg=#89B4FA] "
+                mode_tab           "#[bg=#89B4FA] "
+                mode_scroll        "#[bg=#89B4FA] "
+                mode_session       "#[bg=#89B4FA] "
+                mode_move          "#[bg=#89B4FA] "
+                mode_default_to_mode "tmux"
+
+                tab_normal              "#[fg=#6C7086,bg=#181825] {index} {name} {fullscreen_indicator}{sync_indicator}{floating_indicator}"
+                tab_active              "#[fg=#9399B2,bg=#181825,bold,italic] {index} {name} {fullscreen_indicator}{sync_indicator}{floating_indicator}"
+                tab_fullscreen_indicator "□ "
+                tab_sync_indicator       " "
+                tab_floating_indicator   "󰉈 "
+
+                datetime          "#[fg=#9399B2,bg=#181825] {format} "
+                datetime_format   "%A, %d %b %Y %H:%M"
+                datetime_timezone "America/Los_Angeles"
+            }
+        }
+    }
+}

@@ -101,7 +101,7 @@ function zm() {
     zellij attach "$1" 2>/dev/null || zellij --session "$1"
     return
   fi
-  session=$(zellij list-sessions -n 2>/dev/null | awk '{print $1}' | fzf --exit-0) && zellij attach "$session" || echo "No sessions found."
+  session=$(zellij list-sessions -n 2>/dev/null | grep -v "EXITED" | awk '{print $1}' | fzf --exit-0) && zellij attach "$session" || echo "No sessions found."
 }
 
 function fzfp() {
