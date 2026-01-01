@@ -233,6 +233,7 @@ keybinds {
     }
     shared_except "session" "locked" {
         bind "Ctrl x" { SwitchToMode "Session"; }
+        unbind "Ctrl o"
     }
     shared_except "tab" "locked" {
         bind "Ctrl t" { SwitchToMode "Tab"; }
@@ -241,7 +242,7 @@ keybinds {
         bind "Ctrl h" { SwitchToMode "Move"; }
     }
     shared_except "tmux" "locked" {
-        bind "Ctrl b" { SwitchToMode "Tmux"; }
+        unbind "Ctrl b"
     }
 }
 
@@ -400,7 +401,7 @@ pane_frames false
 //
 // copy_command "xclip -selection clipboard" // x11
 // copy_command "wl-copy"                    // wayland
-// copy_command "pbcopy"                     // osx
+ copy_command "pbcopy"                     // osx
 
 // Choose the destination for copied text
 // Allows using the primary selection buffer (on x11/wayland) instead of the system clipboard.
