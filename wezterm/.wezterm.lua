@@ -1,9 +1,107 @@
 local wezterm = require("wezterm")
 local config = wezterm.config_builder()
 
+local DARK = "tokyonight_storm"
+local LIGHT = "tokyonight_day"
+
+-- Add your favorite themes here
+local FAVORITE_THEMES = {
+	-- Tokyo Night
+	"tokyonight_storm",
+	"tokyonight_night",
+	"tokyonight_day",
+	-- Catppuccin
+	"Catppuccin Mocha",
+	"Catppuccin Macchiato",
+	"Catppuccin Frappe",
+	"Catppuccin Latte",
+	-- Solarized
+	"Solarized Dark (Gogh)",
+	"Solarized Light (Gogh)",
+	-- One
+	"One Dark (Gogh)",
+	"One Light (Gogh)",
+	-- Nord
+	"nord",
+	-- Rosé Pine
+	"Rosé Pine",
+	"Rosé Pine Dawn",
+	-- Kanagawa
+	"Kanagawa (Gogh)",
+	-- Everforest
+	"Everforest Dark (Gogh)",
+	"Everforest Light (Gogh)",
+	-- Nightfox
+	"nightfox",
+	-- Ayu
+	"ayu",
+	"ayu_light",
+	"ayu_mirage",
+}
+
+wezterm.on("augment-command-palette", function(window, pane)
+	return {
+		{
+			brief = "Theme: Toggle light/dark",
+			action = wezterm.action_callback(function(win, _)
+				local overrides = win:get_config_overrides() or {}
+				local current = overrides.color_scheme
+				if current == LIGHT then
+					overrides.color_scheme = DARK
+				else
+					overrides.color_scheme = LIGHT
+				end
+				win:set_config_overrides(overrides)
+			end),
+		},
+		{
+			brief = "Theme: Light",
+			action = wezterm.action_callback(function(win, _)
+				local overrides = win:get_config_overrides() or {}
+				overrides.color_scheme = LIGHT
+				win:set_config_overrides(overrides)
+			end),
+		},
+		{
+			brief = "Theme: Dark",
+			action = wezterm.action_callback(function(win, _)
+				local overrides = win:get_config_overrides() or {}
+				overrides.color_scheme = DARK
+				win:set_config_overrides(overrides)
+			end),
+		},
+		{
+			brief = "Theme: Clear override (back to config default)",
+			action = wezterm.action_callback(function(win, _)
+				win:set_config_overrides({})
+			end),
+		},
+		{
+			brief = "Theme: Pick from favorites",
+			action = wezterm.action.InputSelector({
+				title = "Select Theme",
+				choices = (function()
+					local choices = {}
+					for _, theme in ipairs(FAVORITE_THEMES) do
+						table.insert(choices, { id = theme, label = theme })
+					end
+					return choices
+				end)(),
+				action = wezterm.action_callback(function(win, pane, id, label)
+					if id then
+						local overrides = win:get_config_overrides() or {}
+						overrides.color_scheme = id
+						win:set_config_overrides(overrides)
+					end
+				end),
+			}),
+		},
+	}
+end)
+
 config.font_size = 24
 config.line_height = 1.2
-config.color_scheme = "tokyonight_storm"
+config.color_scheme = DARK
 
 config.colors = {
 	cursor_bg = "#7aa2f7",
