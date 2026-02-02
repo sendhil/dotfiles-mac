@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# Dev services helper
+# Usage: dev [command] [profile]
+
+COMPOSE_FILE="${HOME}/.config/devservices/docker-compose.yml"
+
+show_help() {
+    cat <<EOF
+Dev Services Manager
+
+Usage: dev <command> [profile]
+
+Commands:
+  up [profile]     Start services (default: loki+grafana)
+  down [profile]   Stop services
+  ps               Show running dev services
+  profiles         List available profiles
+  logs [service]   Tail logs for a service
+
+Profiles:
+EOF
+    docker compose -f "$COMPOSE_FILE" config --profiles 2>/dev/null | sed 's/^/  /'
+    echo ""
+    echo "Examples:"
+    echo "  dev up              # Start loki + grafana"
+    echo "  dev up redis        # Start redis"
+    echo "  dev down            # Stop all"
+    echo "  dev logs loki       # Tail loki logs"
+}
+
+case "${1:-help}" in
+    up)
+        profile="${2:-default}"
+        echo "Starting profile: $profile"
+        docker compose -f "$COMPOSE_FILE" --profile "$profile" up -d
+        ;;
+    down)
+        if [ -n "$2" ]; then
+            docker compose -f "$COMPOSE_FILE" --profile "$2" down
+        else
+            docker compose -f "$COMPOSE_FILE" down --remove-orphans
+        fi
+        ;;
+    ps)
+        docker compose -f "$COMPOSE_FILE" ps
+        ;;
+    profiles)
+        echo "Available profiles:"
+        docker compose -f "$COMPOSE_FILE" config --profiles 2>/dev/null | sed 's/^/  /'
+        ;;
+    logs)
+        docker compose -f "$COMPOSE_FILE" logs -f "${2:-}"
+        ;;
+    *)
+        show_help
+        ;;
+esac
