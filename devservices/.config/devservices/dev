@@ -19,7 +19,7 @@ Commands:
 
 Profiles:
 EOF
-    docker compose -f "$COMPOSE_FILE" config --profiles 2>/dev/null | sed 's/^/  /'
+    docker-compose -f "$COMPOSE_FILE" config --profiles 2>/dev/null | sed 's/^/  /'
     echo ""
     echo "Examples:"
     echo "  dev up              # Start loki + grafana"
@@ -32,24 +32,24 @@ case "${1:-help}" in
     up)
         profile="${2:-default}"
         echo "Starting profile: $profile"
-        docker compose -f "$COMPOSE_FILE" --profile "$profile" up -d
+        docker-compose -f "$COMPOSE_FILE" --profile "$profile" up -d
         ;;
     down)
         if [ -n "$2" ]; then
-            docker compose -f "$COMPOSE_FILE" --profile "$2" down
+            docker-compose -f "$COMPOSE_FILE" --profile "$2" down
         else
-            docker compose -f "$COMPOSE_FILE" down --remove-orphans
+            docker-compose -f "$COMPOSE_FILE" down --remove-orphans
         fi
         ;;
     ps)
-        docker compose -f "$COMPOSE_FILE" ps
+        docker-compose -f "$COMPOSE_FILE" ps
         ;;
     profiles)
         echo "Available profiles:"
-        docker compose -f "$COMPOSE_FILE" config --profiles 2>/dev/null | sed 's/^/  /'
+        docker-compose -f "$COMPOSE_FILE" config --profiles 2>/dev/null | sed 's/^/  /'
         ;;
     logs)
-        docker compose -f "$COMPOSE_FILE" logs -f "${2:-}"
+        docker-compose -f "$COMPOSE_FILE" logs -f "${2:-}"
         ;;
     *)
         show_help
