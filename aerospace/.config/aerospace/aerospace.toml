@@ -141,7 +141,18 @@ alt-7 = 'workspace 7'
 alt-8 = 'workspace 8'
 alt-9 = 'workspace 9'
 alt-0 = 'workspace 10'
-alt-minus = 'workspace 11'
+
+# Second layer of workspaces (11-20)
+ctrl-alt-1 = 'workspace 11'
+ctrl-alt-2 = 'workspace 12'
+ctrl-alt-3 = 'workspace 13'
+ctrl-alt-4 = 'workspace 14'
+ctrl-alt-5 = 'workspace 15'
+ctrl-alt-6 = 'workspace 16'
+ctrl-alt-7 = 'workspace 17'
+ctrl-alt-8 = 'workspace 18'
+ctrl-alt-9 = 'workspace 19'
+ctrl-alt-0 = 'workspace 20'
 
 # right-alt-1='workspace 11'
 # right-alt-2='workspace 11'
@@ -157,6 +168,18 @@ alt-shift-7 = 'move-node-to-workspace 7'
 alt-shift-8 = 'move-node-to-workspace 8'
 alt-shift-9 = 'move-node-to-workspace 9'
 alt-shift-0 = 'move-node-to-workspace 10'
+
+# Move windows to second layer (11-20)
+ctrl-alt-shift-1 = 'move-node-to-workspace 11'
+ctrl-alt-shift-2 = 'move-node-to-workspace 12'
+ctrl-alt-shift-3 = 'move-node-to-workspace 13'
+ctrl-alt-shift-4 = 'move-node-to-workspace 14'
+ctrl-alt-shift-5 = 'move-node-to-workspace 15'
+ctrl-alt-shift-6 = 'move-node-to-workspace 16'
+ctrl-alt-shift-7 = 'move-node-to-workspace 17'
+ctrl-alt-shift-8 = 'move-node-to-workspace 18'
+ctrl-alt-shift-9 = 'move-node-to-workspace 19'
+ctrl-alt-shift-0 = 'move-node-to-workspace 20'
 
 alt-shift-f = 'fullscreen'
 
