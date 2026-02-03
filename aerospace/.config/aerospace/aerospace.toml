@@ -142,17 +142,6 @@ alt-8 = 'workspace 8'
 alt-9 = 'workspace 9'
 alt-0 = 'workspace 10'
 
-# Second layer of workspaces (11-20)
-ctrl-alt-1 = 'workspace 11'
-ctrl-alt-2 = 'workspace 12'
-ctrl-alt-3 = 'workspace 13'
-ctrl-alt-4 = 'workspace 14'
-ctrl-alt-5 = 'workspace 15'
-ctrl-alt-6 = 'workspace 16'
-ctrl-alt-7 = 'workspace 17'
-ctrl-alt-8 = 'workspace 18'
-ctrl-alt-9 = 'workspace 19'
-ctrl-alt-0 = 'workspace 20'
 
 # right-alt-1='workspace 11'
 # right-alt-2='workspace 11'
@@ -169,17 +158,6 @@ alt-shift-8 = 'move-node-to-workspace 8'
 alt-shift-9 = 'move-node-to-workspace 9'
 alt-shift-0 = 'move-node-to-workspace 10'
 
-# Move windows to second layer (11-20)
-ctrl-alt-shift-1 = 'move-node-to-workspace 11'
-ctrl-alt-shift-2 = 'move-node-to-workspace 12'
-ctrl-alt-shift-3 = 'move-node-to-workspace 13'
-ctrl-alt-shift-4 = 'move-node-to-workspace 14'
-ctrl-alt-shift-5 = 'move-node-to-workspace 15'
-ctrl-alt-shift-6 = 'move-node-to-workspace 16'
-ctrl-alt-shift-7 = 'move-node-to-workspace 17'
-ctrl-alt-shift-8 = 'move-node-to-workspace 18'
-ctrl-alt-shift-9 = 'move-node-to-workspace 19'
-ctrl-alt-shift-0 = 'move-node-to-workspace 20'
 
 alt-shift-f = 'fullscreen'
 
@@ -193,6 +171,7 @@ alt-shift-semicolon = 'mode alternate'
 alt-shift-q = 'close --quit-if-last-window'
 
 alt-r = 'mode resize'
+alt-backtick = 'mode workspace2'
 
 # 'alternate' binding mode declaration.
 # See: https://nikitabobko.github.io/AeroSpace/guide#binding-modes
@@ -220,6 +199,29 @@ l = 'resize width +50'
 
 enter = 'mode main'
 esc = 'mode main'
+
+[mode.workspace2.binding]
+esc = 'mode main'
+1 = ['workspace 11', 'mode main']
+2 = ['workspace 12', 'mode main']
+3 = ['workspace 13', 'mode main']
+4 = ['workspace 14', 'mode main']
+5 = ['workspace 15', 'mode main']
+6 = ['workspace 16', 'mode main']
+7 = ['workspace 17', 'mode main']
+8 = ['workspace 18', 'mode main']
+9 = ['workspace 19', 'mode main']
+0 = ['workspace 20', 'mode main']
+shift-1 = ['move-node-to-workspace 11', 'mode main']
+shift-2 = ['move-node-to-workspace 12', 'mode main']
+shift-3 = ['move-node-to-workspace 13', 'mode main']
+shift-4 = ['move-node-to-workspace 14', 'mode main']
+shift-5 = ['move-node-to-workspace 15', 'mode main']
+shift-6 = ['move-node-to-workspace 16', 'mode main']
+shift-7 = ['move-node-to-workspace 17', 'mode main']
+shift-8 = ['move-node-to-workspace 18', 'mode main']
+shift-9 = ['move-node-to-workspace 19', 'mode main']
+shift-0 = ['move-node-to-workspace 20', 'mode main']
 
 [mode.monitors.binding]
 esc='mode main'
