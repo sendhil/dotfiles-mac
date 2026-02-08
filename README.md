@@ -32,7 +32,7 @@ make stow-tmux      # Install only tmux config
 - `direnv` - Directory environment configuration
 - `fd` - Find alternative configuration
 - `hammerspoon` - macOS automation
-- `karabiner` - Keyboard customization
+- `karabiner` - Keyboard customization (see [karabiner/README.md](karabiner/README.md) for profile setup)
 - `kitty` - Terminal emulator configuration
 - `neovim` - Neovim configuration (see [Neovim Setup](#neovim-setup) for dependencies)
 - `prezto` - Zsh configuration framework
