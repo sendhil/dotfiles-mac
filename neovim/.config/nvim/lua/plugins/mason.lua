@@ -14,13 +14,7 @@ return {
       })
     end,
   },
-  {
-    "williamboman/mason-lspconfig.nvim",
-    enabled = false, -- Disable mason-lspconfig to prevent duplicate server initialization
-    event = "VeryLazy",
-    dependencies = { "williamboman/mason.nvim" },
-  },
-  {
+{
     "WhoIsSethDaniel/mason-tool-installer.nvim",
     event = "VeryLazy",
     dependencies = { "williamboman/mason.nvim" },
