@@ -189,12 +189,12 @@ return {
 		event = { "VeryLazy" },
 	},
 	{
-		"ggandor/leap.nvim",
+		url = "https://codeberg.org/andyg/leap.nvim",
 		event = { "VeryLazy" },
 
 		-- keep Leap’s normal default mappings
 		config = function()
-			require("leap").set_default_mappings()
+			require("leap").add_default_mappings()
 		end,
 
 		-- ── key‑bindings ──────────────────────────────────────────────────────────────
