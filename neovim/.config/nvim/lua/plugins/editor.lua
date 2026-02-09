@@ -192,13 +192,15 @@ return {
 		url = "https://codeberg.org/andyg/leap.nvim",
 		event = { "VeryLazy" },
 
-		-- keep Leap’s normal default mappings
 		config = function()
-			require("leap").add_default_mappings()
+			require("leap")
 		end,
 
 		-- ── key‑bindings ──────────────────────────────────────────────────────────────
 		keys = {
+			{ "s", "<Plug>(leap-forward)", mode = { "n", "x", "o" }, desc = "Leap forward" },
+			{ "S", "<Plug>(leap-backward)", mode = { "n", "x", "o" }, desc = "Leap backward" },
+			{ "gs", "<Plug>(leap-from-window)", mode = { "n", "x", "o" }, desc = "Leap from window" },
 			-- clever‑R   (incremental Treesitter node selection)
 			{
 				"R",
