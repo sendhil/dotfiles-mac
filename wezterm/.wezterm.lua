@@ -96,6 +96,21 @@ wezterm.on("augment-command-palette", function(window, pane)
         end),
       }),
     },
+    {
+      brief = "Tab: Rename",
+      action = wezterm.action.PromptInputLine({
+        description = "Enter new name for tab",
+        action = wezterm.action_callback(function(win, pane, line)
+          if line then
+            win:active_tab():set_title(line)
+          end
+        end),
+      }),
+    },
+    {
+      brief = "OpenCode: Pick session",
+      action = wezterm.action.SendString("oc-session\n"),
+    },
   }
 end)
 
