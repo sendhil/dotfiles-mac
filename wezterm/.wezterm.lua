@@ -114,7 +114,7 @@ wezterm.on("augment-command-palette", function(window, pane)
   }
 end)
 
-config.font_size = 20
+config.font_size = 24
 config.line_height = 1.2
 config.color_scheme = DARK
 

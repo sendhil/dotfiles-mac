@@ -117,6 +117,12 @@ function bat-allfilesrecursively {
   find . -type f | xargs bat
 }
 
+function tk-read() {
+  local -a files
+  files=( $( { tk list --status=open "$@"; tk list --status=in_progress "$@"; } | awk '{print $1}' | sed 's|^|.tickets/|;s|$|.md|' | sort -u ) )
+  (( ${#files[@]} > 0 )) && bat "${files[@]}"
+}
+
 function timer() {
   n=$1
   countdown "$n" && hs -c 'displayMessageOnAllScreens("Timer is done", 10)'
