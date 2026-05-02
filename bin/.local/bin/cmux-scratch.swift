@@ -17,7 +17,6 @@ let sentinel = "»scratch«"
 let cmuxApp  = "com.cmuxterm.app"
 let stateFile = (ProcessInfo.processInfo.environment["TMPDIR"] ?? "/tmp")
     .appending("cmux-scratch-pos")
-let offscreenX: CGFloat = -10_000  // macOS AX clamps to -(width-1); that's fine
 let widthRatio:  CGFloat = 0.60
 let heightRatio: CGFloat = 0.75
 let cmuxBin = ProcessInfo.processInfo.environment["CMUX_BUNDLED_CLI_PATH"]
@@ -62,6 +61,17 @@ func setSize(_ w: AXUIElement, _ s: CGSize) {
     if let v = AXValueCreate(.cgSize, &sz) {
         AXUIElementSetAttributeValue(w, kAXSizeAttribute as CFString, v)
     }
+}
+
+func isMinimized(_ w: AXUIElement) -> Bool {
+    var raw: CFTypeRef?
+    guard AXUIElementCopyAttributeValue(w, kAXMinimizedAttribute as CFString, &raw) == .success,
+          let b = raw as? Bool else { return false }
+    return b
+}
+
+func setMinimized(_ w: AXUIElement, _ v: Bool) {
+    AXUIElementSetAttributeValue(w, kAXMinimizedAttribute as CFString, v as CFTypeRef)
 }
 
 func raiseWindow(_ w: AXUIElement) {
@@ -151,6 +161,15 @@ func spawn() {
     raiseWindow(ax)
 }
 
+// Park the window to the bottom-right corner (AeroSpace's own technique):
+// macOS AX clamps large x and y to within the screen bounds minus 1px,
+// leaving only a 1x2 pixel blob in the corner — effectively invisible.
+func parkPoint() -> CGPoint {
+    guard let screen = NSScreen.main else { return CGPoint(x: 99_999, y: 99_999) }
+    let f = screen.frame  // AX uses top-left origin; frame origin is (0, 0) on main
+    return CGPoint(x: f.width - 1, y: f.height - 1)
+}
+
 func toggle() {
     guard let w = scratchWindow() else {
         spawn()
@@ -176,7 +195,7 @@ func toggle() {
         guard let p = getPosition(w) else { return }
         let line = "\(Int(p.x)) \(Int(p.y))\n"
         try? line.write(toFile: stateFile, atomically: true, encoding: .utf8)
-        setPosition(w, CGPoint(x: offscreenX, y: p.y))
+        setPosition(w, parkPoint())
     }
 }
 
