@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Quake-style toggle for a floating cmux scratchpad window.
-# Bound to alt-grave in aerospace.toml; parks the window on the "Floating"
-# AeroSpace workspace instead of closing it so shell state persists.
+# Bound to alt-backtick in aerospace.toml; parks the window on the
+# "Floating" AeroSpace workspace to toggle visibility without the Genie
+# minimize animation.
 set -euo pipefail
 
 SENTINEL='»scratch«'
@@ -30,12 +31,12 @@ center_scratch_window() {
 APPLESCRIPT
 }
 
-WINDOW_ID=$(aerospace list-windows --all --format '%{window-id} %{app-bundle-id} %{workspace} %{window-title}' --json \
+read -r WINDOW_ID WINDOW_WS <<<"$(aerospace list-windows --all \
+  --format '%{window-id} %{app-bundle-id} %{workspace} %{window-title}' --json \
   | jq -r --arg s "$SENTINEL" \
-      '.[] | select(."app-bundle-id" == "com.cmuxterm.app"
-                    and ((."window-title" // "") | contains($s)))
-           | ."window-id"' \
-  | head -n1)
+      'first(.[] | select(."app-bundle-id" == "com.cmuxterm.app"
+                          and ((."window-title" // "") | contains($s)))
+                 | "\(."window-id") \(.workspace)") // ""')"
 
 if [ -z "$WINDOW_ID" ]; then
   new_window_line=$("$CMUX" new-window)
@@ -49,15 +50,11 @@ if [ -z "$WINDOW_ID" ]; then
 fi
 
 CURRENT_WS=$(aerospace list-workspaces --focused)
-WINDOW_WS=$(aerospace list-windows --all --format '%{window-id} %{app-bundle-id} %{workspace} %{window-title}' --json \
-  | jq -r --argjson id "$WINDOW_ID" \
-      '.[] | select(."window-id" == $id) | .workspace')
 
 if [ "$WINDOW_WS" = "$CURRENT_WS" ]; then
   aerospace move-node-to-workspace --window-id "$WINDOW_ID" "$PARK"
 else
   aerospace layout floating --window-id "$WINDOW_ID" 2>/dev/null || true
   aerospace move-node-to-workspace --window-id "$WINDOW_ID" "$CURRENT_WS"
-  center_scratch_window
   aerospace focus --window-id "$WINDOW_ID"
 fi
