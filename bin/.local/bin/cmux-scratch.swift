@@ -81,18 +81,29 @@ func raiseWindow(_ w: AXUIElement) {
 // MARK: - Shell out
 
 @discardableResult
-func shell(_ args: [String]) -> (status: Int32, stdout: String) {
+func shell(_ args: [String]) -> (status: Int32, stdout: String, stderr: String) {
     let p = Process()
     p.executableURL = URL(fileURLWithPath: args[0])
     p.arguments = Array(args.dropFirst())
-    let pipe = Pipe()
-    p.standardOutput = pipe
-    p.standardError = Pipe()
-    do { try p.run() } catch { return (-1, "") }
+    // cmux CLI needs CMUX_SOCKET. AeroSpace's exec env doesn't include it,
+    // so inject the canonical path when it's missing.
+    var env = ProcessInfo.processInfo.environment
+    if env["CMUX_SOCKET"] == nil {
+        let home = env["HOME"] ?? NSHomeDirectory()
+        env["CMUX_SOCKET"] = "\(home)/Library/Application Support/cmux/cmux.sock"
+    }
+    p.environment = env
+    let out = Pipe()
+    let err = Pipe()
+    p.standardOutput = out
+    p.standardError = err
+    do { try p.run() } catch { return (-1, "", "") }
     p.waitUntilExit()
-    let data = pipe.fileHandleForReading.readDataToEndOfFile()
-    let out = String(data: data, encoding: .utf8) ?? ""
-    return (p.terminationStatus, out.trimmingCharacters(in: .whitespacesAndNewlines))
+    let oData = out.fileHandleForReading.readDataToEndOfFile()
+    let eData = err.fileHandleForReading.readDataToEndOfFile()
+    return (p.terminationStatus,
+            (String(data: oData, encoding: .utf8) ?? "").trimmingCharacters(in: .whitespacesAndNewlines),
+            (String(data: eData, encoding: .utf8) ?? "").trimmingCharacters(in: .whitespacesAndNewlines))
 }
 
 // MARK: - Actions
@@ -115,9 +126,10 @@ func spawn() {
     try? FileManager.default.removeItem(atPath: stateFile)
 
     // 1. Create new window
-    let newWin = shell([cmuxBin, "new-window"]).stdout
+    let r = shell([cmuxBin, "new-window"])
+    let newWin = r.stdout
     guard newWin.hasPrefix("OK ") else {
-        FileHandle.standardError.write("cmux new-window failed: \(newWin)\n".data(using: .utf8)!)
+        FileHandle.standardError.write("cmux new-window failed: \(newWin) \(r.stderr)\n".data(using: .utf8)!)
         exit(1)
     }
     let winUuid = String(newWin.dropFirst(3))
