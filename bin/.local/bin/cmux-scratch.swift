@@ -187,6 +187,31 @@ func parkPoint() -> CGPoint {
     return CGPoint(x: f.width - 1, y: f.height - 1)
 }
 
+// Look up the aerospace window-id for the scratch window.
+func aerospaceScratchWindowId() -> Int? {
+    let r = shell(["/opt/homebrew/bin/aerospace", "list-windows", "--all",
+                   "--format", "%{window-id} %{app-bundle-id} %{window-title}", "--json"])
+    guard let data = r.stdout.data(using: .utf8),
+          let arr = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
+        return nil
+    }
+    for entry in arr {
+        if (entry["app-bundle-id"] as? String) == cmuxApp,
+           ((entry["window-title"] as? String) ?? "").contains(sentinel),
+           let wid = entry["window-id"] as? Int {
+            return wid
+        }
+    }
+    return nil
+}
+
+func moveToFocusedWorkspace(_ wid: Int) {
+    let ws = shell(["/opt/homebrew/bin/aerospace", "list-workspaces", "--focused"]).stdout
+    guard !ws.isEmpty else { return }
+    _ = shell(["/opt/homebrew/bin/aerospace", "move-node-to-workspace",
+               "--window-id", String(wid), ws])
+}
+
 func toggle() {
     guard let w = scratchWindow() else {
         spawn()
@@ -204,15 +229,34 @@ func toggle() {
             try? FileManager.default.removeItem(atPath: stateFile)
             return
         }
+        // Ensure the window is on the current AeroSpace workspace.
+        if let wid = aerospaceScratchWindowId() {
+            moveToFocusedWorkspace(wid)
+        }
         setPosition(w, CGPoint(x: x, y: y))
         raiseWindow(w)
         try? FileManager.default.removeItem(atPath: stateFile)
     } else {
         // Visible → park
         guard let p = getPosition(w) else { return }
+        let park = parkPoint()
+        // Don't save a position that's already at/near the park corner
+        // (happens when AeroSpace has hidden the window on a non-current workspace).
+        if abs(p.x - park.x) < 10 && abs(p.y - park.y) < 10 {
+            // Move to current workspace and center instead of parking again.
+            if let wid = aerospaceScratchWindowId() {
+                moveToFocusedWorkspace(wid)
+            }
+            if let (pos, size) = centerRect() {
+                setSize(w, size)
+                setPosition(w, pos)
+            }
+            raiseWindow(w)
+            return
+        }
         let line = "\(Int(p.x)) \(Int(p.y))\n"
         try? line.write(toFile: stateFile, atomically: true, encoding: .utf8)
-        setPosition(w, parkPoint())
+        setPosition(w, park)
     }
 }
 
