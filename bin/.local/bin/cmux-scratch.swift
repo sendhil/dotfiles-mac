@@ -1,26 +1,30 @@
 // cmux-scratch — quake-style toggle for a floating cmux scratchpad window.
 //
 // Subcommands:
-//   toggle  auto-detects: spawn if missing, else park/summon
-//   spawn   create a new scratch cmux window and center it
+//   toggle  auto-detects: spawn if missing, summon if on another workspace,
+//           park if on the current workspace.
+//   spawn   always create a fresh scratch window.
 //
-// Parking teleports the window off-screen within its current AeroSpace
-// workspace; no workspace churn. Requires AeroSpace to have marked the
-// window `layout floating` (done once on spawn).
+// Visibility model: workspace-based. The scratch window lives either on the
+// user's current AeroSpace workspace (VISIBLE) or on a dedicated parking
+// workspace `Floating` (HIDDEN). AeroSpace's hide-on-non-focused-workspace
+// behavior does the visual hiding. No state files, no position-based state.
 
 import Cocoa
 import ApplicationServices
 
 // MARK: - Config
 
-let sentinel = "»scratch«"
-let cmuxApp  = "com.cmuxterm.app"
-let stateFile = (ProcessInfo.processInfo.environment["TMPDIR"] ?? "/tmp")
-    .appending("cmux-scratch-pos")
+let sentinel     = "»scratch«"
+let cmuxApp      = "com.cmuxterm.app"
+let parkingWs    = "Floating"
 let widthRatio:  CGFloat = 0.60
 let heightRatio: CGFloat = 0.75
 let cmuxBin = ProcessInfo.processInfo.environment["CMUX_BUNDLED_CLI_PATH"]
     ?? "/Applications/cmux.app/Contents/Resources/bin/cmux"
+let aerospaceBin = "/opt/homebrew/bin/aerospace"
+let spawnLockFile = (ProcessInfo.processInfo.environment["TMPDIR"] ?? "/tmp")
+    .appending("cmux-scratch-spawning.lock")
 
 // MARK: - AX helpers
 
@@ -40,15 +44,6 @@ func scratchWindow() -> AXUIElement? {
     return nil
 }
 
-func getPosition(_ w: AXUIElement) -> CGPoint? {
-    var raw: CFTypeRef?
-    guard AXUIElementCopyAttributeValue(w, kAXPositionAttribute as CFString, &raw) == .success,
-          let v = raw, CFGetTypeID(v) == AXValueGetTypeID() else { return nil }
-    var p = CGPoint.zero
-    guard AXValueGetValue(v as! AXValue, .cgPoint, &p) else { return nil }
-    return p
-}
-
 func setPosition(_ w: AXUIElement, _ p: CGPoint) {
     var pt = p
     if let v = AXValueCreate(.cgPoint, &pt) {
@@ -61,13 +56,6 @@ func setSize(_ w: AXUIElement, _ s: CGSize) {
     if let v = AXValueCreate(.cgSize, &sz) {
         AXUIElementSetAttributeValue(w, kAXSizeAttribute as CFString, v)
     }
-}
-
-func isMinimized(_ w: AXUIElement) -> Bool {
-    var raw: CFTypeRef?
-    guard AXUIElementCopyAttributeValue(w, kAXMinimizedAttribute as CFString, &raw) == .success,
-          let b = raw as? Bool else { return false }
-    return b
 }
 
 func setMinimized(_ w: AXUIElement, _ v: Bool) {
@@ -106,6 +94,32 @@ func shell(_ args: [String]) -> (status: Int32, stdout: String, stderr: String) 
             (String(data: eData, encoding: .utf8) ?? "").trimmingCharacters(in: .whitespacesAndNewlines))
 }
 
+// MARK: - AeroSpace queries
+
+// Single query that returns (scratchWid, scratchWorkspace)? for the scratch window.
+func queryScratch() -> (wid: Int, workspace: String)? {
+    let r = shell([aerospaceBin, "list-windows", "--all",
+                   "--format", "%{window-id} %{app-bundle-id} %{workspace} %{window-title}",
+                   "--json"])
+    guard let data = r.stdout.data(using: .utf8),
+          let arr = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
+        return nil
+    }
+    for entry in arr {
+        guard (entry["app-bundle-id"] as? String) == cmuxApp else { continue }
+        let title = (entry["window-title"] as? String) ?? ""
+        guard title.contains(sentinel) else { continue }
+        guard let wid = entry["window-id"] as? Int,
+              let ws = entry["workspace"] as? String else { continue }
+        return (wid, ws)
+    }
+    return nil
+}
+
+func focusedWorkspace() -> String {
+    return shell([aerospaceBin, "list-workspaces", "--focused"]).stdout
+}
+
 // MARK: - Actions
 
 func centerRect() -> (CGPoint, CGSize)? {
@@ -121,142 +135,134 @@ func centerRect() -> (CGPoint, CGSize)? {
     return (CGPoint(x: axX, y: axY), CGSize(width: w, height: h))
 }
 
-func spawn() {
-    // Remove any stale state
-    try? FileManager.default.removeItem(atPath: stateFile)
+func park(wid: Int) {
+    _ = shell([aerospaceBin, "move-node-to-workspace",
+               "--window-id", String(wid), parkingWs])
+}
 
-    // 1. Create new window
+func summon(wid: Int, axWindow: AXUIElement, focusedWs: String) {
+    _ = shell([aerospaceBin, "move-node-to-workspace",
+               "--window-id", String(wid), focusedWs])
+    // Ensure not minimized from an earlier session
+    setMinimized(axWindow, false)
+    if let (pos, size) = centerRect() {
+        setSize(axWindow, size)
+        setPosition(axWindow, pos)
+    }
+    raiseWindow(axWindow)
+}
+
+// Returns true if the PID in the lockfile is currently alive.
+func isLockfileOwnerAlive() -> Bool {
+    guard let contents = try? String(contentsOfFile: spawnLockFile, encoding: .utf8),
+          let pid = pid_t(contents.trimmingCharacters(in: .whitespacesAndNewlines)) else {
+        return false
+    }
+    return kill(pid, 0) == 0
+}
+
+func acquireSpawnLock() -> Bool {
+    // Clean up stale lockfile (process died during spawn)
+    if FileManager.default.fileExists(atPath: spawnLockFile), !isLockfileOwnerAlive() {
+        try? FileManager.default.removeItem(atPath: spawnLockFile)
+    }
+    // Exclusive create
+    let fd = open(spawnLockFile, O_CREAT | O_EXCL | O_WRONLY, 0o644)
+    if fd < 0 { return false }
+    let pid = "\(getpid())"
+    _ = pid.withCString { write(fd, $0, strlen($0)) }
+    close(fd)
+    return true
+}
+
+func releaseSpawnLock() {
+    try? FileManager.default.removeItem(atPath: spawnLockFile)
+}
+
+func spawn(focusedWs: String) {
+    guard acquireSpawnLock() else {
+        // Another spawn in progress; bail silently.
+        return
+    }
+    defer { releaseSpawnLock() }
+
+    // 1. Create new cmux window
     let r = shell([cmuxBin, "new-window"])
     let newWin = r.stdout
     guard newWin.hasPrefix("OK ") else {
-        FileHandle.standardError.write("cmux new-window failed: \(newWin) \(r.stderr)\n".data(using: .utf8)!)
+        FileHandle.standardError.write(
+            "cmux new-window failed: \(newWin) \(r.stderr)\n".data(using: .utf8)!)
         exit(1)
     }
     let winUuid = String(newWin.dropFirst(3))
 
-    // 2. Find its default workspace and rename to the sentinel
-    let lsOut = shell([cmuxBin, "list-workspaces", "--window", winUuid, "--id-format", "uuids"]).stdout
+    // 2. Find the new window's default workspace and rename it to SENTINEL
+    let lsOut = shell([cmuxBin, "list-workspaces", "--window", winUuid,
+                       "--id-format", "uuids"]).stdout
     guard let wsUuid = lsOut.split(separator: "\n").first
-        .flatMap({ $0.split(separator: " ").dropFirst().first })
-        .map(String.init) else {
-        FileHandle.standardError.write("failed to find workspace uuid in: \(lsOut)\n".data(using: .utf8)!)
+            .flatMap({ $0.split(separator: " ").dropFirst().first })
+            .map(String.init) else {
+        FileHandle.standardError.write(
+            "failed to find workspace uuid in: \(lsOut)\n".data(using: .utf8)!)
         exit(1)
     }
     _ = shell([cmuxBin, "rename-workspace", "--workspace", wsUuid, sentinel])
 
-    // 3. Poll for AX window, mark it floating in AeroSpace, center it
-    var w: AXUIElement?
+    // 3. Poll for AX window to appear
+    var ax: AXUIElement?
     for _ in 0..<20 {
-        if let found = scratchWindow() { w = found; break }
-        usleep(50_000)  // 50ms
+        if let found = scratchWindow() { ax = found; break }
+        usleep(50_000)
     }
-    guard let ax = w else {
-        FileHandle.standardError.write("timed out waiting for scratch AX window\n".data(using: .utf8)!)
+    guard let axWindow = ax else {
+        FileHandle.standardError.write(
+            "timed out waiting for scratch AX window\n".data(using: .utf8)!)
         exit(1)
     }
 
-    // Find aerospace window id, float it, move it to the current workspace
-    let asJson = shell(["/opt/homebrew/bin/aerospace", "list-windows", "--all",
-                         "--format", "%{window-id} %{app-bundle-id} %{window-title}", "--json"]).stdout
-    if let data = asJson.data(using: .utf8),
-       let arr = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
-       let entry = arr.first(where: { ($0["app-bundle-id"] as? String) == cmuxApp
-                                     && (($0["window-title"] as? String) ?? "").contains(sentinel) }),
-       let wid = entry["window-id"] as? Int {
-        _ = shell(["/opt/homebrew/bin/aerospace", "layout", "floating", "--window-id", String(wid)])
-        let currentWs = shell(["/opt/homebrew/bin/aerospace", "list-workspaces", "--focused"]).stdout
-        if !currentWs.isEmpty {
-            _ = shell(["/opt/homebrew/bin/aerospace", "move-node-to-workspace",
-                       "--window-id", String(wid), currentWs])
-        }
+    // 4. Find the AeroSpace window-id. Retry — AS may register the window
+    //    a frame or two after AX does.
+    var info: (wid: Int, workspace: String)? = nil
+    for _ in 0..<10 {
+        if let found = queryScratch() { info = found; break }
+        usleep(50_000)
     }
 
+    // 5. Explicitly mark floating (belt-and-suspenders; on-window-detected rule
+    //    may race) and move to current workspace.
+    if let info = info {
+        _ = shell([aerospaceBin, "layout", "floating", "--window-id", String(info.wid)])
+        _ = shell([aerospaceBin, "move-node-to-workspace",
+                   "--window-id", String(info.wid), focusedWs])
+    }
+
+    // 6. Center and raise
     if let (pos, size) = centerRect() {
-        setSize(ax, size)
-        setPosition(ax, pos)
+        setSize(axWindow, size)
+        setPosition(axWindow, pos)
     }
-    raiseWindow(ax)
+    raiseWindow(axWindow)
 }
 
-// Park the window to the bottom-right corner (AeroSpace's own technique):
-// macOS AX clamps large x and y to within the screen bounds minus 1px,
-// leaving only a 1x2 pixel blob in the corner — effectively invisible.
-func parkPoint() -> CGPoint {
-    guard let screen = NSScreen.main else { return CGPoint(x: 99_999, y: 99_999) }
-    let f = screen.frame  // AX uses top-left origin; frame origin is (0, 0) on main
-    return CGPoint(x: f.width - 1, y: f.height - 1)
-}
-
-// Look up the aerospace window-id for the scratch window.
-func aerospaceScratchWindowId() -> Int? {
-    let r = shell(["/opt/homebrew/bin/aerospace", "list-windows", "--all",
-                   "--format", "%{window-id} %{app-bundle-id} %{window-title}", "--json"])
-    guard let data = r.stdout.data(using: .utf8),
-          let arr = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
-        return nil
-    }
-    for entry in arr {
-        if (entry["app-bundle-id"] as? String) == cmuxApp,
-           ((entry["window-title"] as? String) ?? "").contains(sentinel),
-           let wid = entry["window-id"] as? Int {
-            return wid
-        }
-    }
-    return nil
-}
-
-func moveToFocusedWorkspace(_ wid: Int) {
-    let ws = shell(["/opt/homebrew/bin/aerospace", "list-workspaces", "--focused"]).stdout
-    guard !ws.isEmpty else { return }
-    _ = shell(["/opt/homebrew/bin/aerospace", "move-node-to-workspace",
-               "--window-id", String(wid), ws])
-}
+// MARK: - Toggle
 
 func toggle() {
-    guard let w = scratchWindow() else {
-        spawn()
+    let axWindow = scratchWindow()
+    let info = queryScratch()
+    let focusedWs = focusedWorkspace()
+
+    // MISSING: no AX window, or no matching aerospace entry
+    guard let ax = axWindow, let si = info else {
+        spawn(focusedWs: focusedWs)
         return
     }
-    if FileManager.default.fileExists(atPath: stateFile) {
-        // Parked → summon
-        guard let data = try? String(contentsOfFile: stateFile, encoding: .utf8) else {
-            try? FileManager.default.removeItem(atPath: stateFile)
-            return
-        }
-        let parts = data.trimmingCharacters(in: .whitespacesAndNewlines).split(separator: " ")
-        guard parts.count == 2,
-              let x = Double(parts[0]), let y = Double(parts[1]) else {
-            try? FileManager.default.removeItem(atPath: stateFile)
-            return
-        }
-        // Ensure the window is on the current AeroSpace workspace.
-        if let wid = aerospaceScratchWindowId() {
-            moveToFocusedWorkspace(wid)
-        }
-        setPosition(w, CGPoint(x: x, y: y))
-        raiseWindow(w)
-        try? FileManager.default.removeItem(atPath: stateFile)
+
+    if si.workspace == focusedWs {
+        // VISIBLE → park
+        park(wid: si.wid)
     } else {
-        // Visible → park
-        guard let p = getPosition(w) else { return }
-        let park = parkPoint()
-        // Don't save a position that's already at/near the park corner
-        // (happens when AeroSpace has hidden the window on a non-current workspace).
-        if abs(p.x - park.x) < 10 && abs(p.y - park.y) < 10 {
-            // Move to current workspace and center instead of parking again.
-            if let wid = aerospaceScratchWindowId() {
-                moveToFocusedWorkspace(wid)
-            }
-            if let (pos, size) = centerRect() {
-                setSize(w, size)
-                setPosition(w, pos)
-            }
-            raiseWindow(w)
-            return
-        }
-        let line = "\(Int(p.x)) \(Int(p.y))\n"
-        try? line.write(toFile: stateFile, atomically: true, encoding: .utf8)
-        setPosition(w, park)
+        // HIDDEN → summon
+        summon(wid: si.wid, axWindow: ax, focusedWs: focusedWs)
     }
 }
 
@@ -266,7 +272,9 @@ let args = CommandLine.arguments
 let sub = args.count > 1 ? args[1] : ""
 switch sub {
 case "toggle": toggle()
-case "spawn":  spawn()
+case "spawn":
+    let focusedWs = focusedWorkspace()
+    spawn(focusedWs: focusedWs)
 default:
     FileHandle.standardError.write("usage: cmux-scratch {toggle|spawn}\n".data(using: .utf8)!)
     exit(2)
