@@ -104,14 +104,39 @@ return {
 						clangdFileStatus = true,
 					},
 				},
-				rust_analyzer = {},
-				pyright = {},
-				ts_ls = {},
-				gopls = {},
-				lua_ls = {},
-				buf_ls = {},
-				yamlls = {},
-				nil_ls = {},
+				rust_analyzer = {
+					cmd = { "rust-analyzer" },
+					filetypes = { "rust" },
+				},
+				pyright = {
+					cmd = { "pyright-langserver", "--stdio" },
+					filetypes = { "python" },
+				},
+				ts_ls = {
+					cmd = { "typescript-language-server", "--stdio" },
+					filetypes = { "javascript", "javascriptreact", "typescript", "typescriptreact" },
+				},
+				gopls = {
+					cmd = { "gopls" },
+					filetypes = { "go", "gomod", "gowork", "gotmpl" },
+				},
+				lua_ls = {
+					cmd = { "lua-language-server" },
+					filetypes = { "lua" },
+				},
+				buf_ls = {
+					cmd = { "buf", "lsp", "serve" },
+					filetypes = { "proto" },
+					root_markers = { "buf.yaml", ".git" },
+				},
+				yamlls = {
+					cmd = { "yaml-language-server", "--stdio" },
+					filetypes = { "yaml", "yaml.docker-compose" },
+				},
+				nil_ls = {
+					cmd = { "nil" },
+					filetypes = { "nix" },
+				},
 			}
 
 			for server, config in pairs(servers) do
