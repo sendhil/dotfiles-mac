@@ -245,24 +245,61 @@ func spawn(focusedWs: String) {
 }
 
 // MARK: - Toggle
+//
+// Fast single-workspace toggle. No AeroSpace workspace moves. Park teleports
+// the window to the bottom-right corner (AX clamps to {screenW-1, screenH-1},
+// leaving a 1x2px sliver that's effectively invisible). Summon restores
+// position from a state file. State file presence == parked.
+//
+// Constraint: the scratch window lives on whatever AeroSpace workspace it
+// was spawned on. If you want it on a different workspace, close it and
+// respawn there.
+
+func parkPoint() -> CGPoint {
+    guard let screen = NSScreen.main else { return CGPoint(x: 99_999, y: 99_999) }
+    let f = screen.frame
+    return CGPoint(x: f.width - 1, y: f.height - 1)
+}
+
+func getPosition(_ w: AXUIElement) -> CGPoint? {
+    var raw: CFTypeRef?
+    guard AXUIElementCopyAttributeValue(w, kAXPositionAttribute as CFString, &raw) == .success,
+          let v = raw, CFGetTypeID(v) == AXValueGetTypeID() else { return nil }
+    var p = CGPoint.zero
+    guard AXValueGetValue(v as! AXValue, .cgPoint, &p) else { return nil }
+    return p
+}
+
+let positionStateFile = (ProcessInfo.processInfo.environment["TMPDIR"] ?? "/tmp")
+    .appending("cmux-scratch-pos")
 
 func toggle() {
-    let axWindow = scratchWindow()
-    let info = queryScratch()
-    let focusedWs = focusedWorkspace()
-
-    // MISSING: no AX window, or no matching aerospace entry
-    guard let ax = axWindow, let si = info else {
+    guard let ax = scratchWindow() else {
+        // MISSING → spawn on current workspace
+        let focusedWs = focusedWorkspace()
         spawn(focusedWs: focusedWs)
         return
     }
 
-    if si.workspace == focusedWs {
-        // VISIBLE → park
-        park(wid: si.wid)
+    if FileManager.default.fileExists(atPath: positionStateFile) {
+        // Parked → summon: restore saved position
+        if let data = try? String(contentsOfFile: positionStateFile, encoding: .utf8) {
+            let parts = data.trimmingCharacters(in: .whitespacesAndNewlines)
+                .split(separator: " ")
+            if parts.count == 2,
+               let x = Double(parts[0]), let y = Double(parts[1]) {
+                setPosition(ax, CGPoint(x: x, y: y))
+            }
+        }
+        raiseWindow(ax)
+        try? FileManager.default.removeItem(atPath: positionStateFile)
     } else {
-        // HIDDEN → summon
-        summon(wid: si.wid, axWindow: ax, focusedWs: focusedWs)
+        // Visible → park: save current position, teleport off-screen
+        if let p = getPosition(ax) {
+            let line = "\(Int(p.x)) \(Int(p.y))\n"
+            try? line.write(toFile: positionStateFile, atomically: true, encoding: .utf8)
+        }
+        setPosition(ax, parkPoint())
     }
 }
 
