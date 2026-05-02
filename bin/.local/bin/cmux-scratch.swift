@@ -143,7 +143,7 @@ func spawn() {
         exit(1)
     }
 
-    // Find aerospace window id to mark it floating
+    // Find aerospace window id, float it, move it to the current workspace
     let asJson = shell(["/opt/homebrew/bin/aerospace", "list-windows", "--all",
                          "--format", "%{window-id} %{app-bundle-id} %{window-title}", "--json"]).stdout
     if let data = asJson.data(using: .utf8),
@@ -152,6 +152,11 @@ func spawn() {
                                      && (($0["window-title"] as? String) ?? "").contains(sentinel) }),
        let wid = entry["window-id"] as? Int {
         _ = shell(["/opt/homebrew/bin/aerospace", "layout", "floating", "--window-id", String(wid)])
+        let currentWs = shell(["/opt/homebrew/bin/aerospace", "list-workspaces", "--focused"]).stdout
+        if !currentWs.isEmpty {
+            _ = shell(["/opt/homebrew/bin/aerospace", "move-node-to-workspace",
+                       "--window-id", String(wid), currentWs])
+        }
     }
 
     if let (pos, size) = centerRect() {
