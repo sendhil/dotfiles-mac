@@ -10,9 +10,5 @@
 
   "notifications": {
     "sound": "none"
-  },
-
-  "automation": {
-    "socketControlMode": "automation"
   }
 }

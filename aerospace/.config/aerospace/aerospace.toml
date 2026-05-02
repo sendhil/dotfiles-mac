@@ -342,6 +342,5 @@ if.app-id = 'com.grimridge.PingPlace'
 run = ['layout floating']
 
 [[on-window-detected]]
-if.app-id = 'com.cmuxterm.app'
-if.window-title-regex-substring = '»scratch«'
-run = ['layout floating', 'move-mouse window-lazy-center']
+if.app-id = 'com.mitchellh.ghostty'
+run = 'layout floating'
