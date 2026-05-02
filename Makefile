@@ -58,3 +58,7 @@ gitconfig:
 .PHONY: prestow
 prestow:
 	@./scripts/clear-out-files-before-stow.sh
+
+.PHONY: build-bin
+build-bin:
+	swiftc -O -o bin/.local/bin/cmux-scratch bin/.local/bin/cmux-scratch.swift

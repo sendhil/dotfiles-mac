@@ -182,7 +182,7 @@ alt-shift-q = 'close --quit-if-last-window'
 
 alt-r = 'mode resize'
 alt-shift-backtick = 'mode workspace2'
-alt-backtick = 'exec-and-forget ~/.local/bin/cmux-scratch-toggle.sh'
+alt-backtick = 'exec-and-forget ~/.local/bin/cmux-scratch toggle'
 
 # 'alternate' binding mode declaration.
 # See: https://nikitabobko.github.io/AeroSpace/guide#binding-modes
