@@ -56,8 +56,8 @@ WINDOW_WS=$(aerospace list-windows --all --format '%{window-id} %{app-bundle-id}
 if [ "$WINDOW_WS" = "$CURRENT_WS" ]; then
   aerospace move-node-to-workspace --window-id "$WINDOW_ID" "$PARK"
 else
-  aerospace move-node-to-workspace --window-id "$WINDOW_ID" "$CURRENT_WS"
-  aerospace focus --window-id "$WINDOW_ID"
   aerospace layout floating --window-id "$WINDOW_ID" 2>/dev/null || true
+  aerospace move-node-to-workspace --window-id "$WINDOW_ID" "$CURRENT_WS"
   center_scratch_window
+  aerospace focus --window-id "$WINDOW_ID"
 fi
