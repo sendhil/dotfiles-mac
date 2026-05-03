@@ -1,30 +1,79 @@
 // cmux-scratch — quake-style toggle for a floating Ghostty scratchpad.
 //
-// Subcommand:
-//   toggle  — spawn if missing, else park/summon via AX setPosition
-//
-// Ghostty is made fully-floating in AeroSpace via an on-window-detected
-// rule matching app-id com.mitchellh.ghostty. AS therefore leaves its
-// geometry alone once we set it. Park teleports to the bottom-right
-// corner (AX clamps to a 1x2px sliver there); summon restores the last
-// visible position from a state file.
+// Visibility is driven by AeroSpace workspace membership, not by window
+// position. Park = move scratch window to a dedicated `Floating` workspace.
+// Summon = move it to the current workspace + recenter. AeroSpace's own
+// per-workspace hiding does the visual work, so switching workspaces and
+// coming back no longer leaves the window in a random spot.
 
 import Cocoa
 import ApplicationServices
 
 // MARK: - Config
 
-let sentinel     = "»scratch«"
-let ghosttyApp   = "com.mitchellh.ghostty"
-let ghosttyBundle = "/Applications/Ghostty.app"
+let sentinel       = "»scratch«"
+let ghosttyApp     = "com.mitchellh.ghostty"
+let ghosttyBundle  = "/Applications/Ghostty.app"
+let parkingWs      = "Floating"
+let aerospaceBin   = "/opt/homebrew/bin/aerospace"
 let widthRatio:  CGFloat = 0.60
 let heightRatio: CGFloat = 0.75
-let positionStateFile = (ProcessInfo.processInfo.environment["TMPDIR"] ?? "/tmp")
-    .appending("cmux-scratch-pos")
+
+// MARK: - Shell
+
+struct AerospaceWindow {
+    let id: Int
+    let workspace: String
+}
+
+@discardableResult
+func runAerospace(_ args: [String]) -> (status: Int32, stdout: String) {
+    let p = Process()
+    p.executableURL = URL(fileURLWithPath: aerospaceBin)
+    p.arguments = args
+    let out = Pipe()
+    p.standardOutput = out
+    p.standardError = Pipe()
+    do { try p.run() } catch { return (-1, "") }
+    p.waitUntilExit()
+    let data = out.fileHandleForReading.readDataToEndOfFile()
+    return (p.terminationStatus, String(data: data, encoding: .utf8) ?? "")
+}
+
+// MARK: - AeroSpace state
+
+func findScratch() -> AerospaceWindow? {
+    let (status, stdout) = runAerospace([
+        "list-windows", "--all",
+        "--format", "%{window-id}%{app-bundle-id}%{workspace}%{window-title}",
+        "--json",
+    ])
+    guard status == 0,
+          let data = stdout.data(using: .utf8),
+          let arr = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]]
+    else { return nil }
+
+    for entry in arr {
+        guard let appId = entry["app-bundle-id"] as? String, appId == ghosttyApp,
+              let title = entry["window-title"] as? String, title.contains(sentinel),
+              let wid   = entry["window-id"] as? Int,
+              let ws    = entry["workspace"] as? String
+        else { continue }
+        return AerospaceWindow(id: wid, workspace: ws)
+    }
+    return nil
+}
+
+func focusedWorkspace() -> String? {
+    let (status, stdout) = runAerospace(["list-workspaces", "--focused"])
+    guard status == 0 else { return nil }
+    let trimmed = stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+    return trimmed.isEmpty ? nil : trimmed
+}
 
 // MARK: - AX helpers
 
-func scratchWindow() -> AXUIElement? {
+func scratchAXWindow() -> AXUIElement? {
     for app in NSRunningApplication.runningApplications(withBundleIdentifier: ghosttyApp) {
         let axApp = AXUIElementCreateApplication(app.processIdentifier)
         var raw: CFTypeRef?
@@ -38,15 +87,6 @@ func scratchWindow() -> AXUIElement? {
         }
     }
     return nil
-}
-
-func getPosition(_ w: AXUIElement) -> CGPoint? {
-    var raw: CFTypeRef?
-    guard AXUIElementCopyAttributeValue(w, kAXPositionAttribute as CFString, &raw) == .success,
-          let v = raw, CFGetTypeID(v) == AXValueGetTypeID() else { return nil }
-    var p = CGPoint.zero
-    guard AXValueGetValue(v as! AXValue, .cgPoint, &p) else { return nil }
-    return p
 }
 
 func setPosition(_ w: AXUIElement, _ p: CGPoint) {
@@ -65,6 +105,9 @@ func setSize(_ w: AXUIElement, _ s: CGSize) {
 
 func raiseWindow(_ w: AXUIElement) {
     AXUIElementPerformAction(w, kAXRaiseAction as CFString)
+    for app in NSRunningApplication.runningApplications(withBundleIdentifier: ghosttyApp) {
+        app.activate()
+    }
 }
 
 // MARK: - Geometry
@@ -81,18 +124,26 @@ func centerRect() -> (CGPoint, CGSize)? {
     return (CGPoint(x: axX, y: axY), CGSize(width: w, height: h))
 }
 
-func parkPoint() -> CGPoint {
-    guard let screen = NSScreen.main else { return CGPoint(x: 99_999, y: 99_999) }
-    let f = screen.frame
-    return CGPoint(x: f.width - 1, y: f.height - 1)
+// MARK: - Actions
+
+func centerAndRaise(_ ax: AXUIElement) {
+    if let (pos, size) = centerRect() {
+        setSize(ax, size)
+        setPosition(ax, pos)
+    }
+    raiseWindow(ax)
 }
 
-// MARK: - Spawn
+func park(windowId: Int) {
+    runAerospace(["move-node-to-workspace", "--window-id", "\(windowId)", parkingWs])
+}
 
-func spawn() {
-    // Use `open -na` to launch a fresh Ghostty instance with a known window
-    // title. The AeroSpace on-window-detected rule floats all Ghostty
-    // windows, so this one will be untiled from the start.
+func summon(windowId: Int, focusedWs: String, ax: AXUIElement?) {
+    runAerospace(["move-node-to-workspace", "--window-id", "\(windowId)", focusedWs])
+    if let ax = ax { centerAndRaise(ax) }
+}
+
+func spawn(focusedWs: String) {
     let p = Process()
     p.executableURL = URL(fileURLWithPath: "/usr/bin/open")
     p.arguments = ["-na", ghosttyBundle, "--args", "--title=\(sentinel)"]
@@ -103,10 +154,10 @@ func spawn() {
     }
     p.waitUntilExit()
 
-    // Poll for the AX window to appear
+    // Poll for the AX window (up to ~2s).
     var ax: AXUIElement?
-    for _ in 0..<40 {  // up to 2s
-        if let found = scratchWindow() { ax = found; break }
+    for _ in 0..<40 {
+        if let found = scratchAXWindow() { ax = found; break }
         usleep(50_000)
     }
     guard let axWindow = ax else {
@@ -115,55 +166,42 @@ func spawn() {
         exit(1)
     }
 
-    // Center and raise
-    if let (pos, size) = centerRect() {
-        setSize(axWindow, size)
-        setPosition(axWindow, pos)
+    // Poll briefly for AeroSpace to see the new window so we can move it to
+    // the focused workspace (on-window-detected may drop it elsewhere).
+    for _ in 0..<20 {
+        if let info = findScratch() {
+            if info.workspace != focusedWs {
+                runAerospace(["move-node-to-workspace",
+                              "--window-id", "\(info.id)", focusedWs])
+            }
+            break
+        }
+        usleep(50_000)
     }
-    raiseWindow(axWindow)
-    try? FileManager.default.removeItem(atPath: positionStateFile)
+
+    centerAndRaise(axWindow)
 }
 
 // MARK: - Toggle
-//
-// Decide based on actual position vs park corner, not just state file.
-// After AeroSpace reshuffles (workspace switches, restart, etc.) the window
-// may end up at a new position. Treat anything near the park corner as
-// "parked"; anything else as "visible → re-park on this press".
 
 func toggle() {
-    guard let ax = scratchWindow() else {
-        spawn()
+    let info = findScratch()
+    let ax = scratchAXWindow()
+
+    // MISSING: nothing in AS and/or nothing in AX -> spawn a fresh window.
+    guard let info = info, ax != nil else {
+        let fws = focusedWorkspace() ?? "1"
+        spawn(focusedWs: fws)
         return
     }
 
-    let park = parkPoint()
-    let currentPos = getPosition(ax) ?? park
-    // macOS AX clamps our park target (screen-bottom-right) by the window
-    // height/width, so the actual on-screen position can be ~30-40px off
-    // from our target. Use a generous threshold.
-    let isAtParkCorner = abs(currentPos.x - park.x) < 100
-        && abs(currentPos.y - park.y) < 100
-
-    if isAtParkCorner && FileManager.default.fileExists(atPath: positionStateFile) {
-        // Parked → summon: restore saved position
-        if let data = try? String(contentsOfFile: positionStateFile, encoding: .utf8) {
-            let parts = data.trimmingCharacters(in: .whitespacesAndNewlines)
-                .split(separator: " ")
-            if parts.count == 2,
-               let x = Double(parts[0]), let y = Double(parts[1]) {
-                setPosition(ax, CGPoint(x: x, y: y))
-            } else if let (pos, _) = centerRect() {
-                setPosition(ax, pos)
-            }
-        }
-        raiseWindow(ax)
-        try? FileManager.default.removeItem(atPath: positionStateFile)
+    if info.workspace == parkingWs {
+        // HIDDEN -> summon (need focused ws to know destination)
+        guard let fws = focusedWorkspace() else { exit(1) }
+        summon(windowId: info.id, focusedWs: fws, ax: ax)
     } else {
-        // Visible → park: save current position, teleport to park corner
-        let line = "\(Int(currentPos.x)) \(Int(currentPos.y))\n"
-        try? line.write(toFile: positionStateFile, atomically: true, encoding: .utf8)
-        setPosition(ax, park)
+        // VISIBLE (on any non-parking workspace) -> park
+        park(windowId: info.id)
     }
 }
 
@@ -173,7 +211,7 @@ let args = CommandLine.arguments
 let sub = args.count > 1 ? args[1] : ""
 switch sub {
 case "toggle": toggle()
-case "spawn":  spawn()
+case "spawn":  spawn(focusedWs: focusedWorkspace() ?? "1")
 default:
     FileHandle.standardError.write("usage: cmux-scratch {toggle|spawn}\n".data(using: .utf8)!)
     exit(2)
