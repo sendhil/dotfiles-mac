@@ -138,3 +138,20 @@ zoxide_refresh_src() {
 }
 
 alias zrs='zoxide_refresh_src' # quick manual refresh
+
+# List all currently open OpenCode sessions (useful for crash recovery).
+# Wraps ~/.local/bin/opencode-sessions — pass --all or --json for more output.
+#
+# Usage:
+#   oc-active-sessions                 # show table of open sessions
+#   oc-active-sessions <SESSION_ID>    # cd to session dir and resume it
+function oc-active-sessions() {
+  if [[ "$1" =~ ^ses_ ]]; then
+    local session_id="$1"
+    local dir
+    dir=$(opencode-sessions --get-dir "$session_id") || return 1
+    cd "$dir" && opencode --session "$session_id"
+  else
+    opencode-sessions "$@"
+  fi
+}
