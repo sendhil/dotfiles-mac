@@ -1,0 +1,260 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
+"""
+List all currently open OpenCode sessions.
+
+Correlates running `opencode` processes to their session IDs by matching
+each process's CWD + log-file timestamp against the OpenCode SQLite database.
+
+Usage:
+    opencode-sessions                       # list active sessions
+    opencode-sessions --all                 # include subagent sessions
+    opencode-sessions --json                # machine-readable output
+    opencode-sessions --get-dir <id>        # print directory for a session ID (for shell resume)
+"""
+
+import argparse
+import json
+import os
+import re
+import sqlite3
+import subprocess
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+DB_PATH = Path.home() / ".local" / "share" / "opencode" / "opencode.db"
+HOME = str(Path.home())
+
+# Max seconds between log-file start and session creation to consider a match.
+# Generous because some sessions resume from earlier checkpoints.
+MATCH_WINDOW_SECS = 3600  # 1 hour
+
+
+def get_opencode_pids() -> list[str]:
+    r = subprocess.run(["pgrep", "opencode"], capture_output=True, text=True)
+    return r.stdout.strip().split("\n") if r.stdout.strip() else []
+
+
+def get_process_info(pid: str) -> tuple[str | None, str | None]:
+    """Return (cwd, log_file_path) for a PID via lsof."""
+    r = subprocess.run(["lsof", "-p", pid], capture_output=True, text=True)
+    cwd = log_file = None
+    for line in r.stdout.splitlines():
+        parts = line.split()
+        if len(parts) < 4:
+            continue
+        fd = parts[3]
+        name = parts[-1]
+        if fd == "cwd":
+            cwd = name
+        elif name.endswith(".log") and "opencode/log/" in name and log_file is None:
+            log_file = name
+    return cwd, log_file
+
+
+def parse_log_timestamp_ms(log_path: str | None) -> int | None:
+    """
+    Parse UTC timestamp in milliseconds from a log filename.
+    Format: 2026-05-04T013443.log  (hhmmss, no colons, UTC)
+    """
+    if not log_path:
+        return None
+    filename = os.path.basename(log_path)
+    m = re.match(r"(\d{4}-\d{2}-\d{2})T(\d{2})(\d{2})(\d{2})\.log$", filename)
+    if not m:
+        return None
+    date_str, hh, mm, ss = m.groups()
+    dt = datetime.strptime(f"{date_str} {hh}:{mm}:{ss}", "%Y-%m-%d %H:%M:%S")
+    return int(dt.replace(tzinfo=timezone.utc).timestamp() * 1000)
+
+
+def find_root_session(db: sqlite3.Connection, cwd: str, ts_ms: int | None, include_subagents: bool) -> dict | None:
+    """
+    Find the best-matching session for (cwd, timestamp).
+
+    Strategy:
+      1. If we have a timestamp, find the session whose time_created is within
+         MATCH_WINDOW_SECS of the log start.
+      2. Among candidates, prefer the most recently *created* one — this handles
+         the case where a user starts a new session inside an existing process window.
+      3. Fallback: most recently updated session for that directory.
+    If the matched session is a subagent (has parent_id), walk up to the root.
+    """
+    parent_filter = "" if include_subagents else "AND parent_id IS NULL"
+
+    row = None
+    if ts_ms is not None:
+        # Fetch all sessions created within the window, pick the newest
+        rows = db.execute(
+            f"""
+            SELECT id, parent_id, title, directory, time_created, time_updated
+            FROM session
+            WHERE directory = ?
+              AND time_archived IS NULL
+              {parent_filter}
+              AND time_created >= ?
+              AND time_created <= ?
+            ORDER BY time_created DESC
+            LIMIT 10
+            """,
+            (cwd, ts_ms - MATCH_WINDOW_SECS * 1000, ts_ms + MATCH_WINDOW_SECS * 1000),
+        ).fetchall()
+        if rows:
+            row = rows[0]  # most recently created within the window
+
+    if not row:
+        row = db.execute(
+            f"""
+            SELECT id, parent_id, title, directory, time_created, time_updated
+            FROM session
+            WHERE directory = ?
+              AND time_archived IS NULL
+              {parent_filter}
+            ORDER BY time_updated DESC
+            LIMIT 1
+            """,
+            (cwd,),
+        ).fetchone()
+
+    if not row:
+        return None
+
+    # Follow parent chain to root
+    visited = set()
+    while row["parent_id"] and row["id"] not in visited:
+        visited.add(row["id"])
+        parent = db.execute(
+            "SELECT id, parent_id, title, directory, time_created, time_updated FROM session WHERE id = ?",
+            (row["parent_id"],),
+        ).fetchone()
+        if parent:
+            row = parent
+        else:
+            break
+
+    return dict(row)
+
+
+def format_time(ts_ms: int) -> str:
+    dt = datetime.fromtimestamp(ts_ms / 1000)
+    today = datetime.now().date()
+    if dt.date() == today:
+        return f"today {dt.strftime('%H:%M')}"
+    return dt.strftime("%Y-%m-%d %H:%M")
+
+
+def shorten(path: str) -> str:
+    return path.replace(HOME, "~")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="List open OpenCode sessions")
+    parser.add_argument("--all", action="store_true", help="Include subagent sessions")
+    parser.add_argument("--json", action="store_true", help="Output JSON")
+    parser.add_argument("--get-dir", metavar="SESSION_ID",
+                        help="Print the directory for a session ID and exit (used by oc-active-sessions for resume)")
+    args = parser.parse_args()
+
+    if not DB_PATH.exists():
+        print(f"Error: OpenCode database not found at {DB_PATH}", file=sys.stderr)
+        sys.exit(1)
+
+    # --get-dir: simple lookup, no process scanning needed
+    if args.get_dir:
+        db = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+        row = db.execute(
+            "SELECT directory FROM session WHERE id = ?", (args.get_dir,)
+        ).fetchone()
+        db.close()
+        if row:
+            print(row[0])
+        else:
+            print(f"Session not found: {args.get_dir}", file=sys.stderr)
+            sys.exit(1)
+        return
+
+    pids = get_opencode_pids()
+    if not pids:
+        print("No opencode processes are running.")
+        return
+
+    db = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+    db.row_factory = sqlite3.Row
+
+    results: list[dict] = []
+    seen_session_ids: set[str] = set()
+
+    for pid in pids:
+        cwd, log_file = get_process_info(pid)
+        if not cwd:
+            continue
+        ts_ms = parse_log_timestamp_ms(log_file)
+        session = find_root_session(db, cwd, ts_ms, args.all)
+        if not session:
+            continue
+
+        sid = session["id"]
+        if sid in seen_session_ids:
+            # Another PID already claimed this session — just add the pid
+            for r in results:
+                if r["session_id"] == sid:
+                    r["pids"].append(pid)
+                    break
+            continue
+
+        seen_session_ids.add(sid)
+        results.append(
+            {
+                "pids": [pid],
+                "session_id": sid,
+                "title": session["title"],
+                "directory": session["directory"],
+                "last_active": session["time_updated"],
+            }
+        )
+
+    db.close()
+
+    # Sort by last_active descending
+    results.sort(key=lambda r: r["last_active"], reverse=True)
+
+    if args.json:
+        print(json.dumps(results, indent=2))
+        return
+
+    if not results:
+        print("No active sessions found for running processes.")
+        return
+
+    # Pretty table
+    pid_w = 12
+    id_w = 42
+    time_w = 14
+    dir_w = 48
+    print(f"{'PID(s)':<{pid_w}}  {'SESSION ID':<{id_w}}  {'LAST ACTIVE':<{time_w}}  {'DIRECTORY':<{dir_w}}  TITLE")
+    print("-" * (pid_w + id_w + time_w + dir_w + 4 * 2 + 20))
+
+    for r in results:
+        pids_str = ",".join(r["pids"])
+        last = format_time(r["last_active"])
+        dirstr = shorten(r["directory"])
+        title = r["title"]
+        if len(pids_str) > pid_w:
+            pids_str = pids_str[: pid_w - 1] + "…"
+        if len(dirstr) > dir_w:
+            dirstr = "…" + dirstr[-(dir_w - 1):]
+        if len(title) > 60:
+            title = title[:59] + "…"
+        print(f"{pids_str:<{pid_w}}  {r['session_id']:<{id_w}}  {last:<{time_w}}  {dirstr:<{dir_w}}  {title}")
+
+    print(f"\n{len(results)} session(s) across {len(pids)} process(es)")
+    print("\nTo resume a session:")
+    print("  cd <directory> && opencode --session <SESSION_ID>")
+
+
+if __name__ == "__main__":
+    main()

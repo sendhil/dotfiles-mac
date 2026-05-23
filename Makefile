@@ -1,5 +1,5 @@
 # List of all packages
-PACKAGES = kitty neovim skhd bash-linux bat yabai karabiner tmux prezto hammerspoon aerospace sesh fd direnv wezterm zellij ccstatusline devservices
+PACKAGES = kitty neovim skhd bash-linux bat yabai karabiner tmux prezto hammerspoon aerospace sesh fd direnv wezterm zellij ccstatusline devservices cmux ghostty bin
 
 .PHONY: all
 all: stow gitconfig
@@ -58,3 +58,7 @@ gitconfig:
 .PHONY: prestow
 prestow:
 	@./scripts/clear-out-files-before-stow.sh
+
+.PHONY: build-bin
+build-bin:
+	swiftc -O -o bin/.local/bin/cmux-scratch bin/.local/bin/cmux-scratch.swift

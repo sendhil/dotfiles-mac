@@ -1,0 +1,43 @@
+{
+  "$schema": "https://raw.githubusercontent.com/manaflow-ai/cmux/main/web/data/cmux.schema.json",
+  "schemaVersion": 1,
+
+  "actions": {
+    "ghostty.toggleTheme": {
+      "type": "command",
+      "title": "Theme: Toggle light/dark",
+      "subtitle": "Flip Ghostty between TokyoNight Storm and TokyoNight Day",
+      "command": "~/.config/ghostty/toggle-theme.sh >/dev/null 2>&1; printf '\\e[2K\\r\\e[1A\\e[2K\\r'",
+      "target": "currentTerminal",
+      "icon": { "type": "emoji", "value": "🌓" }
+    }
+  },
+
+  "commands": [
+    {
+      "name": "OpenCode: Pick session",
+      "command": "oc-session"
+    },
+    {
+      "name": "Theme: Light",
+      "keywords": ["theme", "light", "day"],
+      "command": "sed -i '' 's/^theme = .*/theme = TokyoNight Day/; s/^cursor-color = .*/cursor-color = #2e7de9/' ~/.config/ghostty/config && osascript -e 'tell application \"System Events\" to tell process \"Ghostty\" to keystroke \",\" using {command down, shift down}' >/dev/null 2>&1; printf '\\e[2K\\r\\e[1A\\e[2K\\r'"
+    },
+    {
+      "name": "Theme: Dark",
+      "keywords": ["theme", "dark", "storm"],
+      "command": "sed -i '' 's/^theme = .*/theme = TokyoNight Storm/; s/^cursor-color = .*/cursor-color = #7aa2f7/' ~/.config/ghostty/config && osascript -e 'tell application \"System Events\" to tell process \"Ghostty\" to keystroke \",\" using {command down, shift down}' >/dev/null 2>&1; printf '\\e[2K\\r\\e[1A\\e[2K\\r'"
+    }
+  ],
+
+  "app": {
+    "openMarkdownInCmuxViewer": true,
+    "commandPaletteSearchesAllSurfaces": true,
+    "preferredEditor": "zed",
+    "minimalMode": false
+  },
+
+  "notifications": {
+    "sound": "none"
+  }
+}

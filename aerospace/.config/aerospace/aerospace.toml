@@ -181,7 +181,8 @@ alt-shift-semicolon = 'mode alternate'
 alt-shift-q = 'close --quit-if-last-window'
 
 alt-r = 'mode resize'
-alt-backtick = 'mode workspace2'
+alt-shift-backtick = 'mode workspace2'
+alt-backtick = 'exec-and-forget ~/.local/bin/cmux-scratch toggle'
 
 # 'alternate' binding mode declaration.
 # See: https://nikitabobko.github.io/AeroSpace/guide#binding-modes
@@ -339,3 +340,7 @@ run = ['layout floating']
 [[on-window-detected]]
 if.app-id = 'com.grimridge.PingPlace'
 run = ['layout floating']
+
+[[on-window-detected]]
+if.app-id = 'com.mitchellh.ghostty'
+run = 'layout floating'

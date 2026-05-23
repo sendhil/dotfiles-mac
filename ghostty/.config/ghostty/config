@@ -1,0 +1,5 @@
+font-size = 24
+adjust-cell-height = 20%
+theme = TokyoNight Storm
+cursor-color = #7aa2f7
+copy-on-select = clipboard

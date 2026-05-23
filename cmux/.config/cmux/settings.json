@@ -1,0 +1,14 @@
+{
+  "$schema": "https://raw.githubusercontent.com/manaflow-ai/cmux/main/web/data/cmux-settings.schema.json",
+  "schemaVersion": 1,
+
+  "app": {
+    "openMarkdownInCmuxViewer": true,
+    "commandPaletteSearchesAllSurfaces": true,
+    "preferredEditor": "zed"
+  },
+
+  "notifications": {
+    "sound": "none"
+  }
+}
