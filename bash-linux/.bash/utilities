@@ -155,3 +155,11 @@ function oc-active-sessions() {
     opencode-sessions "$@"
   fi
 }
+
+function journal() {
+  local base="$HOME/projects/journal"
+  local dir="$base/$(date +%Y/%m/%d)"
+  mkdir -p "$dir"
+  cd "$dir"
+  echo "📂 $dir"
+}
