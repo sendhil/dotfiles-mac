@@ -1,8 +1,18 @@
+onboarding = false
+
 [keys]
 prefix = "ctrl+a"
+last_pane = "prefix+semicolon"
+previous_workspace = "cmd+shift+up"
+next_workspace = "cmd+shift+down"
+rename_workspace = "cmd+shift+r"
 
 [ui.toast]
-delivery = "system"
+delivery = "herdr"
 
 [ui]
 show_agent_labels_on_pane_borders = true
+agent_panel_sort = "priority"
+
+[update]
+manifest_check = false

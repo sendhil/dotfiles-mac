@@ -114,6 +114,8 @@ wezterm.on("augment-command-palette", function(window, pane)
 	}
 end)
 
+-- Includes Nerd Font v3 glyphs used by Pi's Powerline status bar.
+config.font = wezterm.font("JetBrainsMono Nerd Font Mono")
 config.font_size = 23
 config.line_height = 1.2
 config.color_scheme = DARK
@@ -147,7 +149,43 @@ config.skip_close_confirmation_for_processes_named = {
 -- config.window_background_opacity = 0.92
 -- config.macos_window_background_blur = 20
 
+-- Preserve Cmd+Shift workspace navigation for Herdr without enabling the
+-- Kitty keyboard protocol globally, which currently breaks plain Escape.
+local function send_herdr_key(sequence, fallback_key, fallback_mods)
+	return wezterm.action_callback(function(window, pane)
+		local process = pane:get_foreground_process_name() or ""
+		if process:match("/herdr$") then
+			pane:send_text(sequence)
+		else
+			window:perform_action(
+				wezterm.action.SendKey({ key = fallback_key, mods = fallback_mods }),
+				pane
+			)
+		end
+	end)
+end
+
 config.keys = {
+	{
+		key = "Escape",
+		mods = "NONE",
+		action = send_herdr_key("\x1b[27;1u", "Escape", "NONE"),
+	},
+	{
+		key = "UpArrow",
+		mods = "CMD|SHIFT",
+		action = send_herdr_key("\x1b[1;10A", "UpArrow", "CMD|SHIFT"),
+	},
+	{
+		key = "DownArrow",
+		mods = "CMD|SHIFT",
+		action = send_herdr_key("\x1b[1;10B", "DownArrow", "CMD|SHIFT"),
+	},
+	{
+		key = "r",
+		mods = "CMD|SHIFT",
+		action = send_herdr_key("\x1b[114:82;10u", "r", "CMD|SHIFT"),
+	},
 	{
 		key = "d",
 		mods = "CMD",
