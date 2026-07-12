@@ -3,16 +3,31 @@ onboarding = false
 [keys]
 prefix = "ctrl+a"
 last_pane = "prefix+semicolon"
+split_vertical = "prefix+|"
 previous_workspace = "cmd+shift+up"
 next_workspace = "cmd+shift+down"
+previous_agent = "cmd+shift+left"
+next_agent = "cmd+shift+right"
 rename_workspace = "cmd+shift+r"
+
+[terminal]
+new_cwd = "follow"
 
 [ui.toast]
 delivery = "herdr"
+delay_seconds = 1
 
 [ui]
 show_agent_labels_on_pane_borders = true
+hide_tab_bar_when_single_tab = true
 agent_panel_sort = "priority"
+
+[theme]
+name = "catppuccin"
+auto_switch = true
 
 [update]
 manifest_check = false
+
+[experimental]
+kitty_graphics = true

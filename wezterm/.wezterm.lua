@@ -182,6 +182,16 @@ config.keys = {
 		action = send_herdr_key("\x1b[1;10B", "DownArrow", "CMD|SHIFT"),
 	},
 	{
+		key = "LeftArrow",
+		mods = "CMD|SHIFT",
+		action = send_herdr_key("\x1b[1;10D", "LeftArrow", "CMD|SHIFT"),
+	},
+	{
+		key = "RightArrow",
+		mods = "CMD|SHIFT",
+		action = send_herdr_key("\x1b[1;10C", "RightArrow", "CMD|SHIFT"),
+	},
+	{
 		key = "r",
 		mods = "CMD|SHIFT",
 		action = send_herdr_key("\x1b[114:82;10u", "r", "CMD|SHIFT"),
