@@ -151,10 +151,19 @@ config.skip_close_confirmation_for_processes_named = {
 
 -- Preserve Cmd+Shift workspace navigation for Herdr without enabling the
 -- Kitty keyboard protocol globally, which currently breaks plain Escape.
+local function is_herdr_process(process)
+	if process == "" then
+		return false
+	end
+
+	local name = process:match("([^/\\]+)$") or process
+	return name == "herdr" or name == "herdr.exe"
+end
+
 local function send_herdr_key(sequence, fallback_key, fallback_mods)
 	return wezterm.action_callback(function(window, pane)
 		local process = pane:get_foreground_process_name() or ""
-		if process:match("/herdr$") then
+		if is_herdr_process(process) then
 			pane:send_text(sequence)
 		else
 			window:perform_action(
