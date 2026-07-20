@@ -10,6 +10,12 @@ previous_agent = "cmd+shift+left"
 next_agent = "cmd+shift+right"
 rename_workspace = "cmd+shift+r"
 
+[[keys.command]]
+key = "cmd+shift+p"
+type = "plugin_action"
+command = "herdr.command-palette.open"
+description = "open command palette"
+
 [terminal]
 new_cwd = "follow"
 

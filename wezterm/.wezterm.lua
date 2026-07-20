@@ -206,6 +206,11 @@ config.keys = {
 		action = send_herdr_key("\x1b[114:82;10u", "r", "CMD|SHIFT"),
 	},
 	{
+		key = "p",
+		mods = "CMD|SHIFT",
+		action = send_herdr_key("\x1b[112:80;10u", "p", "CMD|SHIFT"),
+	},
+	{
 		key = "d",
 		mods = "CMD",
 		action = wezterm.action.SplitHorizontal({ domain = "CurrentPaneDomain" }),
