@@ -163,3 +163,11 @@ function journal() {
   cd "$dir"
   echo "📂 $dir"
 }
+
+function tdf() {
+  if [ -n "${HERDR_ENV:-}" ]; then
+    env -u WEZTERM_EXECUTABLE -u TERM_PROGRAM tdf "$@"
+  else
+    command tdf "$@"
+  fi
+}
