@@ -1,0 +1,29 @@
+#!/bin/sh
+
+set -eu
+
+if [ "$#" -ne 0 ]; then
+  printf 'usage: sway-scratchpad\n' >&2
+  exit 2
+fi
+
+set +e
+tree=$(swaymsg -t get_tree -r)
+status=$?
+set -e
+[ "$status" -eq 0 ] || exit "$status"
+
+printf '%s\n' "$tree" | jq -e . >/dev/null || exit 1
+
+if printf '%s\n' "$tree" | jq -e \
+  '[.. | objects | .app_id? // empty] | index("kitty-scratchpad") != null' >/dev/null; then
+  set +e
+  result=$(swaymsg -- '[app_id="^kitty-scratchpad$"] scratchpad show')
+  status=$?
+  set -e
+  [ "$status" -eq 0 ] || exit "$status"
+  printf '%s\n' "$result" | jq -e \
+    'type == "array" and length > 0 and all(.[]; .success == true)' >/dev/null || exit 1
+else
+  exec kitty --class kitty-scratchpad --title kitty-scratchpad --directory "$HOME"
+fi

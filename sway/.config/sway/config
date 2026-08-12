@@ -1,0 +1,147 @@
+# Sway mirrors the existing AeroSpace workflow while remaining hardware-neutral.
+set $mod Mod1
+set $term kitty
+set $menu fuzzel
+
+floating_modifier $mod normal
+default_border pixel 2
+gaps inner 6
+gaps outer 0
+focus_wrapping workspace
+
+exec_always dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=sway
+
+# Intentional i3 deviations: Alt preserves AeroSpace muscle memory; Vim h/j/k/l replaces stock i3 j/k/l/semicolon.
+# AeroSpace compatibility: number keys toggle N/N+10; Alt+Shift+f remains a fullscreen alias.
+bindsym $mod+h focus left
+bindsym $mod+j focus down
+bindsym $mod+k focus up
+bindsym $mod+l focus right
+bindsym $mod+Shift+h move left
+bindsym $mod+Shift+j move down
+bindsym $mod+Shift+k move up
+bindsym $mod+Shift+l move right
+
+bindsym $mod+Return exec kitty
+bindsym $mod+d exec fuzzel
+bindsym $mod+Shift+q kill
+bindsym $mod+Shift+space floating toggle
+bindsym $mod+f fullscreen toggle
+bindsym $mod+Shift+f fullscreen toggle
+bindsym $mod+Tab workspace back_and_forth
+bindsym $mod+grave exec ~/.local/bin/sway-scratchpad
+# Scratch Kitty Wayland app_id; keep it out of the normal Kitty workspace route.
+for_window [app_id="^kitty-scratchpad$"] move scratchpad, scratchpad show
+
+bindsym $mod+1 exec ~/.local/bin/sway-workspace-toggle 1
+bindsym $mod+2 exec ~/.local/bin/sway-workspace-toggle 2
+bindsym $mod+3 exec ~/.local/bin/sway-workspace-toggle 3
+bindsym $mod+4 exec ~/.local/bin/sway-workspace-toggle 4
+bindsym $mod+5 exec ~/.local/bin/sway-workspace-toggle 5
+bindsym $mod+6 exec ~/.local/bin/sway-workspace-toggle 6
+bindsym $mod+7 exec ~/.local/bin/sway-workspace-toggle 7
+bindsym $mod+8 exec ~/.local/bin/sway-workspace-toggle 8
+bindsym $mod+9 exec ~/.local/bin/sway-workspace-toggle 9
+bindsym $mod+0 exec ~/.local/bin/sway-workspace-toggle 0
+
+bindsym $mod+Shift+1 move container to workspace number 1
+bindsym $mod+Shift+2 move container to workspace number 2
+bindsym $mod+Shift+3 move container to workspace number 3
+bindsym $mod+Shift+4 move container to workspace number 4
+bindsym $mod+Shift+5 move container to workspace number 5
+bindsym $mod+Shift+6 move container to workspace number 6
+bindsym $mod+Shift+7 move container to workspace number 7
+bindsym $mod+Shift+8 move container to workspace number 8
+bindsym $mod+Shift+9 move container to workspace number 9
+bindsym $mod+Shift+0 move container to workspace number 10
+
+bindsym $mod+r mode "resize"
+bindsym $mod+Shift+semicolon mode "alternate"
+bindsym $mod+Shift+grave mode "workspace2"
+
+mode "resize" {
+    bindsym h resize shrink width 10 px
+    bindsym j resize grow height 10 px
+    bindsym k resize shrink height 10 px
+    bindsym l resize grow width 10 px
+    bindsym Return mode "default"
+    bindsym Escape mode "default"
+}
+
+mode "alternate" {
+    bindsym m mode "outputs"
+    bindsym f floating toggle, mode "default"
+    bindsym r layout toggle split, mode "default"
+    bindsym Escape mode "default"
+}
+
+mode "workspace2" {
+    bindsym 1 workspace number 11, mode "default"
+    bindsym 2 workspace number 12, mode "default"
+    bindsym 3 workspace number 13, mode "default"
+    bindsym 4 workspace number 14, mode "default"
+    bindsym 5 workspace number 15, mode "default"
+    bindsym 6 workspace number 16, mode "default"
+    bindsym 7 workspace number 17, mode "default"
+    bindsym 8 workspace number 18, mode "default"
+    bindsym 9 workspace number 19, mode "default"
+    bindsym 0 workspace number 20, mode "default"
+    bindsym Shift+1 move container to workspace number 11, mode "default"
+    bindsym Shift+2 move container to workspace number 12, mode "default"
+    bindsym Shift+3 move container to workspace number 13, mode "default"
+    bindsym Shift+4 move container to workspace number 14, mode "default"
+    bindsym Shift+5 move container to workspace number 15, mode "default"
+    bindsym Shift+6 move container to workspace number 16, mode "default"
+    bindsym Shift+7 move container to workspace number 17, mode "default"
+    bindsym Shift+8 move container to workspace number 18, mode "default"
+    bindsym Shift+9 move container to workspace number 19, mode "default"
+    bindsym Shift+0 move container to workspace number 20, mode "default"
+    bindsym Escape mode "default"
+}
+
+mode "outputs" {
+    bindsym h focus output left
+    bindsym j focus output down
+    bindsym k focus output up
+    bindsym l focus output right
+    bindsym Shift+h move container to output left
+    bindsym Shift+j move container to output down
+    bindsym Shift+k move container to output up
+    bindsym Shift+l move container to output right
+    bindsym Escape mode "default"
+    bindsym Return mode "default"
+}
+
+bindsym XF86AudioRaiseVolume exec wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+
+bindsym XF86AudioLowerVolume exec wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-
+bindsym XF86AudioMute exec wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle
+bindsym XF86AudioMicMute exec wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle
+bindsym XF86AudioPlay exec playerctl play-pause
+bindsym XF86AudioNext exec playerctl next
+bindsym XF86AudioPrev exec playerctl previous
+bindsym XF86MonBrightnessUp exec brightnessctl set +5%
+bindsym XF86MonBrightnessDown exec brightnessctl set 5%-
+
+bindsym Print exec grim ~/Pictures/screenshot-$(date +%Y%m%d-%H%M%S).png
+bindsym Shift+Print exec grim -g "$(slurp)" ~/Pictures/screenshot-$(date +%Y%m%d-%H%M%S).png
+bindsym $mod+Shift+x exec swaylock
+bindsym $mod+Shift+e exec swaynag -t warning -m 'Exit Sway?' -b 'Exit' 'swaymsg exit'
+
+# Chrome Wayland app_id; disable this line if the observed identifier differs.
+assign [app_id="^google-chrome$"] workspace number 1
+# Chrome XWayland class; disable this line if the observed identifier differs.
+assign [class="^Google-chrome$"] workspace number 1
+# VS Code Wayland app_id; disable this line if the observed identifier differs.
+assign [app_id="^code$"] workspace number 2
+# VS Code XWayland class; disable this line if the observed identifier differs.
+assign [class="^Code$"] workspace number 2
+# Kitty Wayland app_id; the scratch terminal uses a different app_id.
+assign [app_id="^kitty$"] workspace number 3
+# Obsidian Wayland app_id; disable this line if the observed identifier differs.
+assign [app_id="^obsidian$"] workspace number 9
+# Obsidian XWayland class; disable this line if the observed identifier differs.
+assign [class="^obsidian$"] workspace number 9
+# Slack Wayland app_id; disable this line if the observed identifier differs.
+assign [app_id="^Slack$"] workspace number 10
+# Slack XWayland class; disable this line if the observed identifier differs.
+assign [class="^Slack$"] workspace number 10
