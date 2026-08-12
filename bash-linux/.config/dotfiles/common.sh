@@ -2,9 +2,15 @@
 # platform.sh or in the optional, untracked local.sh.
 path_prepend() {
   [ -d "$1" ] || return 0
-  case ":$PATH:" in
+  case ":${PATH:-}:" in
     *":$1:"*) ;;
-    *) PATH="$1:$PATH" ;;
+    *)
+      if [ -n "${PATH:-}" ]; then
+        PATH="$1:$PATH"
+      else
+        PATH=$1
+      fi
+      ;;
   esac
 }
 

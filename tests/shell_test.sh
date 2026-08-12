@@ -32,6 +32,30 @@ PATH=$minimal_path HOME="$ubuntu_home" ZDOTDIR="$ubuntu_home" \
 PATH=$minimal_path HOME="$ubuntu_home" \
   /bin/bash --noprofile --norc -c 'source "$HOME/.bashrc"; test "$EDITOR" = nvim; test "$LESS" = FRX; test "$TERMINAL" = kitty'
 
+nounset_home="$tmp_dir/nounset-home"
+mkdir -p "$nounset_home/.local/bin" "$nounset_home/.cargo/bin" "$nounset_home/go/bin"
+expected_nounset_path="$nounset_home/go/bin:$nounset_home/.cargo/bin:$nounset_home/.local/bin"
+env -u PATH HOME="$nounset_home" EXPECTED_PATH="$expected_nounset_path" \
+  /bin/bash --noprofile --norc -c '
+    unset PATH
+    set -u
+    . "$1"
+    [ "$PATH" = "$EXPECTED_PATH" ]
+    first_path=$PATH
+    . "$1"
+    [ "$PATH" = "$first_path" ]
+  ' bash "$ROOT_DIR/bash-linux/.config/dotfiles/common.sh"
+env -u PATH HOME="$nounset_home" EXPECTED_PATH="$expected_nounset_path" \
+  /bin/zsh -df -c '
+    unset PATH
+    setopt nounset
+    source "$1"
+    [[ "$PATH" = "$EXPECTED_PATH" ]]
+    first_path=$PATH
+    source "$1"
+    [[ "$PATH" = "$first_path" ]]
+  ' zsh "$ROOT_DIR/bash-linux/.config/dotfiles/common.sh"
+
 PATH=$minimal_path HOME="$ubuntu_home" WAYLAND_DISPLAY= \
   /bin/bash --noprofile --norc -c '
     source "$HOME/.bashrc"
