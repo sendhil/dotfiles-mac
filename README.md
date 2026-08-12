@@ -178,6 +178,12 @@ docker-compose exec neovim nvim
 ```
 
 ### Option 3: Colima (macOS)
+
+This helper configures a pre-provisioned `neovim-dev` Colima profile; it does
+not create, stop, delete, or reprovision the guest. Before running it, ensure
+the profile is running, `nvim` is installed in the guest, and this repository
+is mounted there at `/home/dotfiles` through your external provisioning flow.
+
 ```bash
 ./scripts/setup-colima-neovim.sh
 colima-nvim nvim

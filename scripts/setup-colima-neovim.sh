@@ -1,11 +1,12 @@
 #!/bin/bash
 
 # Colima Setup Script for Neovim Development
-# This script creates a Colima VM optimized for Neovim development
+# This script configures an externally provisioned Colima VM. It never creates,
+# stops, deletes, or recreates the VM.
 
 set -e
 
-echo "🚀 Setting up Colima VM for Neovim development..."
+echo "🚀 Configuring an existing Colima VM for Neovim development..."
 
 # Colors for output
 RED='\033[0;31m'
@@ -21,67 +22,37 @@ if ! command -v colima &> /dev/null; then
     exit 1
 fi
 
-# Check if Docker is installed (required for Colima)
-if ! command -v docker &> /dev/null; then
-    echo -e "${RED}✗ Docker CLI is not installed${NC}"
-    echo "Install with: brew install docker"
+# Externally owned VM configuration
+VM_NAME="neovim-dev"
+
+prerequisite_error() {
+    echo -e "${RED}✗ Expected a pre-provisioned \`$VM_NAME\` Colima profile${NC}"
+    echo "Provision and start that profile outside this dotfiles repository."
+    echo "The running guest must have nvim installed and this repository mounted at /home/dotfiles."
+}
+
+if ! colima list 2>/dev/null | awk -v profile="$VM_NAME" '
+    NR > 1 && $1 == profile { found = 1 }
+    END { exit found ? 0 : 1 }
+'; then
+    prerequisite_error
     exit 1
 fi
 
-# VM Configuration
-VM_NAME="neovim-dev"
-CPUS=2
-MEMORY=4
-DISK=20
-ARCH=$(uname -m)
-
-# Set architecture flag
-if [ "$ARCH" = "arm64" ]; then
-    ARCH_FLAG="--arch aarch64"
-else
-    ARCH_FLAG="--arch x86_64"
+if ! colima ssh -p "$VM_NAME" -- command -v nvim >/dev/null 2>&1; then
+    prerequisite_error
+    exit 1
 fi
 
-echo -e "${BLUE}Creating Colima VM with:${NC}"
-echo "  • Name: $VM_NAME"
-echo "  • CPUs: $CPUS"
-echo "  • Memory: ${MEMORY}GB"
-echo "  • Disk: ${DISK}GB"
-echo "  • Architecture: $ARCH"
-
-# Stop existing VM if it exists
-if colima list | grep -q "$VM_NAME"; then
-    echo -e "${YELLOW}Stopping existing VM...${NC}"
-    colima stop "$VM_NAME" 2>/dev/null || true
-    colima delete "$VM_NAME" --force 2>/dev/null || true
+if ! colima ssh -p "$VM_NAME" -- test -d /home/dotfiles/neovim/.config/nvim >/dev/null 2>&1; then
+    echo -e "${RED}✗ Missing /home/dotfiles/neovim/.config/nvim in the \`$VM_NAME\` guest${NC}"
+    echo "Mount this repository at /home/dotfiles through the external Colima profile configuration, then rerun."
+    exit 1
 fi
 
-# Get the dotfiles directory path
-DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-
-# Create the VM with optimized settings
-echo -e "${BLUE}Creating Colima VM...${NC}"
-colima start "$VM_NAME" \
-    --cpu "$CPUS" \
-    --memory "$MEMORY" \
-    --disk "$DISK" \
-    $ARCH_FLAG \
-    --mount "$DOTFILES_DIR:/home/dotfiles:cached" \
-    --ssh-agent
-
-# Wait for VM to be ready
-echo -e "${YELLOW}Waiting for VM to be ready...${NC}"
-sleep 5
-
-# Configure Neovim in the VM. Workstation dependency provisioning is owned by
-# linux-laptop-setup, so this helper does not run a second Linux installer.
+# All external prerequisites are present; guest configuration can now mutate.
 echo -e "${BLUE}Configuring Neovim in VM...${NC}"
 colima ssh -p "$VM_NAME" << 'EOF'
-if ! command -v nvim >/dev/null 2>&1; then
-    echo "Neovim is not installed in this VM. Provision it before running this helper."
-    exit 1
-fi
-
 # Create symlink to Neovim config
 mkdir -p ~/.config
 ln -sf /home/dotfiles/neovim/.config/nvim ~/.config/nvim
@@ -147,7 +118,7 @@ echo ""
 echo -e "${YELLOW}Notes:${NC}"
 echo "• Your dotfiles are mounted at: /home/dotfiles"
 echo "• Neovim config is linked to: ~/.config/nvim"
-echo "• The VM will persist between restarts"
+echo "• The externally provisioned VM was preserved"
 echo "• Helper script installed at: $HELPER_SCRIPT"
 echo ""
 echo -e "${GREEN}Happy coding! 🎉${NC}"

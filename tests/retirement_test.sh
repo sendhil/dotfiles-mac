@@ -24,7 +24,9 @@ retired_paths='hammerspoon/.hammerspoon/init.lua
 hammerspoon/.hammerspoon/.gitignore
 scripts/clear-out-files-before-stow.sh
 scripts/setup-neovim-deps-linux.sh
-scripts/check-neovim-deps-linux.sh'
+scripts/check-neovim-deps-linux.sh
+scripts/setup-stackline.sh
+scripts/toggle-stackline-icons.sh'
 
 tracked_retired=$(git ls-files --cached -- $retired_paths)
 [ -z "$tracked_retired" ] || fail "retired paths remain tracked:
@@ -32,6 +34,25 @@ $tracked_retired"
 
 [ -z "$(git ls-files --cached -- hammerspoon)" ] || \
   fail 'the retired Hammerspoon package still contains tracked files'
+
+probe_dir="$ROOT_DIR/hammerspoon"
+probe_relative="hammerspoon/.retirement-test-untracked-$$"
+probe="$ROOT_DIR/$probe_relative"
+created_probe_dir=0
+if [ ! -d "$probe_dir" ]; then
+  mkdir "$probe_dir"
+  created_probe_dir=1
+fi
+cleanup_probe() {
+  rm -f "$probe"
+  if [ "$created_probe_dir" -eq 1 ]; then
+    rmdir "$probe_dir" 2>/dev/null || true
+  fi
+}
+trap cleanup_probe EXIT HUP INT TERM
+printf '%s\n' 'user-owned Hammerspoon notes: hs -c is retired' >"$probe"
+[ -z "$(git ls-files --cached -- "$probe_relative")" ] || \
+  fail 'retirement probe unexpectedly entered tracked state'
 
 help_output=$(make --no-print-directory -s help)
 if printf '%s\n' "$help_output" | grep -Eiq 'prestow|hammerspoon'; then
@@ -54,6 +75,16 @@ legacy_reference_status=$?
 set -e
 [ "$legacy_reference_status" -eq 1 ] || fail "supported tracked files reference retired Linux installers:
 $legacy_references"
+
+set +e
+hammerspoon_references=$(git grep --cached -n -I -i -E \
+  'hammerspoon|(^|[[:space:]])hs[[:space:]]+-c' \
+  -- ':!docs/superpowers/**' ':!tests/**' 2>&1)
+hammerspoon_reference_status=$?
+set -e
+[ "$hammerspoon_reference_status" -eq 1 ] || fail "supported tracked files reference retired Hammerspoon automation:
+$hammerspoon_references"
+[ -f "$probe" ] || fail 'tracked-content scan removed user-owned untracked content'
 
 for retained_path in \
   aerospace/.config/aerospace/aerospace.toml \
