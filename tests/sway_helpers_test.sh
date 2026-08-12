@@ -61,6 +61,11 @@ cat >"$fake_bin/kitty" <<'FAKE_KITTY'
   done
   printf '\n'
 } >>"$KITTY_LOG"
+if [ -n "${LOCK_PROBE_FD:-}" ] && ( eval ": >&$LOCK_PROBE_FD" ) 2>/dev/null; then
+  printf 'inherited-open\n' >>"$KITTY_FD_LOG"
+else
+  printf 'closed\n' >>"$KITTY_FD_LOG"
+fi
 kitty_status=${KITTY_STATUS:-0}
 [ -z "${KITTY_STATE_DELAY:-}" ] || sleep "$KITTY_STATE_DELAY"
 if [ "$kitty_status" -eq 0 ] && [ -n "${SWAYMSG_TREE_STATE_FILE:-}" ]; then
@@ -74,25 +79,28 @@ FAKE_KITTY
 cat >"$fake_bin/flock" <<'FAKE_FLOCK'
 #!/bin/sh
 [ "${FLOCK_STATUS:-0}" -eq 0 ] || exit "$FLOCK_STATUS"
-[ "$#" -ge 5 ] || exit 2
+if [ "$#" -eq 2 ] && [ "$1" = -u ]; then
+  case $2 in ''|*[!0-9]*) exit 2 ;; esac
+  eval ": >&$2" 2>/dev/null || exit 2
+  rmdir "$XDG_RUNTIME_DIR/sway-scratchpad.fake-lock"
+  exit $?
+fi
+[ "$#" -eq 4 ] || exit 2
 [ "$1" = -x ] || exit 2
 [ "$2" = -w ] || exit 2
 timeout=$3
-lock_file=$4
-shift 4
-lock_dir="$lock_file.fake-lock"
+[ "$timeout" = 6 ] || exit 2
+lock_fd=$4
+case $lock_fd in ''|*[!0-9]*) exit 2 ;; esac
+eval ": >&$lock_fd" 2>/dev/null || exit 2
+printf 'flock <-x> <-w> <%s> <fd:%s>\n' "$timeout" "$lock_fd" >>"$FLOCK_LOG"
+lock_dir="$XDG_RUNTIME_DIR/sway-scratchpad.fake-lock"
 attempts=$((timeout * 20))
 while ! mkdir "$lock_dir" 2>/dev/null; do
   attempts=$((attempts - 1))
   [ "$attempts" -gt 0 ] || exit 1
   sleep 0.05
 done
-trap 'rmdir "$lock_dir"' EXIT HUP INT TERM
-set +e
-"$@"
-status=$?
-set -e
-exit "$status"
 FAKE_FLOCK
 chmod +x "$fake_bin/swaymsg" "$fake_bin/kitty" "$fake_bin/flock"
 
@@ -100,8 +108,12 @@ workspace_helper="$ROOT_DIR/sway/.local/bin/sway-workspace-toggle"
 scratch_helper="$ROOT_DIR/sway/.local/bin/sway-scratchpad"
 log="$tmp_dir/swaymsg log"
 kitty_log="$tmp_dir/kitty log"
+kitty_fd_log="$tmp_dir/kitty fd log"
+flock_log="$tmp_dir/flock log"
 : >"$log"
 : >"$kitty_log"
+: >"$kitty_fd_log"
+: >"$flock_log"
 
 run_workspace() {
   focused=$1
@@ -186,23 +198,34 @@ mkdir -p "$runtime_dir"
 tree_state="$tmp_dir/tree state"
 printf '%s\n' '{"nodes":[{"app_id":"ordinary-kitty"}]}' >"$tree_state"
 PATH="$fake_bin:$PATH" HOME="$scratch_home" XDG_RUNTIME_DIR="$runtime_dir" \
-  SWAYMSG_LOG="$log" KITTY_LOG="$kitty_log" SWAYMSG_TREE_STATE_FILE="$tree_state" \
+  SWAYMSG_LOG="$log" KITTY_LOG="$kitty_log" KITTY_FD_LOG="$kitty_fd_log" \
+  FLOCK_LOG="$flock_log" SWAYMSG_TREE_STATE_FILE="$tree_state" LOCK_PROBE_FD=9 \
   "$scratch_helper"
 expected_kitty="kitty <--class> <kitty-scratchpad> <--title> <kitty-scratchpad> <--directory> <$scratch_home>"
 [ "$(cat "$kitty_log")" = "$expected_kitty" ] || \
   fail 'absent scratch terminal was not launched with literal safe arguments'
+assert_contains "$(cat "$flock_log")" 'flock <-x> <-w> <6> <fd:' \
+  'scratch helper does not acquire a bounded exclusive lock on an open descriptor'
+[ "$(cat "$kitty_fd_log")" = 'closed' ] || \
+  fail 'Kitty inherited the scratch serialization lock descriptor'
 
 # Both invocations observe absence before one acquires the lock. The lock holder
 # launches Kitty and waits for its app_id; the waiter then rechecks and shows it.
 : >"$log"
 : >"$kitty_log"
+: >"$kitty_fd_log"
+: >"$flock_log"
 printf '%s\n' '{"nodes":[]}' >"$tree_state"
 PATH="$fake_bin:$PATH" HOME="$scratch_home" XDG_RUNTIME_DIR="$runtime_dir" \
-  SWAYMSG_LOG="$log" KITTY_LOG="$kitty_log" SWAYMSG_TREE_STATE_FILE="$tree_state" \
+  SWAYMSG_LOG="$log" KITTY_LOG="$kitty_log" KITTY_FD_LOG="$kitty_fd_log" \
+  FLOCK_LOG="$flock_log" SWAYMSG_TREE_STATE_FILE="$tree_state" \
+  SWAY_SCRATCHPAD_LOCKED=1 LOCK_PROBE_FD=9 \
   KITTY_STATE_DELAY=0.2 "$scratch_helper" &
 first_pid=$!
 PATH="$fake_bin:$PATH" HOME="$scratch_home" XDG_RUNTIME_DIR="$runtime_dir" \
-  SWAYMSG_LOG="$log" KITTY_LOG="$kitty_log" SWAYMSG_TREE_STATE_FILE="$tree_state" \
+  SWAYMSG_LOG="$log" KITTY_LOG="$kitty_log" KITTY_FD_LOG="$kitty_fd_log" \
+  FLOCK_LOG="$flock_log" SWAYMSG_TREE_STATE_FILE="$tree_state" \
+  SWAY_SCRATCHPAD_LOCKED=1 LOCK_PROBE_FD=9 \
   KITTY_STATE_DELAY=0.2 "$scratch_helper" &
 second_pid=$!
 set +e
@@ -218,7 +241,11 @@ set -e
 assert_contains "$(cat "$log")" \
   'swaymsg <--> <[app_id="^kitty-scratchpad$"] scratchpad show>' \
   'the concurrent waiter did not recheck and show the launched scratch terminal'
-[ ! -e "$runtime_dir/sway-scratchpad.lock.fake-lock" ] || \
+[ "$(wc -l <"$flock_log" | tr -d ' ')" -eq 2 ] || \
+  fail 'a public invocation bypassed locking because an internal-looking environment variable was set'
+[ "$(cat "$kitty_fd_log")" = 'closed' ] || \
+  fail 'the concurrent Kitty child retained the serialization lock descriptor'
+[ ! -e "$runtime_dir/sway-scratchpad.fake-lock" ] || \
   fail 'scratch serialization left a stale lock after both invocations exited'
 
 assert_status 2 env PATH="$fake_bin:$PATH" SWAYMSG_LOG="$log" KITTY_LOG="$kitty_log" \
@@ -229,10 +256,12 @@ assert_status 1 env PATH="$fake_bin:$PATH" SWAYMSG_LOG="$log" KITTY_LOG="$kitty_
   SWAYMSG_TREE_JSON='not-json' "$scratch_helper"
 printf '%s\n' '{}' >"$tree_state"
 assert_status 44 env PATH="$fake_bin:$PATH" HOME="$scratch_home" SWAYMSG_LOG="$log" \
-  KITTY_LOG="$kitty_log" XDG_RUNTIME_DIR="$runtime_dir" \
+  KITTY_LOG="$kitty_log" KITTY_FD_LOG="$kitty_fd_log" FLOCK_LOG="$flock_log" \
+  XDG_RUNTIME_DIR="$runtime_dir" \
   SWAYMSG_TREE_STATE_FILE="$tree_state" KITTY_STATUS=44 "$scratch_helper"
 assert_status 46 env PATH="$fake_bin:$PATH" HOME="$scratch_home" SWAYMSG_LOG="$log" \
-  KITTY_LOG="$kitty_log" XDG_RUNTIME_DIR="$runtime_dir" \
+  KITTY_LOG="$kitty_log" KITTY_FD_LOG="$kitty_fd_log" FLOCK_LOG="$flock_log" \
+  XDG_RUNTIME_DIR="$runtime_dir" \
   SWAYMSG_TREE_STATE_FILE="$tree_state" FLOCK_STATUS=46 "$scratch_helper"
 assert_status 45 env PATH="$fake_bin:$PATH" SWAYMSG_LOG="$log" KITTY_LOG="$kitty_log" \
   SWAYMSG_TREE_JSON='{"app_id":"kitty-scratchpad"}' SWAYMSG_COMMAND_STATUS=45 \
