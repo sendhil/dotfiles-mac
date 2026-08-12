@@ -13,6 +13,8 @@ for needle in \
   'cross-platform' \
   'mac-laptop-setup' \
   'linux-laptop-setup' \
+  'git clone --recurse-submodules' \
+  'TPM launcher is vendored' \
   'make preflight-macos' \
   'make stow-macos' \
   'make unstow-macos' \

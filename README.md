@@ -31,6 +31,16 @@ Review the doctor output, then clone this repository, including any
 submodules, and continue with its Ubuntu preflight. Run doctor again from
 inside Sway when completing the physical-session checklist.
 
+```bash
+git clone --recurse-submodules git@github.com:sendhil/dotfiles-mac.git
+cd dotfiles-mac
+```
+
+The TPM launcher is vendored as ordinary tracked files at
+`tmux/.tmux/plugins/tpm`; the other retained plugin checkouts are Git
+submodules. A recursive clone therefore provides both the executable TPM
+launcher and the pinned plugin contents used by the tmux configuration.
+
 The setup repositories own prerequisites such as GNU Stow, Zsh, Neovim,
 desktop packages, and command-line tools. Workplace IT continues to own
 drivers, privileged runtimes, GNOME/GDM, Slack, Zoom, VPNs, and corporate
