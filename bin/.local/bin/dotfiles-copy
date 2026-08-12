@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -eu
+set -euo pipefail
 
 os=${DOTFILES_UNAME:-$(uname -s)}
 

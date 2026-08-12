@@ -87,4 +87,4 @@ prestow:
 
 .PHONY: build-bin
 build-bin:
-	swiftc -O -o bin/.local/bin/cmux-scratch bin/.local/bin/cmux-scratch.swift
+	swiftc -O -o bin-macos/.local/bin/cmux-scratch bin-macos/.local/bin/cmux-scratch.swift

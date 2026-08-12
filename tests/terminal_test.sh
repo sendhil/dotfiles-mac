@@ -61,4 +61,22 @@ if rg -ni 'cmux|aerospace' "$ROOT_DIR/bin/.local/bin" >/dev/null; then
   fail 'common bin contains a CMUX or AeroSpace reference'
 fi
 
+compiler_bin="$tmp_dir/fake compiler"
+mkdir -p "$compiler_bin"
+cat >"$compiler_bin/swiftc" <<'FAKE_SWIFTC'
+#!/bin/sh
+printf '%s\n' "$@" >"$SWIFTC_ARGV_LOG"
+FAKE_SWIFTC
+chmod +x "$compiler_bin/swiftc"
+PATH="$compiler_bin:/usr/bin:/bin" SWIFTC_ARGV_LOG="$tmp_dir/swiftc argv" \
+  make --no-print-directory -s -C "$ROOT_DIR" build-bin
+swiftc_argv=$(cat "$tmp_dir/swiftc argv")
+expected_swiftc_argv=$(printf '%s\n' \
+  -O \
+  -o \
+  bin-macos/.local/bin/cmux-scratch \
+  bin-macos/.local/bin/cmux-scratch.swift)
+[ "$swiftc_argv" = "$expected_swiftc_argv" ] || fail 'build-bin does not compile exclusively within bin-macos'
+assert_not_contains "$swiftc_argv" 'bin/.local/bin/cmux-scratch' 'build-bin still references common bin'
+
 pass 'Kitty and common bin are cleanly split by platform'

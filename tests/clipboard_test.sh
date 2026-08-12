@@ -85,6 +85,27 @@ printf '\033]52;c;%s\a' "$payload" >"$tmp_dir/expected osc"
 cmp "$tmp_dir/expected osc" "$osc_tty" >/dev/null || fail 'OSC 52 output did not faithfully encode stdin'
 [ ! -e "$tmp_dir/should-not-run" ] || fail 'DOTFILES_TTY executed shell syntax'
 
+encoder_bin="$tmp_dir/failing encoder"
+mkdir -p "$encoder_bin"
+cat >"$encoder_bin/base64" <<'FAKE_BASE64'
+#!/bin/sh
+printf 'bogus-payload'
+exit 42
+FAKE_BASE64
+chmod +x "$encoder_bin/base64"
+failed_encoder_tty="$tmp_dir/encoder failure tty"
+printf 'existing tty contents\n' >"$failed_encoder_tty"
+failed_encoder_before=$(cksum "$failed_encoder_tty")
+set +e
+PATH="$encoder_bin:/usr/bin:/bin" DOTFILES_UNAME=Linux WAYLAND_DISPLAY= \
+  DOTFILES_TTY="$failed_encoder_tty" "$helper" <"$osc_input" \
+  >/dev/null 2>"$tmp_dir/encoder-error"
+encoder_status=$?
+set -e
+[ "$encoder_status" -eq 42 ] || fail "base64 failure was not preserved (got $encoder_status)"
+failed_encoder_after=$(cksum "$failed_encoder_tty")
+[ "$failed_encoder_before" = "$failed_encoder_after" ] || fail 'base64 failure wrote a bogus OSC 52 sequence'
+
 missing_tty="$tmp_dir/missing parent/tty"
 set +e
 error=$(PATH=/usr/bin:/bin DOTFILES_UNAME=Linux WAYLAND_DISPLAY= DOTFILES_TTY="$missing_tty" \
