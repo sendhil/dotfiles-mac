@@ -11,6 +11,14 @@ focus_wrapping workspace
 
 exec_always dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=sway
 
+# Session companions use exec so a configuration reload does not start duplicates.
+exec waybar
+exec mako
+exec nm-applet --indicator
+exec blueman-applet
+exec /usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1
+exec swayidle -w timeout 300 'swaylock -f' timeout 600 'swaymsg "output * power off"' resume 'swaymsg "output * power on"' before-sleep 'swaylock -f'
+
 # Intentional stock-i3 deviations: Alt preserves prior muscle memory; Vim h/j/k/l replaces stock j/k/l/semicolon.
 # Compatibility behavior: number keys toggle N/N+10; Alt+Shift+f remains a fullscreen alias.
 bindsym $mod+h focus left

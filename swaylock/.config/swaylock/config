@@ -1,0 +1,21 @@
+indicator
+clock
+font=JetBrainsMono Nerd Font
+font-size=24
+color=1a1b26
+inside-color=1a1b26
+inside-clear-color=e0af68
+inside-ver-color=7aa2f7
+inside-wrong-color=f7768e
+ring-color=565f89
+ring-clear-color=e0af68
+ring-ver-color=7aa2f7
+ring-wrong-color=f7768e
+key-hl-color=9ece6a
+bs-hl-color=f7768e
+text-color=c0caf5
+text-clear-color=1a1b26
+text-ver-color=1a1b26
+text-wrong-color=1a1b26
+line-color=00000000
+separator-color=00000000
