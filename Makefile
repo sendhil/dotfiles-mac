@@ -1,52 +1,84 @@
-# List of all packages
-PACKAGES = kitty neovim skhd bash-linux bat yabai karabiner tmux prezto hammerspoon aerospace sesh fd direnv wezterm zellij ccstatusline devservices cmux ghostty bin herdr
+TARGET ?= $(HOME)
+
+PACKAGES := $(sort $(shell ./scripts/package-set.sh macos) $(shell ./scripts/package-set.sh ubuntu))
 
 .PHONY: all
-all: stow gitconfig
+all: stow-macos gitconfig
 
 .PHONY: help
 help:
 	@echo "Available commands:"
-	@echo "  make stow            - Stow all packages"
-	@echo "  make unstow          - Unstow all packages"
-	@echo "  make stow-<package>  - Stow individual package (e.g., make stow-neovim)"
-	@echo "  make unstow-<package>- Unstow individual package (e.g., make unstow-neovim)"
+	@echo "  make stow-macos      - Preflight and stow common + macOS packages"
+	@echo "  make unstow-macos    - Unstow common + macOS packages"
+	@echo "  make stow-ubuntu     - Preflight and stow common + Ubuntu packages"
+	@echo "  make unstow-ubuntu   - Unstow common + Ubuntu packages"
+	@echo "  make preflight-macos - Simulate the macOS Stow operation"
+	@echo "  make preflight-ubuntu - Simulate the Ubuntu Stow operation"
+	@echo "  make stow-<package>  - Preflight and stow an existing package"
+	@echo "  make unstow-<package>- Preflight and unstow an existing package"
 	@echo "  make gitconfig       - Update git config with aliases"
-	@echo "  make prestow         - Clear out files before stowing"
 	@echo ""
-	@echo "Available packages:"
+	@echo "Available selected packages:"
 	@echo "  $(PACKAGES)"
 
 .PHONY: stow
 stow:
-	stow -t ~ $(PACKAGES)
+	@echo "error: 'make stow' is unsupported; use 'make stow-macos' or 'make stow-ubuntu'" >&2
+	@exit 2
 
 .PHONY: unstow
 unstow:
-	@stow -D -t ~ $(PACKAGES)
+	@echo "error: 'make unstow' is unsupported; use 'make unstow-macos' or 'make unstow-ubuntu'" >&2
+	@exit 2
 
-# Pattern rule for individual package stowing
+.PHONY: preflight-macos
+preflight-macos:
+	@./scripts/stow-preflight.sh macos "$(TARGET)"
+
+.PHONY: stow-macos
+stow-macos: preflight-macos
+	@stow --no-folding --target "$(TARGET)" $$(./scripts/package-set.sh macos)
+
+.PHONY: unstow-macos
+unstow-macos:
+	@stow --simulate --delete --no-folding --target "$(TARGET)" $$(./scripts/package-set.sh macos)
+	@stow --delete --no-folding --target "$(TARGET)" $$(./scripts/package-set.sh macos)
+
+.PHONY: preflight-ubuntu
+preflight-ubuntu:
+	@./scripts/stow-preflight.sh ubuntu "$(TARGET)"
+
+.PHONY: stow-ubuntu
+stow-ubuntu: preflight-ubuntu
+	@stow --no-folding --target "$(TARGET)" $$(./scripts/package-set.sh ubuntu)
+
+.PHONY: unstow-ubuntu
+unstow-ubuntu:
+	@stow --simulate --delete --no-folding --target "$(TARGET)" $$(./scripts/package-set.sh ubuntu)
+	@stow --delete --no-folding --target "$(TARGET)" $$(./scripts/package-set.sh ubuntu)
+
 .PHONY: stow-%
 stow-%:
-	@if echo "$(PACKAGES)" | grep -qw "$*"; then \
-		echo "Stowing $*..."; \
-		stow -t ~ $*; \
+	@if [ -d "$*" ] && case " $(PACKAGES) " in *" $* "*) true ;; *) false ;; esac; then \
+		echo "Preflighting $*..."; \
+		stow --simulate --no-folding --target "$(TARGET)" "$*" && \
+		echo "Stowing $*..." && \
+		stow --no-folding --target "$(TARGET)" "$*"; \
 	else \
-		echo "Error: Package '$*' not found."; \
-		echo "Available packages: $(PACKAGES)"; \
-		exit 1; \
+		echo "Error: Package '$*' not found." >&2; \
+		exit 2; \
 	fi
 
-# Pattern rule for individual package unstowing
 .PHONY: unstow-%
 unstow-%:
-	@if echo "$(PACKAGES)" | grep -qw "$*"; then \
-		echo "Unstowing $*..."; \
-		stow -D -t ~ $*; \
+	@if [ -d "$*" ] && case " $(PACKAGES) " in *" $* "*) true ;; *) false ;; esac; then \
+		echo "Preflighting removal of $*..."; \
+		stow --simulate --delete --no-folding --target "$(TARGET)" "$*" && \
+		echo "Unstowing $*..." && \
+		stow --delete --no-folding --target "$(TARGET)" "$*"; \
 	else \
-		echo "Error: Package '$*' not found."; \
-		echo "Available packages: $(PACKAGES)"; \
-		exit 1; \
+		echo "Error: Package '$*' not found." >&2; \
+		exit 2; \
 	fi
 
 .PHONY: gitconfig
@@ -57,7 +89,8 @@ gitconfig:
 
 .PHONY: prestow
 prestow:
-	@./scripts/clear-out-files-before-stow.sh
+	@echo "error: 'make prestow' is retired; use a platform preflight target" >&2
+	@exit 2
 
 .PHONY: build-bin
 build-bin:
