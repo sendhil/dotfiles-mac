@@ -31,7 +31,6 @@ make stow-tmux      # Install only tmux config
 - `bat` - Better cat configuration
 - `direnv` - Directory environment configuration
 - `fd` - Find alternative configuration
-- `hammerspoon` - macOS automation
 - `karabiner` - Keyboard customization (see [karabiner/README.md](karabiner/README.md) for profile setup)
 - `kitty` - Terminal emulator configuration
 - `neovim` - Neovim configuration (see [Neovim Setup](#neovim-setup) for dependencies)
@@ -65,37 +64,25 @@ make unstow
 make unstow-neovim  # Remove only neovim config
 ```
 
-## Pre-stow Cleanup
-
-If you have existing configuration files that might conflict:
-
-```bash
-make prestow  # Cleans out existing files before stowing
-```
-
 ## Neovim Setup
 
 The Neovim configuration requires several dependencies to work properly. You have two options:
 
 ### Option 1: Automated Setup
 
-Run the appropriate setup script for your operating system:
+On macOS, run the setup script:
 
-#### macOS
 ```bash
 ./scripts/setup-neovim-deps-mac.sh
 ```
 
-#### Linux (Ubuntu/Debian)
-```bash
-./scripts/setup-neovim-deps-linux.sh
-```
+Ubuntu workstation dependencies are owned by the separate `linux-laptop-setup`
+repository rather than by these dotfiles.
 
-These scripts will install:
+The macOS script will install:
 - Core dependencies (git, make, gcc, fzf, ripgrep, fd, etc.)
 - Language runtimes (Go, Node.js via fnm, Rust via rustup, Python)
-- System tools (clangd, clang-tidy on Linux)
-- Package managers (Homebrew on macOS, uses apt on Linux)
+- Package managers and development tools through Homebrew
 
 ### Option 2: Manual Setup
 
@@ -106,8 +93,6 @@ If you prefer to have more control over what gets installed:
    # macOS
    ./scripts/check-neovim-deps-mac.sh
    
-   # Linux
-   ./scripts/check-neovim-deps-linux.sh
    ```
 
 2. **Install missing dependencies** based on the check script output

@@ -73,16 +73,14 @@ colima start "$VM_NAME" \
 echo -e "${YELLOW}Waiting for VM to be ready...${NC}"
 sleep 5
 
-# Install dependencies in the VM
-echo -e "${BLUE}Installing dependencies in VM...${NC}"
+# Configure Neovim in the VM. Workstation dependency provisioning is owned by
+# linux-laptop-setup, so this helper does not run a second Linux installer.
+echo -e "${BLUE}Configuring Neovim in VM...${NC}"
 colima ssh -p "$VM_NAME" << 'EOF'
-# Update package list
-sudo apt-get update
-
-# Run the Linux setup script
-cd /home/dotfiles
-chmod +x scripts/setup-neovim-deps-linux.sh
-./scripts/setup-neovim-deps-linux.sh
+if ! command -v nvim >/dev/null 2>&1; then
+    echo "Neovim is not installed in this VM. Provision it before running this helper."
+    exit 1
+fi
 
 # Create symlink to Neovim config
 mkdir -p ~/.config

@@ -80,11 +80,6 @@ gitconfig:
 	@sed -i 's/^\s*//g' ~/.gitconfig
 	@crudini --merge ~/.gitconfig < ./git/aliases.ini
 
-.PHONY: prestow
-prestow:
-	@echo "error: 'make prestow' is retired; use a platform preflight target" >&2
-	@exit 2
-
 .PHONY: build-bin
 build-bin:
 	swiftc -O -o bin-macos/.local/bin/cmux-scratch bin-macos/.local/bin/cmux-scratch.swift
