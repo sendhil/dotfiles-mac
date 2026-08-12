@@ -1,25 +1,18 @@
-# If you come from bash you might have to change your $PATH.
-# export PATH=$HOME/bin:/usr/local/bin:$PATH
-
-# Uncomment this and the last line to profile
-# zmodload zsh/zprof 
-
-# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
-# Initialization code that may require console input (password prompts, [y/n]
-# confirmations, etc.) must go above this block; everything else may go below.
+# Enable the Powerlevel10k instant prompt when its generated cache exists.
 if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
-fpath=(/opt/homebrew/share/zsh/site-functions $fpath)
+dotfiles_config_dir=${XDG_CONFIG_HOME:-"$HOME/.config"}/dotfiles
+[[ -r "$dotfiles_config_dir/common.sh" ]] && source "$dotfiles_config_dir/common.sh"
+[[ -r "$dotfiles_config_dir/platform.sh" ]] && source "$dotfiles_config_dir/platform.sh"
 
-source "${ZDOTDIR:-$HOME}/.zprezto/init.zsh"
+# Machine- or workplace-specific values belong here. Stow never creates it.
+[[ -r "$dotfiles_config_dir/local.sh" ]] && source "$dotfiles_config_dir/local.sh"
 
-# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
-[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+[[ -r "${ZDOTDIR:-$HOME}/.zprezto/init.zsh" ]] && source "${ZDOTDIR:-$HOME}/.zprezto/init.zsh"
+[[ -r "$HOME/.p10k.zsh" ]] && source "$HOME/.p10k.zsh"
+[[ -r "$HOME/.bash/bash_profile" ]] && source "$HOME/.bash/bash_profile"
+[[ -r "$HOME/.fzf.zsh" ]] && source "$HOME/.fzf.zsh"
 
-source ~/.bash/bash_profile
-
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
-
-# zprof
+unset dotfiles_config_dir

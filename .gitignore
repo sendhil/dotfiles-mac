@@ -48,3 +48,6 @@ Temporary Items
 # End of https://www.toptal.com/developers/gitignore/api/macos,linux
 .vscode
 .worktrees/
+
+# Machine- and workplace-specific shell overrides are never committed or stowed.
+**/.config/dotfiles/local.sh

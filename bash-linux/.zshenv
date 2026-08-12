@@ -1,1 +1,2 @@
-alias darkMode="2>/dev/null defaults read -g AppleInterfaceStyle"
+# Keep this file free of interactive initialization. Interactive environment and
+# tools are loaded from ~/.zshrc through ~/.config/dotfiles/common.sh.
