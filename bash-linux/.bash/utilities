@@ -40,8 +40,48 @@ function tre() {
   tree -aC -I '.git' --dirsfirst "$@" | less -FRNX
 }
 
-# Call from a local repo to open the repository on github/bitbucket in browser
-# Modified version of https://github.com/zeke/ghwd
+dotfiles_open_url() {
+  local url=${1:-}
+  local os=${DOTFILES_UNAME:-$(uname -s)}
+  local browser=${BROWSER:-}
+
+  if [ -z "$url" ]; then
+    printf 'error: URL is required\n' >&2
+    return 2
+  fi
+
+  if [ "$os" = Darwin ]; then
+    if command -v open >/dev/null 2>&1; then
+      open "$url"
+      return $?
+    fi
+    printf 'error: no URL opener available (expected open on Darwin)\n' >&2
+    return 1
+  fi
+
+  # Treat BROWSER as one literal executable, never as shell source. Values with
+  # arguments or metacharacters safely miss command lookup and fall back.
+  case $browser in
+    ''|open|*/open) ;;
+    *)
+      if command -v "$browser" >/dev/null 2>&1; then
+        "$browser" "$url"
+        return $?
+      fi
+      ;;
+  esac
+
+  if command -v xdg-open >/dev/null 2>&1; then
+    xdg-open "$url"
+    return $?
+  fi
+
+  printf 'error: no URL opener available (set BROWSER or install xdg-open)\n' >&2
+  return 1
+}
+
+# Call from a local repo to open the repository on GitHub, GitLab, or Bitbucket.
+# Modified from https://github.com/zeke/ghwd.
 repo() {
   # Figure out github repo base URL
   local base_url
@@ -61,9 +101,9 @@ repo() {
   base_url=${base_url//git@gitlab\.com:/https:\/\/gitlab\.com\/}
 
   # Validate that this folder is a git folder
-  if ! git branch 2>/dev/null 1>&2; then
-    echo "Not a git repo!"
-    exit $?
+  if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    printf 'error: not a Git repository\n' >&2
+    return 1
   fi
 
   # Find current directory relative to .git parent
@@ -79,17 +119,15 @@ repo() {
     relative_path="$relative_path/$1"
   fi
 
-  # Figure out current git branch
-  # git_where=$(command git symbolic-ref -q HEAD || command git name-rev --name-only --no-undefined --always HEAD) 2>/dev/null
-  git_where=$(command git name-rev --name-only --no-undefined --always HEAD) 2>/dev/null
+  # Prefer a branch name, falling back to the current commit in detached HEAD.
+  git_where=$(command git symbolic-ref --quiet --short HEAD 2>/dev/null) || \
+    git_where=$(command git rev-parse --short HEAD 2>/dev/null) || return 1
+  branch=${git_where#refs/heads/}
 
-  # Remove cruft from branchname branch=${git_where#refs\/heads\/}
   [[ $base_url == *bitbucket* ]] && tree="src" || tree="tree"
   url="$base_url/$tree/$branch$relative_path"
 
-  echo "Calling $(type open) for $url"
-
-  open "$url" &>/dev/null || (echo "Using $(type open) to open URL failed." && exit 1)
+  dotfiles_open_url "$url"
 }
 
 function nvminit {
@@ -124,8 +162,21 @@ function tk-read() {
 }
 
 function timer() {
-  n=$1
-  countdown "$n" && hs -c 'displayMessageOnAllScreens("Timer is done", 10)'
+  local n=${1:-}
+  if [ -z "$n" ]; then
+    printf 'error: timer duration is required\n' >&2
+    return 2
+  fi
+  if ! command -v countdown >/dev/null 2>&1; then
+    printf 'error: countdown is unavailable\n' >&2
+    return 1
+  fi
+  if ! command -v notify-send >/dev/null 2>&1; then
+    printf 'error: notify-send is unavailable\n' >&2
+    return 1
+  fi
+
+  countdown "$n" && notify-send 'Timer is done'
 }
 
 function zm_clear() {
