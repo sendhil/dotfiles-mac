@@ -1,4 +1,4 @@
-# Sway mirrors the existing AeroSpace workflow while remaining hardware-neutral.
+# Sway preserves the established workflow while remaining hardware-neutral.
 set $mod Mod1
 set $term kitty
 set $menu fuzzel
@@ -11,8 +11,8 @@ focus_wrapping workspace
 
 exec_always dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=sway
 
-# Intentional i3 deviations: Alt preserves AeroSpace muscle memory; Vim h/j/k/l replaces stock i3 j/k/l/semicolon.
-# AeroSpace compatibility: number keys toggle N/N+10; Alt+Shift+f remains a fullscreen alias.
+# Intentional stock-i3 deviations: Alt preserves prior muscle memory; Vim h/j/k/l replaces stock j/k/l/semicolon.
+# Compatibility behavior: number keys toggle N/N+10; Alt+Shift+f remains a fullscreen alias.
 bindsym $mod+h focus left
 bindsym $mod+j focus down
 bindsym $mod+k focus up

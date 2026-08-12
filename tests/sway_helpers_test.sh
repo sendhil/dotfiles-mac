@@ -33,7 +33,9 @@ case "$*" in
     ;;
   '-t get_tree -r')
     [ "${SWAYMSG_TREE_STATUS:-0}" -eq 0 ] || exit "$SWAYMSG_TREE_STATUS"
-    if [ "${SWAYMSG_TREE_JSON+set}" = set ]; then
+    if [ -n "${SWAYMSG_TREE_STATE_FILE:-}" ]; then
+      cat "$SWAYMSG_TREE_STATE_FILE"
+    elif [ "${SWAYMSG_TREE_JSON+set}" = set ]; then
       printf '%s\n' "$SWAYMSG_TREE_JSON"
     else
       printf '%s\n' '{}'
@@ -59,9 +61,40 @@ cat >"$fake_bin/kitty" <<'FAKE_KITTY'
   done
   printf '\n'
 } >>"$KITTY_LOG"
-exit "${KITTY_STATUS:-0}"
+kitty_status=${KITTY_STATUS:-0}
+[ -z "${KITTY_STATE_DELAY:-}" ] || sleep "$KITTY_STATE_DELAY"
+if [ "$kitty_status" -eq 0 ] && [ -n "${SWAYMSG_TREE_STATE_FILE:-}" ]; then
+  state_tmp="$SWAYMSG_TREE_STATE_FILE.tmp.$$"
+  printf '%s\n' '{"nodes":[{"app_id":"kitty-scratchpad"}]}' >"$state_tmp"
+  mv "$state_tmp" "$SWAYMSG_TREE_STATE_FILE"
+fi
+exit "$kitty_status"
 FAKE_KITTY
-chmod +x "$fake_bin/swaymsg" "$fake_bin/kitty"
+
+cat >"$fake_bin/flock" <<'FAKE_FLOCK'
+#!/bin/sh
+[ "${FLOCK_STATUS:-0}" -eq 0 ] || exit "$FLOCK_STATUS"
+[ "$#" -ge 5 ] || exit 2
+[ "$1" = -x ] || exit 2
+[ "$2" = -w ] || exit 2
+timeout=$3
+lock_file=$4
+shift 4
+lock_dir="$lock_file.fake-lock"
+attempts=$((timeout * 20))
+while ! mkdir "$lock_dir" 2>/dev/null; do
+  attempts=$((attempts - 1))
+  [ "$attempts" -gt 0 ] || exit 1
+  sleep 0.05
+done
+trap 'rmdir "$lock_dir"' EXIT HUP INT TERM
+set +e
+"$@"
+status=$?
+set -e
+exit "$status"
+FAKE_FLOCK
+chmod +x "$fake_bin/swaymsg" "$fake_bin/kitty" "$fake_bin/flock"
 
 workspace_helper="$ROOT_DIR/sway/.local/bin/sway-workspace-toggle"
 scratch_helper="$ROOT_DIR/sway/.local/bin/sway-scratchpad"
@@ -114,6 +147,19 @@ assert_status 1 env PATH="$fake_bin:$PATH" SWAYMSG_LOG="$log" \
   SWAYMSG_WORKSPACES_JSON='[{"num":1,"focused":false}]' "$workspace_helper" 1
 assert_status 1 env PATH="$fake_bin:$PATH" SWAYMSG_LOG="$log" \
   SWAYMSG_WORKSPACES_JSON='[{"num":"1; bad","focused":true}]' "$workspace_helper" 1
+assert_status 1 env PATH="$fake_bin:$PATH" SWAYMSG_LOG="$log" \
+  SWAYMSG_WORKSPACES_JSON='[{"num":"1","focused":true}]' "$workspace_helper" 1
+assert_status 1 env PATH="$fake_bin:$PATH" SWAYMSG_LOG="$log" \
+  SWAYMSG_WORKSPACES_JSON='{"nested":[{"num":1,"focused":true}]}' "$workspace_helper" 1
+assert_status 1 env PATH="$fake_bin:$PATH" SWAYMSG_LOG="$log" \
+  SWAYMSG_WORKSPACES_JSON='[{"num":0,"focused":true}]' "$workspace_helper" 1
+assert_status 1 env PATH="$fake_bin:$PATH" SWAYMSG_LOG="$log" \
+  SWAYMSG_WORKSPACES_JSON='[{"num":-1,"focused":true}]' "$workspace_helper" 1
+assert_status 1 env PATH="$fake_bin:$PATH" SWAYMSG_LOG="$log" \
+  SWAYMSG_WORKSPACES_JSON='[{"num":1.5,"focused":true}]' "$workspace_helper" 1
+assert_status 1 env PATH="$fake_bin:$PATH" SWAYMSG_LOG="$log" \
+  SWAYMSG_WORKSPACES_JSON='[{"num":1,"focused":true},{"num":2,"focused":true}]' \
+  "$workspace_helper" 1
 assert_status 42 env PATH="$fake_bin:$PATH" SWAYMSG_LOG="$log" \
   SWAYMSG_WORKSPACES_JSON='[{"num":1,"focused":true}]' \
   SWAYMSG_COMMAND_STATUS=42 "$workspace_helper" 1
@@ -134,13 +180,46 @@ assert_contains "$(cat "$log")" \
 : >"$log"
 : >"$kitty_log"
 scratch_home="$tmp_dir/home with spaces"
+runtime_dir="$tmp_dir/runtime with spaces"
 mkdir -p "$scratch_home"
-PATH="$fake_bin:$PATH" HOME="$scratch_home" SWAYMSG_LOG="$log" KITTY_LOG="$kitty_log" \
-  SWAYMSG_TREE_JSON='{"nodes":[{"app_id":"ordinary-kitty"}]}' \
+mkdir -p "$runtime_dir"
+tree_state="$tmp_dir/tree state"
+printf '%s\n' '{"nodes":[{"app_id":"ordinary-kitty"}]}' >"$tree_state"
+PATH="$fake_bin:$PATH" HOME="$scratch_home" XDG_RUNTIME_DIR="$runtime_dir" \
+  SWAYMSG_LOG="$log" KITTY_LOG="$kitty_log" SWAYMSG_TREE_STATE_FILE="$tree_state" \
   "$scratch_helper"
 expected_kitty="kitty <--class> <kitty-scratchpad> <--title> <kitty-scratchpad> <--directory> <$scratch_home>"
 [ "$(cat "$kitty_log")" = "$expected_kitty" ] || \
   fail 'absent scratch terminal was not launched with literal safe arguments'
+
+# Both invocations observe absence before one acquires the lock. The lock holder
+# launches Kitty and waits for its app_id; the waiter then rechecks and shows it.
+: >"$log"
+: >"$kitty_log"
+printf '%s\n' '{"nodes":[]}' >"$tree_state"
+PATH="$fake_bin:$PATH" HOME="$scratch_home" XDG_RUNTIME_DIR="$runtime_dir" \
+  SWAYMSG_LOG="$log" KITTY_LOG="$kitty_log" SWAYMSG_TREE_STATE_FILE="$tree_state" \
+  KITTY_STATE_DELAY=0.2 "$scratch_helper" &
+first_pid=$!
+PATH="$fake_bin:$PATH" HOME="$scratch_home" XDG_RUNTIME_DIR="$runtime_dir" \
+  SWAYMSG_LOG="$log" KITTY_LOG="$kitty_log" SWAYMSG_TREE_STATE_FILE="$tree_state" \
+  KITTY_STATE_DELAY=0.2 "$scratch_helper" &
+second_pid=$!
+set +e
+wait "$first_pid"
+first_status=$?
+wait "$second_pid"
+second_status=$?
+set -e
+[ "$first_status" -eq 0 ] || fail "first concurrent scratch invocation failed: $first_status"
+[ "$second_status" -eq 0 ] || fail "second concurrent scratch invocation failed: $second_status"
+[ "$(wc -l <"$kitty_log" | tr -d ' ')" -eq 1 ] || \
+  fail 'concurrent scratch invocations launched more than one Kitty process'
+assert_contains "$(cat "$log")" \
+  'swaymsg <--> <[app_id="^kitty-scratchpad$"] scratchpad show>' \
+  'the concurrent waiter did not recheck and show the launched scratch terminal'
+[ ! -e "$runtime_dir/sway-scratchpad.lock.fake-lock" ] || \
+  fail 'scratch serialization left a stale lock after both invocations exited'
 
 assert_status 2 env PATH="$fake_bin:$PATH" SWAYMSG_LOG="$log" KITTY_LOG="$kitty_log" \
   "$scratch_helper" unexpected
@@ -148,8 +227,13 @@ assert_status 43 env PATH="$fake_bin:$PATH" SWAYMSG_LOG="$log" KITTY_LOG="$kitty
   SWAYMSG_TREE_STATUS=43 "$scratch_helper"
 assert_status 1 env PATH="$fake_bin:$PATH" SWAYMSG_LOG="$log" KITTY_LOG="$kitty_log" \
   SWAYMSG_TREE_JSON='not-json' "$scratch_helper"
+printf '%s\n' '{}' >"$tree_state"
 assert_status 44 env PATH="$fake_bin:$PATH" HOME="$scratch_home" SWAYMSG_LOG="$log" \
-  KITTY_LOG="$kitty_log" SWAYMSG_TREE_JSON='{}' KITTY_STATUS=44 "$scratch_helper"
+  KITTY_LOG="$kitty_log" XDG_RUNTIME_DIR="$runtime_dir" \
+  SWAYMSG_TREE_STATE_FILE="$tree_state" KITTY_STATUS=44 "$scratch_helper"
+assert_status 46 env PATH="$fake_bin:$PATH" HOME="$scratch_home" SWAYMSG_LOG="$log" \
+  KITTY_LOG="$kitty_log" XDG_RUNTIME_DIR="$runtime_dir" \
+  SWAYMSG_TREE_STATE_FILE="$tree_state" FLOCK_STATUS=46 "$scratch_helper"
 assert_status 45 env PATH="$fake_bin:$PATH" SWAYMSG_LOG="$log" KITTY_LOG="$kitty_log" \
   SWAYMSG_TREE_JSON='{"app_id":"kitty-scratchpad"}' SWAYMSG_COMMAND_STATUS=45 \
   "$scratch_helper"

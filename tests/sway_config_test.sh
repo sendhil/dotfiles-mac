@@ -10,10 +10,13 @@ config_file="$ROOT_DIR/sway/.config/sway/config"
 config=$(cat "$config_file" 2>/dev/null || true)
 
 assert_contains "$config" 'set $mod Mod1' 'Sway uses Alt to preserve AeroSpace muscle memory'
-assert_contains "$config" '# Intentional i3 deviations: Alt preserves AeroSpace muscle memory; Vim h/j/k/l replaces stock i3 j/k/l/semicolon.' \
+assert_contains "$config" '# Intentional stock-i3 deviations: Alt preserves prior muscle memory; Vim h/j/k/l replaces stock j/k/l/semicolon.' \
   'config does not document the intentional modifier and Vim-navigation deviations from stock i3'
-assert_contains "$config" '# AeroSpace compatibility: number keys toggle N/N+10; Alt+Shift+f remains a fullscreen alias.' \
+assert_contains "$config" '# Compatibility behavior: number keys toggle N/N+10; Alt+Shift+f remains a fullscreen alias.' \
   'config does not document the workspace-toggle and fullscreen deviations from stock i3'
+if rg --hidden --no-ignore -ni 'aerospace' "$ROOT_DIR/sway" >/dev/null 2>&1; then
+  fail 'Ubuntu-linked Sway files contain a macOS window-manager reference'
+fi
 
 for binding in \
   'bindsym $mod+h focus left' \

@@ -21,7 +21,21 @@ set -e
 
 set +e
 focused=$(printf '%s\n' "$workspaces" | jq -er \
-  '[.[] | select(.focused == true) | .num] | if length == 1 then .[0] else error("expected one focused workspace") end')
+  'if type != "array" then
+     error("workspace response must be an array")
+   else
+     [.[] | select(type == "object" and .focused == true)] as $focused
+     | if ($focused | length) != 1 then
+         error("expected one focused workspace")
+       else
+         $focused[0].num
+         | if type == "number" and . > 0 and floor == . then
+             .
+           else
+             error("focused workspace number must be a positive integer")
+           end
+       end
+   end')
 status=$?
 set -e
 [ "$status" -eq 0 ] || exit 1
@@ -29,7 +43,6 @@ set -e
 case $focused in
   ''|*[!0-9]*) exit 1 ;;
 esac
-[ "$focused" -gt 0 ] || exit 1
 
 if [ "$digit" -eq 0 ]; then
   primary=10
@@ -38,7 +51,7 @@ else
 fi
 secondary=$((primary + 10))
 
-if [ "$focused" -eq "$primary" ]; then
+if [ "$focused" = "$primary" ]; then
   target=$secondary
 else
   target=$primary

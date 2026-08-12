@@ -7,23 +7,94 @@ if [ "$#" -ne 0 ]; then
   exit 2
 fi
 
-set +e
-tree=$(swaymsg -t get_tree -r)
-status=$?
-set -e
-[ "$status" -eq 0 ] || exit "$status"
+read_tree() {
+  if tree=$(swaymsg -t get_tree -r); then
+    :
+  else
+    return $?
+  fi
+  printf '%s\n' "$tree" | jq -e 'type == "object"' >/dev/null || return 1
+}
 
-printf '%s\n' "$tree" | jq -e . >/dev/null || exit 1
+scratch_exists() {
+  printf '%s\n' "$tree" | jq -e \
+    '[.. | objects | .app_id? // empty] | index("kitty-scratchpad") != null' >/dev/null
+}
 
-if printf '%s\n' "$tree" | jq -e \
-  '[.. | objects | .app_id? // empty] | index("kitty-scratchpad") != null' >/dev/null; then
-  set +e
-  result=$(swaymsg -- '[app_id="^kitty-scratchpad$"] scratchpad show')
-  status=$?
-  set -e
-  [ "$status" -eq 0 ] || exit "$status"
+show_scratch() {
+  if result=$(swaymsg -- '[app_id="^kitty-scratchpad$"] scratchpad show'); then
+    :
+  else
+    exit $?
+  fi
   printf '%s\n' "$result" | jq -e \
     'type == "array" and length > 0 and all(.[]; .success == true)' >/dev/null || exit 1
+}
+
+if read_tree; then
+  :
 else
-  exec kitty --class kitty-scratchpad --title kitty-scratchpad --directory "$HOME"
+  exit $?
 fi
+
+if scratch_exists; then
+  show_scratch
+  exit 0
+fi
+
+if [ "${SWAY_SCRATCHPAD_LOCKED:-0}" != 1 ]; then
+  runtime_dir=${XDG_RUNTIME_DIR:-}
+  case $runtime_dir in
+    /*) ;;
+    *) exit 1 ;;
+  esac
+  [ -d "$runtime_dir" ] && [ -w "$runtime_dir" ] || exit 1
+  umask 077
+  lock_file="$runtime_dir/sway-scratchpad.lock"
+  exec flock -x -w 6 "$lock_file" env SWAY_SCRATCHPAD_LOCKED=1 "$0"
+fi
+
+unset SWAY_SCRATCHPAD_LOCKED
+
+# The lock holder must recheck: another invocation may have launched Kitty
+# between our optimistic first check and lock acquisition.
+if read_tree; then
+  :
+else
+  exit $?
+fi
+if scratch_exists; then
+  show_scratch
+  exit 0
+fi
+
+kitty --class kitty-scratchpad --title kitty-scratchpad --directory "$HOME" &
+kitty_pid=$!
+
+# Keep the lock only for a bounded startup window. The kernel releases flock
+# automatically on every exit path, so a killed helper cannot leave a stale lock.
+attempts=50
+while [ "$attempts" -gt 0 ]; do
+  sleep 0.1
+  if read_tree; then
+    :
+  else
+    exit $?
+  fi
+  if scratch_exists; then
+    exit 0
+  fi
+
+  if ! kill -0 "$kitty_pid" 2>/dev/null; then
+    if wait "$kitty_pid"; then
+      status=0
+    else
+      status=$?
+    fi
+    [ "$status" -ne 0 ] || status=1
+    exit "$status"
+  fi
+  attempts=$((attempts - 1))
+done
+
+exit 1
