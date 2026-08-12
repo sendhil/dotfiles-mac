@@ -75,3 +75,52 @@ assert_status 2 make --no-print-directory -s -C "$ROOT_DIR" stow-docs TARGET="$m
 assert_status 2 make --no-print-directory -s -C "$ROOT_DIR" stow-not-a-package TARGET="$make_tmp/home"
 
 pass 'Make exposes explicit platform targets'
+
+target_injection='TARGET="; printf TARGET_INJECTION; #'
+: >"$make_tmp/stow.log"
+set +e
+target_output=$(PATH="$make_tmp/bin:$PATH" STOW_LOG="$make_tmp/stow.log" \
+  make --no-print-directory -s -C "$ROOT_DIR" preflight-ubuntu "$target_injection" \
+  2>"$make_tmp/target-preflight.stderr")
+target_status=$?
+set -e
+[ "$target_status" -ne 0 ] || fail 'TARGET injection turned preflight failure into success'
+assert_not_contains "$target_output" TARGET_INJECTION 'TARGET value executed as shell source'
+[ ! -s "$make_tmp/stow.log" ] || fail 'invalid TARGET reached Stow during preflight'
+
+: >"$make_tmp/stow.log"
+set +e
+target_output=$(PATH="$make_tmp/bin:$PATH" STOW_LOG="$make_tmp/stow.log" \
+  make --no-print-directory -s -C "$ROOT_DIR" stow-ubuntu "$target_injection" \
+  2>"$make_tmp/target-stow.stderr")
+target_status=$?
+set -e
+[ "$target_status" -ne 0 ] || fail 'TARGET injection bypassed the mutating target preflight'
+assert_not_contains "$target_output" TARGET_INJECTION 'mutating target executed TARGET as shell source'
+[ ! -s "$make_tmp/stow.log" ] || fail 'Stow mutation followed invalid TARGET preflight'
+
+quoted_target="$make_tmp/home with a \"quote"
+mkdir -p "$quoted_target"
+: >"$make_tmp/stow.log"
+PATH="$make_tmp/bin:$PATH" STOW_LOG="$make_tmp/stow.log" \
+  make --no-print-directory -s -C "$ROOT_DIR" stow-ubuntu TARGET="$quoted_target"
+quoted_target_count=$(grep -Fxc -- "$quoted_target" "$make_tmp/stow.log")
+[ "$quoted_target_count" -eq 2 ] || fail 'TARGET containing spaces and a quote was not passed literally'
+
+stem_injection='stow-bin" ]; then printf PWN; exit 0; fi; #'
+set +e
+stem_output=$(make --no-print-directory -s -C "$ROOT_DIR" "$stem_injection" 2>&1)
+stem_status=$?
+set -e
+[ "$stem_status" -ne 0 ] || fail 'stow pattern stem executed as shell source'
+[ "$stem_output" != 'PWN' ] || fail 'stow pattern stem printed its injected payload'
+
+stem_injection='unstow-bin" ]; then printf PWN; exit 0; fi; #'
+set +e
+stem_output=$(make --no-print-directory -s -C "$ROOT_DIR" "$stem_injection" 2>&1)
+stem_status=$?
+set -e
+[ "$stem_status" -ne 0 ] || fail 'unstow pattern stem executed as shell source'
+[ "$stem_output" != 'PWN' ] || fail 'unstow pattern stem printed its injected payload'
+
+pass 'Make treats target paths and package names as literal data'

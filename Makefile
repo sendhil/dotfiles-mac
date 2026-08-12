@@ -1,6 +1,9 @@
 TARGET ?= $(HOME)
+export TARGET
 
 PACKAGES := $(sort $(shell ./scripts/package-set.sh macos) $(shell ./scripts/package-set.sh ubuntu))
+PACKAGE_STOW_TARGETS := $(addprefix stow-,$(PACKAGES))
+PACKAGE_UNSTOW_TARGETS := $(addprefix unstow-,$(PACKAGES))
 
 .PHONY: all
 all: stow-macos gitconfig
@@ -33,53 +36,43 @@ unstow:
 
 .PHONY: preflight-macos
 preflight-macos:
-	@./scripts/stow-preflight.sh macos "$(TARGET)"
+	@./scripts/stow-preflight.sh macos "$${TARGET}"
 
 .PHONY: stow-macos
 stow-macos: preflight-macos
-	@stow --no-folding --target "$(TARGET)" $$(./scripts/package-set.sh macos)
+	@stow --no-folding --target "$${TARGET}" $$(./scripts/package-set.sh macos)
 
 .PHONY: unstow-macos
 unstow-macos:
-	@stow --simulate --delete --no-folding --target "$(TARGET)" $$(./scripts/package-set.sh macos)
-	@stow --delete --no-folding --target "$(TARGET)" $$(./scripts/package-set.sh macos)
+	@stow --simulate --delete --no-folding --target "$${TARGET}" $$(./scripts/package-set.sh macos)
+	@stow --delete --no-folding --target "$${TARGET}" $$(./scripts/package-set.sh macos)
 
 .PHONY: preflight-ubuntu
 preflight-ubuntu:
-	@./scripts/stow-preflight.sh ubuntu "$(TARGET)"
+	@./scripts/stow-preflight.sh ubuntu "$${TARGET}"
 
 .PHONY: stow-ubuntu
 stow-ubuntu: preflight-ubuntu
-	@stow --no-folding --target "$(TARGET)" $$(./scripts/package-set.sh ubuntu)
+	@stow --no-folding --target "$${TARGET}" $$(./scripts/package-set.sh ubuntu)
 
 .PHONY: unstow-ubuntu
 unstow-ubuntu:
-	@stow --simulate --delete --no-folding --target "$(TARGET)" $$(./scripts/package-set.sh ubuntu)
-	@stow --delete --no-folding --target "$(TARGET)" $$(./scripts/package-set.sh ubuntu)
+	@stow --simulate --delete --no-folding --target "$${TARGET}" $$(./scripts/package-set.sh ubuntu)
+	@stow --delete --no-folding --target "$${TARGET}" $$(./scripts/package-set.sh ubuntu)
 
-.PHONY: stow-%
-stow-%:
-	@if [ -d "$*" ] && case " $(PACKAGES) " in *" $* "*) true ;; *) false ;; esac; then \
-		echo "Preflighting $*..."; \
-		stow --simulate --no-folding --target "$(TARGET)" "$*" && \
-		echo "Stowing $*..." && \
-		stow --no-folding --target "$(TARGET)" "$*"; \
-	else \
-		echo "Error: Package '$*' not found." >&2; \
-		exit 2; \
-	fi
+.PHONY: $(PACKAGE_STOW_TARGETS)
+$(PACKAGE_STOW_TARGETS): stow-%:
+	@echo "Preflighting $*..."
+	@stow --simulate --no-folding --target "$${TARGET}" "$*"
+	@echo "Stowing $*..."
+	@stow --no-folding --target "$${TARGET}" "$*"
 
-.PHONY: unstow-%
-unstow-%:
-	@if [ -d "$*" ] && case " $(PACKAGES) " in *" $* "*) true ;; *) false ;; esac; then \
-		echo "Preflighting removal of $*..."; \
-		stow --simulate --delete --no-folding --target "$(TARGET)" "$*" && \
-		echo "Unstowing $*..." && \
-		stow --delete --no-folding --target "$(TARGET)" "$*"; \
-	else \
-		echo "Error: Package '$*' not found." >&2; \
-		exit 2; \
-	fi
+.PHONY: $(PACKAGE_UNSTOW_TARGETS)
+$(PACKAGE_UNSTOW_TARGETS): unstow-%:
+	@echo "Preflighting removal of $*..."
+	@stow --simulate --delete --no-folding --target "$${TARGET}" "$*"
+	@echo "Unstowing $*..."
+	@stow --delete --no-folding --target "$${TARGET}" "$*"
 
 .PHONY: gitconfig
 gitconfig:
