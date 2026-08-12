@@ -1,0 +1,25 @@
+#!/bin/bash
+
+set -eu
+
+os=${DOTFILES_UNAME:-$(uname -s)}
+
+if [ "$os" = Darwin ] && command -v pbcopy >/dev/null 2>&1; then
+  exec pbcopy
+fi
+
+if [ -n "${WAYLAND_DISPLAY:-}" ] && command -v wl-copy >/dev/null 2>&1; then
+  exec wl-copy
+fi
+
+tty=${DOTFILES_TTY:-/dev/tty}
+if [ ! -w "$tty" ]; then
+  printf 'error: no clipboard transport is available\n' >&2
+  exit 1
+fi
+
+payload=$(base64 | tr -d '\n')
+if ! printf '\033]52;c;%s\a' "$payload" >"$tty"; then
+  printf 'error: no clipboard transport is available\n' >&2
+  exit 1
+fi
