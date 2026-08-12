@@ -45,11 +45,17 @@ case $command_name in
         [ "$3" = /home/dotfiles/neovim/.config/nvim ]; then
         exit "${COLIMA_MOUNT_STATUS:-0}"
       fi
+      if [ "$#" -eq 4 ] && [ "$1" = sh ] && [ "$2" = -eu ] && [ "$3" = -c ]; then
+        HOME="$COLIMA_GUEST_HOME" /bin/sh -eu -c "$4"
+        exit $?
+      fi
       exit 93
     fi
     [ "$#" -eq 0 ] || exit 97
     cat >"$COLIMA_GUEST_CONFIG_LOG"
     printf '%s\n' guest-config >>"$COLIMA_MUTATION_LOG"
+    HOME="$COLIMA_GUEST_HOME" PATH="$COLIMA_GUEST_BIN:/usr/bin:/bin" \
+      /bin/sh "$COLIMA_GUEST_CONFIG_LOG"
     ;;
   start|stop|delete)
     printf '%s\n' "$command_name" >>"$COLIMA_MUTATION_LOG"
@@ -61,6 +67,15 @@ esac
 FAKE_COLIMA
 
 chmod +x "$fake_bin/colima"
+
+guest_bin="$tmp_dir/guest bin"
+mkdir -p "$guest_bin"
+cat >"$guest_bin/nvim" <<'FAKE_NVIM'
+#!/bin/sh
+printf '%s\n' nvim >>"$COLIMA_MUTATION_LOG"
+exit "${COLIMA_GUEST_NVIM_STATUS:-0}"
+FAKE_NVIM
+chmod +x "$guest_bin/nvim"
 
 setup_script="$ROOT_DIR/scripts/setup-colima-neovim.sh"
 absent_home="$tmp_dir/absent guest home"
@@ -137,8 +152,112 @@ assert_contains "$missing_mount_output" /home/dotfiles \
 [ ! -e "$missing_mount_home/.local/bin/colima-nvim" ] || \
   fail 'missing dotfiles guest mount installed a local helper before preflight passed'
 
+local_conflict_home="$tmp_dir/local conflict home"
+local_conflict_guest="$tmp_dir/local conflict guest"
+mkdir -p "$local_conflict_home/.local/bin" "$local_conflict_guest"
+printf '%s\n' 'preserve this file' >"$tmp_dir/helper sentinel"
+ln -s "$tmp_dir/helper sentinel" "$local_conflict_home/.local/bin/colima-nvim"
+: >"$tmp_dir/local conflict colima log"
+: >"$tmp_dir/local conflict mutation log"
+: >"$tmp_dir/local conflict guest config"
+set +e
+local_conflict_output=$(PATH="$fake_bin:/usr/bin:/bin" HOME="$local_conflict_home" \
+  COLIMA_LOG="$tmp_dir/local conflict colima log" \
+  COLIMA_MUTATION_LOG="$tmp_dir/local conflict mutation log" \
+  COLIMA_GUEST_CONFIG_LOG="$tmp_dir/local conflict guest config" \
+  COLIMA_GUEST_HOME="$local_conflict_guest" COLIMA_GUEST_BIN="$guest_bin" \
+  "$setup_script" 2>&1)
+local_conflict_status=$?
+set -e
+[ "$local_conflict_status" -ne 0 ] || fail 'Colima setup overwrote a symlinked local helper destination'
+[ "$(cat "$tmp_dir/helper sentinel")" = 'preserve this file' ] || \
+  fail 'Colima setup followed and overwrote a local helper symlink'
+[ ! -s "$tmp_dir/local conflict mutation log" ] || \
+  fail 'local helper conflict was detected after guest mutation'
+assert_contains "$local_conflict_output" colima-nvim \
+  'local helper conflict error does not name its destination'
+
+guest_parent_conflict_home="$tmp_dir/guest parent conflict home"
+guest_parent_conflict_guest="$tmp_dir/guest parent conflict guest"
+mkdir -p "$guest_parent_conflict_home/.local/bin" "$guest_parent_conflict_guest"
+printf '%s\n' keep >"$guest_parent_conflict_guest/.config"
+: >"$tmp_dir/guest parent conflict colima log"
+: >"$tmp_dir/guest parent conflict mutation log"
+: >"$tmp_dir/guest parent conflict guest config"
+set +e
+guest_parent_conflict_output=$(PATH="$fake_bin:/usr/bin:/bin" HOME="$guest_parent_conflict_home" \
+  COLIMA_LOG="$tmp_dir/guest parent conflict colima log" \
+  COLIMA_MUTATION_LOG="$tmp_dir/guest parent conflict mutation log" \
+  COLIMA_GUEST_CONFIG_LOG="$tmp_dir/guest parent conflict guest config" \
+  COLIMA_GUEST_HOME="$guest_parent_conflict_guest" COLIMA_GUEST_BIN="$guest_bin" \
+  "$setup_script" 2>&1)
+guest_parent_conflict_status=$?
+set -e
+[ "$guest_parent_conflict_status" -ne 0 ] || \
+  fail 'Colima setup accepted a conflicting guest ~/.config parent'
+[ "$(cat "$guest_parent_conflict_guest/.config")" = keep ] || \
+  fail 'guest parent conflict preflight damaged existing state'
+[ ! -s "$tmp_dir/guest parent conflict mutation log" ] || \
+  fail 'guest parent conflict was detected after guest mutation'
+[ ! -e "$guest_parent_conflict_home/.local/bin/colima-nvim" ] || \
+  fail 'guest parent conflict installed the local helper'
+assert_contains "$guest_parent_conflict_output" '.config' \
+  'guest parent conflict error does not name its destination'
+
+guest_conflict_home="$tmp_dir/guest conflict home"
+guest_conflict_guest="$tmp_dir/guest conflict guest"
+mkdir -p "$guest_conflict_home/.local/bin" "$guest_conflict_guest/.config/nvim"
+printf '%s\n' keep >"$guest_conflict_guest/.config/nvim/user-file"
+: >"$tmp_dir/guest conflict colima log"
+: >"$tmp_dir/guest conflict mutation log"
+: >"$tmp_dir/guest conflict guest config"
+set +e
+guest_conflict_output=$(PATH="$fake_bin:/usr/bin:/bin" HOME="$guest_conflict_home" \
+  COLIMA_LOG="$tmp_dir/guest conflict colima log" \
+  COLIMA_MUTATION_LOG="$tmp_dir/guest conflict mutation log" \
+  COLIMA_GUEST_CONFIG_LOG="$tmp_dir/guest conflict guest config" \
+  COLIMA_GUEST_HOME="$guest_conflict_guest" COLIMA_GUEST_BIN="$guest_bin" \
+  "$setup_script" 2>&1)
+guest_conflict_status=$?
+set -e
+[ "$guest_conflict_status" -ne 0 ] || fail 'Colima setup accepted a conflicting guest Neovim directory'
+[ -f "$guest_conflict_guest/.config/nvim/user-file" ] || \
+  fail 'guest conflict preflight damaged the existing Neovim directory'
+[ ! -s "$tmp_dir/guest conflict mutation log" ] || \
+  fail 'guest destination conflict was detected after guest mutation'
+[ ! -e "$guest_conflict_home/.local/bin/colima-nvim" ] || \
+  fail 'guest destination conflict installed the local helper'
+assert_contains "$guest_conflict_output" '.config/nvim' \
+  'guest destination conflict error does not name its destination'
+
+nvim_failure_home="$tmp_dir/nvim failure home"
+nvim_failure_guest="$tmp_dir/nvim failure guest"
+mkdir -p "$nvim_failure_home/.local/bin" "$nvim_failure_guest"
+: >"$tmp_dir/nvim failure colima log"
+: >"$tmp_dir/nvim failure mutation log"
+: >"$tmp_dir/nvim failure guest config"
+set +e
+nvim_failure_output=$(PATH="$fake_bin:/usr/bin:/bin" HOME="$nvim_failure_home" \
+  COLIMA_LOG="$tmp_dir/nvim failure colima log" \
+  COLIMA_MUTATION_LOG="$tmp_dir/nvim failure mutation log" \
+  COLIMA_GUEST_CONFIG_LOG="$tmp_dir/nvim failure guest config" \
+  COLIMA_GUEST_HOME="$nvim_failure_guest" COLIMA_GUEST_BIN="$guest_bin" \
+  COLIMA_GUEST_NVIM_STATUS=47 \
+  "$setup_script" 2>&1)
+nvim_failure_status=$?
+set -e
+[ "$nvim_failure_status" -eq 47 ] || \
+  fail "guest Neovim failure status was not propagated (got $nvim_failure_status)"
+[ ! -e "$nvim_failure_home/.local/bin/colima-nvim" ] || \
+  fail 'guest Neovim failure installed the local helper'
+assert_not_contains "$nvim_failure_output" 'Colima VM setup complete' \
+  'guest Neovim failure reported false overall success'
+assert_not_contains "$nvim_failure_output" 'VM setup complete' \
+  'guest Neovim failure reported false guest success'
+
 configured_home="$tmp_dir/configured guest home"
-mkdir -p "$configured_home"
+configured_guest="$tmp_dir/configured guest"
+mkdir -p "$configured_home/.local/bin" "$configured_guest"
 : >"$tmp_dir/configured colima log"
 : >"$tmp_dir/configured mutation log"
 : >"$tmp_dir/configured guest config"
@@ -146,20 +265,34 @@ configured_output=$(PATH="$fake_bin:/usr/bin:/bin" HOME="$configured_home" \
   COLIMA_LOG="$tmp_dir/configured colima log" \
   COLIMA_MUTATION_LOG="$tmp_dir/configured mutation log" \
   COLIMA_GUEST_CONFIG_LOG="$tmp_dir/configured guest config" \
+  COLIMA_GUEST_HOME="$configured_guest" COLIMA_GUEST_BIN="$guest_bin" \
   COLIMA_NVIM_STATUS=0 \
   "$setup_script" 2>&1)
 
 if grep -Eq '^(start|stop|delete)$' "$tmp_dir/configured mutation log"; then
   fail 'configured existing Colima guest was stopped, deleted, or recreated'
 fi
-[ "$(cat "$tmp_dir/configured mutation log")" = guest-config ] || \
+[ "$(cat "$tmp_dir/configured mutation log")" = "guest-config
+nvim" ] || \
   fail 'configured guest did not proceed to Neovim configuration'
 guest_config=$(cat "$tmp_dir/configured guest config")
 assert_contains "$guest_config" \
-  'ln -sf /home/dotfiles/neovim/.config/nvim ~/.config/nvim' \
+  'ln -s /home/dotfiles/neovim/.config/nvim "$destination"' \
   'configured guest did not link the mounted Neovim configuration'
+[ "$(readlink "$configured_guest/.config/nvim")" = /home/dotfiles/neovim/.config/nvim ] || \
+  fail 'configured guest did not create the exact intended Neovim symlink'
 [ -x "$configured_home/.local/bin/colima-nvim" ] || \
   fail 'configured guest did not install the local Colima helper'
+helper=$(cat "$configured_home/.local/bin/colima-nvim")
+if printf '%s\n' "$helper" | grep -Eq \
+  '(^|[[:space:]|])(start|stop|delete)([[:space:]|)]|$)|colima[[:space:]]+(start|stop|delete)'; then
+  fail 'generated helper exposes Colima lifecycle ownership'
+fi
+assert_contains "$helper" 'set -eu' 'generated helper does not fail closed'
+assert_contains "$helper" 'profile_running' \
+  'generated helper does not preflight the exact running profile'
+assert_contains "$helper" 'colima ssh -p "$VM_NAME"' \
+  'generated helper does not attach to the exact provisioned profile'
 assert_contains "$configured_output" 'Colima VM setup complete' \
   'configured guest did not report successful completion'
 
@@ -171,6 +304,9 @@ assert_contains "$configured_calls" \
 assert_contains "$configured_calls" \
   'colima <ssh> <-p> <neovim-dev> <--> <test> <-d> </home/dotfiles/neovim/.config/nvim>' \
   'Colima setup did not preflight its required guest mount with literal arguments'
+assert_contains "$configured_calls" \
+  'colima <ssh> <-p> <neovim-dev> <--> <sh> <-eu> <-c>' \
+  'Colima setup did not run a read-only guest destination preflight'
 if printf '%s\n' "$configured_calls" | grep -Eq \
   'colima <(start|stop|delete)>|<--force>'; then
   fail 'Colima setup contains a destructive existing-profile lifecycle'
