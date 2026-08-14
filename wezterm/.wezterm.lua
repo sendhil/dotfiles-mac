@@ -175,6 +175,13 @@ local function send_herdr_key(sequence, fallback_key, fallback_mods)
 end
 
 config.keys = {
+	-- Let the terminal tab handle Alt+Enter instead of WezTerm's default
+	-- fullscreen binding.
+	{
+		key = "Enter",
+		mods = "ALT",
+		action = wezterm.action.DisableDefaultAssignment,
+	},
 	{
 		key = "Escape",
 		mods = "NONE",
