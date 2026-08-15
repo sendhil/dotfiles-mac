@@ -97,7 +97,9 @@ grouping is:
 - **macOS packages:** AeroSpace, Karabiner, skhd, yabai, macOS terminal layers,
   and other Mac-only helpers and applications.
 - **Ubuntu packages:** the Linux shell and Kitty layers plus Sway, Waybar,
-  Fuzzel, Mako, Swaylock, and the desktop-portal preference.
+  Wofi, Mako, Swaylock, and the desktop-portal preference. Wofi is used as the
+  launcher because it is available from the official Ubuntu 22.04 archive;
+  this workflow adds no launcher PPA or manual installer.
 
 The package set controls only user configuration. It does not imply that the
 corresponding software is installed. Individual package targets remain
@@ -171,7 +173,7 @@ few choices intentionally differ from stock i3:
 | Outputs | `Alt+Shift+;`, then `m` | Enters a mode for focusing outputs or moving containers. |
 | Floating | `Alt+Shift+Space` | Toggles floating for the focused container. |
 | Fullscreen | `Alt+f` | `Alt+Shift+f` remains a compatibility alias. |
-| Terminal / launcher | `Alt+Enter` / `Alt+d` | Explicit Kitty and Fuzzel launch bindings. |
+| Terminal / launcher | `Alt+Enter` / `Alt+d` | Explicit Kitty and Wofi launch bindings. |
 
 Known Chrome, VS Code, Kitty, Obsidian, and Slack identifiers have initial
 workspace routes. Wayland `app_id` values and XWayland classes vary by package

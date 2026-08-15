@@ -27,6 +27,7 @@ for needle in \
   'GNOME' \
   'GDM' \
   'NVIDIA' \
+  'Wofi' \
   'stock i3' \
   'swaymsg -t get_tree' \
   'pre-linux-2026-08-11'
@@ -84,5 +85,12 @@ for check in \
 do
   assert_contains "$checklist" "$check" "Ubuntu first-login checklist is missing a physical check: $check"
 done
+
+assert_contains "$checklist" 'Wofi launcher' \
+  'Ubuntu first-login checklist does not identify the Wofi launcher'
+case "$readme
+$checklist" in
+  *Fuzzel*|*fuzzel*) fail 'supported documentation still references unavailable Fuzzel' ;;
+esac
 
 pass 'cross-platform workflow and physical Sway checks are documented'

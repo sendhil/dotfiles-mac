@@ -20,7 +20,7 @@ Log out, open GDM's session chooser, and select Sway. Then verify:
 
 - [ ] Sway reaches a stable desktop, and logout returns to GDM normally.
 - [ ] GNOME can still be selected in GDM and reaches a stable desktop.
-- [ ] `Alt+Enter` opens Kitty and `Alt+d` opens the Fuzzel launcher.
+- [ ] `Alt+Enter` opens Kitty and `Alt+d` opens the Wofi launcher.
 - [ ] Focus with `Alt+h/j/k/l` and move with `Alt+Shift+h/j/k/l` work in every
   direction.
 - [ ] Selection and move bindings cover workspaces 1–20, including the
