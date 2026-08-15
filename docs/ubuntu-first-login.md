@@ -13,6 +13,11 @@ critical workflow works reliably.
 - [ ] Run `make preflight-ubuntu` and `make stow-ubuntu` from this dotfiles
   checkout, resolving every conflict explicitly without deleting existing
   home-directory content.
+- [ ] In a Sway session, run `scripts/setup-local-laptop.sh`, choose the
+  selected built-in keyboard, and verify that it creates only
+  `~/.config/sway/local.d/laptop.conf` and `~/.config/wezterm/local.lua`.
+- [ ] Confirm the laptop profile uses font size 17, swaps the built-in left Alt
+  and Windows keys, and leaves external keyboards unchanged.
 - [ ] If a proprietary NVIDIA driver is detected, do not change it; plan a
   short Sway smoke test and be ready to select GNOME again in GDM.
 
@@ -32,8 +37,9 @@ Log out, open GDM's session chooser, and select Sway. Then verify:
   Escape.
 - [ ] The output mode focuses each attached output and moves a container
   between outputs.
-- [ ] Application routing sends Chrome, VS Code, WezTerm, Obsidian, and Slack to
-  the documented workspaces; inspect mismatches rather than guessing IDs.
+- [ ] New WezTerm windows stay on the current workspace; application routing
+  sends Chrome, VS Code, Obsidian, and Slack to the documented workspaces.
+  Inspect mismatches rather than guessing IDs.
 - [ ] Built-in and attached displays use the expected resolution, scale,
   position, refresh rate, and lid behavior.
 - [ ] Brightness controls and laptop brightness keys change the built-in panel

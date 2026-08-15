@@ -51,3 +51,7 @@ Temporary Items
 
 # Machine- and workplace-specific shell overrides are never committed or stowed.
 **/.config/dotfiles/local.sh
+
+# Machine-local desktop overrides are generated outside the Stow packages.
+**/.config/sway/local.d/
+**/.config/wezterm/local.lua

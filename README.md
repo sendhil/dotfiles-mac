@@ -131,6 +131,34 @@ The file is ignored by Git, is never created by Stow, and should remain local
 to that machine. Do not put secrets or workplace-specific paths in a tracked
 package.
 
+### Laptop-local Sway and WezTerm profile
+
+After entering Sway on a laptop, create the optional machine-local desktop
+profile with:
+
+```bash
+scripts/setup-local-laptop.sh
+```
+
+The helper asks you to choose the selected built-in keyboard from Sway's live
+input inventory. It writes an exact device rule to
+`~/.config/sway/local.d/laptop.conf` that swaps the left Alt and Windows keys;
+external keyboards are not changed. The physical Windows key then behaves as
+Option for the existing Sway `Mod1` bindings, while the physical Alt key beside
+the spacebar behaves as Command/Super for WezTerm's native shortcuts.
+
+The helper also writes `~/.config/wezterm/local.lua` with laptop font size 17.
+Both files are ignored, never Stowed, and may differ on every machine. Pass an
+exact identifier or another size for repeatable setup:
+
+```bash
+scripts/setup-local-laptop.sh --keyboard 1:1:AT_Translated_Set_2_keyboard --font-size 17
+```
+
+Reload Sway and restart WezTerm after changing the profile. The script only
+updates files carrying its ownership marker and refuses unrelated existing
+files.
+
 Clipboard behavior also follows the session. `~/.local/bin/dotfiles-copy`
 uses `pbcopy` on macOS, `wl-copy` in a local Wayland session, and an OSC 52
 escape sequence through the controlling terminal when neither local clipboard
@@ -178,9 +206,10 @@ few choices intentionally differ from stock i3:
 | Fullscreen | `Alt+f` | `Alt+Shift+f` remains a compatibility alias. |
 | Terminal / launcher | `Alt+Enter` / `Alt+Space` | Explicit WezTerm and Wofi launch bindings. |
 
-Known Chrome, VS Code, WezTerm, Obsidian, and Slack identifiers have initial
-workspace routes. Wayland `app_id` values and XWayland classes vary by package
-and launch mode, so do not guess a new rule. Launch the application, run
+Normal WezTerm windows open on the current workspace. Known Chrome, VS Code,
+Obsidian, and Slack identifiers have initial workspace routes. Wayland `app_id`
+values and XWayland classes vary by package and launch mode, so do not guess a
+new rule. Launch the application, run
 `swaymsg -t get_tree`, inspect its `app_id` or `window_properties.class`, and
 then add one exact criterion per rule. Reload Sway and verify the observed
 application before relying on the route.

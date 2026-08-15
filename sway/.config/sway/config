@@ -3,6 +3,9 @@ set $mod Mod1
 set $term wezterm
 set $menu wofi --show drun
 
+# Optional per-machine input settings are ignored by Git and never stowed.
+include ~/.config/sway/local.d/*.conf
+
 floating_modifier $mod normal
 default_border pixel 2
 gaps inner 6
@@ -143,8 +146,6 @@ assign [class="^Google-chrome$"] workspace number 1
 assign [app_id="^code$"] workspace number 2
 # VS Code XWayland class; disable this line if the observed identifier differs.
 assign [class="^Code$"] workspace number 2
-# WezTerm Wayland app_id; the scratch terminal uses a different app_id.
-assign [app_id="^org.wezfurlong.wezterm$"] workspace number 3
 # Obsidian Wayland app_id; disable this line if the observed identifier differs.
 assign [app_id="^obsidian$"] workspace number 9
 # Obsidian XWayland class; disable this line if the observed identifier differs.

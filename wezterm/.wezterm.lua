@@ -234,4 +234,20 @@ config.keys = {
 	},
 }
 
+local local_config_path = wezterm.home_dir .. "/.config/wezterm/local.lua"
+local local_config_file = io.open(local_config_path, "r")
+if local_config_file then
+	local_config_file:close()
+	local loaded, local_overrides = pcall(dofile, local_config_path)
+	if not loaded then
+		error("unable to load WezTerm local override " .. local_config_path .. ": " .. tostring(local_overrides))
+	end
+	if type(local_overrides) ~= "table" then
+		error("WezTerm local override must return a table: " .. local_config_path)
+	end
+	for key, value in pairs(local_overrides) do
+		config[key] = value
+	end
+end
+
 return config

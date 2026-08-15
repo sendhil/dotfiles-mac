@@ -23,6 +23,13 @@ for needle in \
   'make unstow-ubuntu' \
   'Do not delete' \
   'local.sh' \
+  'scripts/setup-local-laptop.sh' \
+  '~/.config/sway/local.d/laptop.conf' \
+  '~/.config/wezterm/local.lua' \
+  'font size 17' \
+  'selected built-in keyboard' \
+  'external keyboards' \
+  'current workspace' \
   'OSC 52' \
   'GNOME' \
   'GDM' \

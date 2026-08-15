@@ -10,6 +10,8 @@ config_file="$ROOT_DIR/sway/.config/sway/config"
 config=$(cat "$config_file" 2>/dev/null || true)
 
 assert_contains "$config" 'set $mod Mod1' 'Sway uses Alt to preserve AeroSpace muscle memory'
+assert_contains "$config" 'include ~/.config/sway/local.d/*.conf' \
+  'Sway does not load optional machine-local input fragments'
 assert_contains "$config" '# Intentional stock-i3 deviations: Alt preserves prior muscle memory; Vim h/j/k/l replaces stock j/k/l/semicolon.' \
   'config does not document the intentional modifier and Vim-navigation deviations from stock i3'
 assert_contains "$config" '# Compatibility behavior: number keys toggle N/N+10; Alt+Shift+f remains a fullscreen alias.' \
@@ -96,7 +98,6 @@ for rule in \
   'assign [class="^Google-chrome$"] workspace number 1' \
   'assign [app_id="^code$"] workspace number 2' \
   'assign [class="^Code$"] workspace number 2' \
-  'assign [app_id="^org.wezfurlong.wezterm$"] workspace number 3' \
   'assign [app_id="^obsidian$"] workspace number 9' \
   'assign [class="^obsidian$"] workspace number 9' \
   'assign [app_id="^Slack$"] workspace number 10' \
@@ -104,6 +105,9 @@ for rule in \
 do
   assert_contains "$config" "$rule" "known Linux application route is absent: $rule"
 done
+
+assert_not_contains "$config" 'assign [app_id="^org.wezfurlong.wezterm$"]' \
+  'normal WezTerm windows are forced away from the current workspace'
 
 assert_not_contains "$config" 'Outlook' 'Sway guesses an unobserved Outlook identifier'
 assert_not_contains "$config" 'outlook' 'Sway guesses an unobserved Outlook identifier'
@@ -115,6 +119,10 @@ if rg -n '^[[:space:]]*(output|workspace)[[:space:]].*(eDP|DP-|HDMI-|DVI-|Displa
 fi
 
 route_line_count=$(printf '%s\n' "$config" | awk '/^assign \[(app_id|class)=/{count++} END {print count+0}')
-[ "$route_line_count" -eq 9 ] || fail 'application criteria are not isolated on one rule per line'
+[ "$route_line_count" -eq 8 ] || fail 'application criteria are not isolated on one rule per line'
+
+case $(git -C "$ROOT_DIR" check-ignore -v sway/.config/sway/local.d/laptop.conf 2>/dev/null || true) in
+  '') fail 'machine-local Sway fragments are not ignored' ;;
+esac
 
 pass 'Sway config mirrors AeroSpace and documents intentional stock-i3 deviations'

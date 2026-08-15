@@ -21,6 +21,18 @@ wezterm=$(cat "$wezterm_config" 2>/dev/null || true)
 
 assert_contains "$wezterm" 'wezterm.font("JetBrainsMono Nerd Font Mono")' \
   'shared WezTerm config does not request the provisioned Nerd Font family'
+assert_contains "$wezterm" 'wezterm.home_dir .. "/.config/wezterm/local.lua"' \
+  'shared WezTerm config does not look for the machine-local override'
+assert_contains "$wezterm" 'type(local_overrides) ~= "table"' \
+  'shared WezTerm config does not reject a non-table local override'
+assert_contains "$wezterm" 'config[key] = value' \
+  'shared WezTerm config does not merge machine-local values'
+assert_not_contains "$wezterm" 'key = "t", mods = "CMD"' \
+  'shared WezTerm config redundantly replaces the native Super-t tab binding'
+
+case $(git -C "$ROOT_DIR" check-ignore -v wezterm/.config/wezterm/local.lua 2>/dev/null || true) in
+  '') fail 'machine-local WezTerm override is not ignored' ;;
+esac
 
 assert_contains "$base" 'include platform.conf' 'Kitty base includes its selected platform fragment'
 assert_not_contains "$base" 'macos_colorspace' 'Kitty base contains a macOS colorspace setting'
