@@ -63,7 +63,7 @@ assert_contains "$config" 'bindsym $mod+Tab workspace back_and_forth' \
 assert_contains "$config" 'bindsym $mod+grave exec ~/.local/bin/sway-scratchpad' \
   'native Sway scratchpad helper binding is absent'
 assert_contains "$config" \
-  'for_window [app_id="^kitty-scratchpad$"] move scratchpad, scratchpad show' \
+  'for_window [app_id="^wezterm-scratchpad$"] move scratchpad, scratchpad show' \
   'a newly launched scratch terminal is not moved into and shown from Sway scratchpad storage'
 assert_contains "$config" 'bindsym $mod+r mode "resize"' 'resize mode binding is absent'
 assert_contains "$config" 'mode "resize" {' 'resize mode is absent'
@@ -72,9 +72,11 @@ assert_contains "$config" 'mode "outputs" {' 'output mode is absent'
 assert_contains "$config" 'focus output left' 'output mode cannot focus an adjacent output'
 assert_contains "$config" 'move container to output left' 'output mode cannot move a container between outputs'
 assert_contains "$config" 'bindsym $mod+Shift+space floating toggle' 'floating toggle is absent'
-assert_contains "$config" 'bindsym $mod+Return exec kitty' 'baseline terminal binding is absent'
+assert_contains "$config" 'set $term wezterm' 'WezTerm is not the configured terminal'
+assert_contains "$config" 'bindsym $mod+Return exec $term' 'baseline terminal binding is absent'
 assert_contains "$config" 'set $menu wofi --show drun' 'Wofi drun menu command is absent'
-assert_contains "$config" 'bindsym $mod+d exec $menu' 'launcher binding is absent'
+assert_contains "$config" 'bindsym $mod+space exec $menu' 'Alt-Space launcher binding is absent'
+assert_not_contains "$config" 'bindsym $mod+d exec $menu' 'retired Alt-d launcher binding remains'
 assert_not_contains "$config" 'fuzzel' 'Sway still references unavailable Fuzzel'
 assert_contains "$config" 'bindsym $mod+f fullscreen toggle' 'discoverable fullscreen binding is absent'
 assert_contains "$config" 'bindsym $mod+Shift+f fullscreen toggle' \
@@ -94,7 +96,7 @@ for rule in \
   'assign [class="^Google-chrome$"] workspace number 1' \
   'assign [app_id="^code$"] workspace number 2' \
   'assign [class="^Code$"] workspace number 2' \
-  'assign [app_id="^kitty$"] workspace number 3' \
+  'assign [app_id="^org.wezfurlong.wezterm$"] workspace number 3' \
   'assign [app_id="^obsidian$"] workspace number 9' \
   'assign [class="^obsidian$"] workspace number 9' \
   'assign [app_id="^Slack$"] workspace number 10' \

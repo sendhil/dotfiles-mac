@@ -18,11 +18,11 @@ read_tree() {
 
 scratch_exists() {
   printf '%s\n' "$tree" | jq -e \
-    '[.. | objects | .app_id? // empty] | index("kitty-scratchpad") != null' >/dev/null
+    '[.. | objects | .app_id? // empty] | index("wezterm-scratchpad") != null' >/dev/null
 }
 
 show_scratch() {
-  if result=$(swaymsg -- '[app_id="^kitty-scratchpad$"] scratchpad show'); then
+  if result=$(swaymsg -- '[app_id="^wezterm-scratchpad$"] scratchpad show'); then
     :
   else
     exit $?
@@ -65,7 +65,7 @@ trap 'exit 129' HUP
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
-# The lock holder must recheck: another invocation may have launched Kitty
+# The lock holder must recheck: another invocation may have launched WezTerm
 # between our optimistic first check and lock acquisition.
 if read_tree; then
   :
@@ -77,9 +77,9 @@ if scratch_exists; then
   exit 0
 fi
 
-kitty --class kitty-scratchpad --title kitty-scratchpad --directory "$HOME" 9>&- &
-kitty_pid=$!
-kitty_running=1
+wezterm start --always-new-process --class wezterm-scratchpad --cwd "$HOME" 9>&- &
+wezterm_pid=$!
+wezterm_running=1
 
 # Keep the lock only for a bounded startup window. The kernel releases flock
 # automatically on every exit path, so a killed helper cannot leave a stale lock.
@@ -95,8 +95,8 @@ while [ "$attempts" -gt 0 ]; do
     exit 0
   fi
 
-  if [ "$kitty_running" -eq 1 ] && ! kill -0 "$kitty_pid" 2>/dev/null; then
-    if wait "$kitty_pid"; then
+  if [ "$wezterm_running" -eq 1 ] && ! kill -0 "$wezterm_pid" 2>/dev/null; then
+    if wait "$wezterm_pid"; then
       status=0
     else
       status=$?
@@ -104,7 +104,7 @@ while [ "$attempts" -gt 0 ]; do
     [ "$status" -eq 0 ] || exit "$status"
     # A successful launcher may exit just before Sway publishes the new tree;
     # keep polling within the existing bound instead of racing to failure.
-    kitty_running=0
+    wezterm_running=0
   fi
   attempts=$((attempts - 1))
 done

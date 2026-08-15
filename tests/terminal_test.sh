@@ -12,10 +12,15 @@ trap 'rm -rf "$tmp_dir"' EXIT HUP INT TERM
 base_config="$ROOT_DIR/kitty/.config/kitty/kitty.conf"
 mac_config="$ROOT_DIR/kitty-macos/.config/kitty/platform.conf"
 ubuntu_config="$ROOT_DIR/kitty-ubuntu/.config/kitty/platform.conf"
+wezterm_config="$ROOT_DIR/wezterm/.wezterm.lua"
 
 base=$(cat "$base_config")
 mac=$(cat "$mac_config" 2>/dev/null || true)
 ubuntu=$(cat "$ubuntu_config" 2>/dev/null || true)
+wezterm=$(cat "$wezterm_config" 2>/dev/null || true)
+
+assert_contains "$wezterm" 'wezterm.font("JetBrainsMono Nerd Font Mono")' \
+  'shared WezTerm config does not request the provisioned Nerd Font family'
 
 assert_contains "$base" 'include platform.conf' 'Kitty base includes its selected platform fragment'
 assert_not_contains "$base" 'macos_colorspace' 'Kitty base contains a macOS colorspace setting'
@@ -43,6 +48,13 @@ for platform in macos ubuntu; do
   linked_platform=$(cat "$home/.config/kitty/platform.conf")
   expected_platform=$(cat "$ROOT_DIR/kitty-$platform/.config/kitty/platform.conf")
   [ "$linked_platform" = "$expected_platform" ] || fail "$platform Kitty fragment linked the wrong content"
+done
+
+for platform in macos ubuntu; do
+  home="$tmp_dir/$platform wezterm home"
+  mkdir -p "$home"
+  stow --dir "$ROOT_DIR" --no-folding --target "$home" wezterm
+  [ -L "$home/.wezterm.lua" ] || fail "$platform WezTerm config was not linked"
 done
 
 [ -f "$ROOT_DIR/bin-macos/.local/bin/cmux-scratch" ] || fail 'CMUX executable was not moved to bin-macos'

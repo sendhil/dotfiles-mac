@@ -20,7 +20,7 @@ Log out, open GDM's session chooser, and select Sway. Then verify:
 
 - [ ] Sway reaches a stable desktop, and logout returns to GDM normally.
 - [ ] GNOME can still be selected in GDM and reaches a stable desktop.
-- [ ] `Alt+Enter` opens Kitty and `Alt+d` opens the Wofi launcher.
+- [ ] `Alt+Enter` opens WezTerm and `Alt+Space` opens the Wofi launcher.
 - [ ] Focus with `Alt+h/j/k/l` and move with `Alt+Shift+h/j/k/l` work in every
   direction.
 - [ ] Selection and move bindings cover workspaces 1–20, including the
@@ -32,7 +32,7 @@ Log out, open GDM's session chooser, and select Sway. Then verify:
   Escape.
 - [ ] The output mode focuses each attached output and moves a container
   between outputs.
-- [ ] Application routing sends Chrome, VS Code, Kitty, Obsidian, and Slack to
+- [ ] Application routing sends Chrome, VS Code, WezTerm, Obsidian, and Slack to
   the documented workspaces; inspect mismatches rather than guessing IDs.
 - [ ] Built-in and attached displays use the expected resolution, scale,
   position, refresh rate, and lid behavior.

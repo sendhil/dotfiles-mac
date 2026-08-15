@@ -52,29 +52,29 @@ case "$*" in
 esac
 FAKE_SWAYMSG
 
-cat >"$fake_bin/kitty" <<'FAKE_KITTY'
+cat >"$fake_bin/wezterm" <<'FAKE_WEZTERM'
 #!/bin/sh
 {
-  printf 'kitty'
+  printf 'wezterm'
   for arg do
     printf ' <%s>' "$arg"
   done
   printf '\n'
-} >>"$KITTY_LOG"
+} >>"$WEZTERM_LOG"
 if [ -n "${LOCK_PROBE_FD:-}" ] && ( eval ": >&$LOCK_PROBE_FD" ) 2>/dev/null; then
-  printf 'inherited-open\n' >>"$KITTY_FD_LOG"
+  printf 'inherited-open\n' >>"$WEZTERM_FD_LOG"
 else
-  printf 'closed\n' >>"$KITTY_FD_LOG"
+  printf 'closed\n' >>"$WEZTERM_FD_LOG"
 fi
-kitty_status=${KITTY_STATUS:-0}
-[ -z "${KITTY_STATE_DELAY:-}" ] || sleep "$KITTY_STATE_DELAY"
-if [ "$kitty_status" -eq 0 ] && [ -n "${SWAYMSG_TREE_STATE_FILE:-}" ]; then
+wezterm_status=${WEZTERM_STATUS:-0}
+[ -z "${WEZTERM_STATE_DELAY:-}" ] || sleep "$WEZTERM_STATE_DELAY"
+if [ "$wezterm_status" -eq 0 ] && [ -n "${SWAYMSG_TREE_STATE_FILE:-}" ]; then
   state_tmp="$SWAYMSG_TREE_STATE_FILE.tmp.$$"
-  printf '%s\n' '{"nodes":[{"app_id":"kitty-scratchpad"}]}' >"$state_tmp"
+  printf '%s\n' '{"nodes":[{"app_id":"wezterm-scratchpad"}]}' >"$state_tmp"
   mv "$state_tmp" "$SWAYMSG_TREE_STATE_FILE"
 fi
-exit "$kitty_status"
-FAKE_KITTY
+exit "$wezterm_status"
+FAKE_WEZTERM
 
 cat >"$fake_bin/flock" <<'FAKE_FLOCK'
 #!/bin/sh
@@ -102,17 +102,17 @@ while ! mkdir "$lock_dir" 2>/dev/null; do
   sleep 0.05
 done
 FAKE_FLOCK
-chmod +x "$fake_bin/swaymsg" "$fake_bin/kitty" "$fake_bin/flock"
+chmod +x "$fake_bin/swaymsg" "$fake_bin/wezterm" "$fake_bin/flock"
 
 workspace_helper="$ROOT_DIR/sway/.local/bin/sway-workspace-toggle"
 scratch_helper="$ROOT_DIR/sway/.local/bin/sway-scratchpad"
 log="$tmp_dir/swaymsg log"
-kitty_log="$tmp_dir/kitty log"
-kitty_fd_log="$tmp_dir/kitty fd log"
+wezterm_log="$tmp_dir/wezterm log"
+wezterm_fd_log="$tmp_dir/wezterm fd log"
 flock_log="$tmp_dir/flock log"
 : >"$log"
-: >"$kitty_log"
-: >"$kitty_fd_log"
+: >"$wezterm_log"
+: >"$wezterm_fd_log"
 : >"$flock_log"
 
 run_workspace() {
@@ -180,53 +180,53 @@ assert_status 1 env PATH="$fake_bin:$PATH" SWAYMSG_LOG="$log" \
   SWAYMSG_COMMAND_JSON='[{"success":false,"error":"rejected"}]' "$workspace_helper" 1
 
 : >"$log"
-: >"$kitty_log"
-PATH="$fake_bin:$PATH" SWAYMSG_LOG="$log" KITTY_LOG="$kitty_log" \
-  SWAYMSG_TREE_JSON='{"nodes":[{"app_id":"kitty-scratchpad"}]}' \
+: >"$wezterm_log"
+PATH="$fake_bin:$PATH" SWAYMSG_LOG="$log" WEZTERM_LOG="$wezterm_log" \
+  SWAYMSG_TREE_JSON='{"nodes":[{"app_id":"wezterm-scratchpad"}]}' \
   "$scratch_helper"
 assert_contains "$(cat "$log")" \
-  'swaymsg <--> <[app_id="^kitty-scratchpad$"] scratchpad show>' \
+  'swaymsg <--> <[app_id="^wezterm-scratchpad$"] scratchpad show>' \
   'existing scratch terminal is shown with an exact app-id criterion'
-[ ! -s "$kitty_log" ] || fail 'existing scratch terminal launched a duplicate Kitty process'
+[ ! -s "$wezterm_log" ] || fail 'existing scratch terminal launched a duplicate WezTerm process'
 
 : >"$log"
-: >"$kitty_log"
+: >"$wezterm_log"
 scratch_home="$tmp_dir/home with spaces"
 runtime_dir="$tmp_dir/runtime with spaces"
 mkdir -p "$scratch_home"
 mkdir -p "$runtime_dir"
 tree_state="$tmp_dir/tree state"
-printf '%s\n' '{"nodes":[{"app_id":"ordinary-kitty"}]}' >"$tree_state"
+printf '%s\n' '{"nodes":[{"app_id":"org.wezfurlong.wezterm"}]}' >"$tree_state"
 PATH="$fake_bin:$PATH" HOME="$scratch_home" XDG_RUNTIME_DIR="$runtime_dir" \
-  SWAYMSG_LOG="$log" KITTY_LOG="$kitty_log" KITTY_FD_LOG="$kitty_fd_log" \
+  SWAYMSG_LOG="$log" WEZTERM_LOG="$wezterm_log" WEZTERM_FD_LOG="$wezterm_fd_log" \
   FLOCK_LOG="$flock_log" SWAYMSG_TREE_STATE_FILE="$tree_state" LOCK_PROBE_FD=9 \
   "$scratch_helper"
-expected_kitty="kitty <--class> <kitty-scratchpad> <--title> <kitty-scratchpad> <--directory> <$scratch_home>"
-[ "$(cat "$kitty_log")" = "$expected_kitty" ] || \
+expected_wezterm="wezterm <start> <--always-new-process> <--class> <wezterm-scratchpad> <--cwd> <$scratch_home>"
+[ "$(cat "$wezterm_log")" = "$expected_wezterm" ] || \
   fail 'absent scratch terminal was not launched with literal safe arguments'
 assert_contains "$(cat "$flock_log")" 'flock <-x> <-w> <6> <fd:' \
   'scratch helper does not acquire a bounded exclusive lock on an open descriptor'
-[ "$(cat "$kitty_fd_log")" = 'closed' ] || \
-  fail 'Kitty inherited the scratch serialization lock descriptor'
+[ "$(cat "$wezterm_fd_log")" = 'closed' ] || \
+  fail 'WezTerm inherited the scratch serialization lock descriptor'
 
 # Both invocations observe absence before one acquires the lock. The lock holder
-# launches Kitty and waits for its app_id; the waiter then rechecks and shows it.
+# launches WezTerm and waits for its app_id; the waiter then rechecks and shows it.
 : >"$log"
-: >"$kitty_log"
-: >"$kitty_fd_log"
+: >"$wezterm_log"
+: >"$wezterm_fd_log"
 : >"$flock_log"
 printf '%s\n' '{"nodes":[]}' >"$tree_state"
 PATH="$fake_bin:$PATH" HOME="$scratch_home" XDG_RUNTIME_DIR="$runtime_dir" \
-  SWAYMSG_LOG="$log" KITTY_LOG="$kitty_log" KITTY_FD_LOG="$kitty_fd_log" \
+  SWAYMSG_LOG="$log" WEZTERM_LOG="$wezterm_log" WEZTERM_FD_LOG="$wezterm_fd_log" \
   FLOCK_LOG="$flock_log" SWAYMSG_TREE_STATE_FILE="$tree_state" \
   SWAY_SCRATCHPAD_LOCKED=1 LOCK_PROBE_FD=9 \
-  KITTY_STATE_DELAY=0.2 "$scratch_helper" &
+  WEZTERM_STATE_DELAY=0.2 "$scratch_helper" &
 first_pid=$!
 PATH="$fake_bin:$PATH" HOME="$scratch_home" XDG_RUNTIME_DIR="$runtime_dir" \
-  SWAYMSG_LOG="$log" KITTY_LOG="$kitty_log" KITTY_FD_LOG="$kitty_fd_log" \
+  SWAYMSG_LOG="$log" WEZTERM_LOG="$wezterm_log" WEZTERM_FD_LOG="$wezterm_fd_log" \
   FLOCK_LOG="$flock_log" SWAYMSG_TREE_STATE_FILE="$tree_state" \
   SWAY_SCRATCHPAD_LOCKED=1 LOCK_PROBE_FD=9 \
-  KITTY_STATE_DELAY=0.2 "$scratch_helper" &
+  WEZTERM_STATE_DELAY=0.2 "$scratch_helper" &
 second_pid=$!
 set +e
 wait "$first_pid"
@@ -236,38 +236,38 @@ second_status=$?
 set -e
 [ "$first_status" -eq 0 ] || fail "first concurrent scratch invocation failed: $first_status"
 [ "$second_status" -eq 0 ] || fail "second concurrent scratch invocation failed: $second_status"
-[ "$(wc -l <"$kitty_log" | tr -d ' ')" -eq 1 ] || \
-  fail 'concurrent scratch invocations launched more than one Kitty process'
+[ "$(wc -l <"$wezterm_log" | tr -d ' ')" -eq 1 ] || \
+  fail 'concurrent scratch invocations launched more than one WezTerm process'
 assert_contains "$(cat "$log")" \
-  'swaymsg <--> <[app_id="^kitty-scratchpad$"] scratchpad show>' \
+  'swaymsg <--> <[app_id="^wezterm-scratchpad$"] scratchpad show>' \
   'the concurrent waiter did not recheck and show the launched scratch terminal'
 [ "$(wc -l <"$flock_log" | tr -d ' ')" -eq 2 ] || \
   fail 'a public invocation bypassed locking because an internal-looking environment variable was set'
-[ "$(cat "$kitty_fd_log")" = 'closed' ] || \
-  fail 'the concurrent Kitty child retained the serialization lock descriptor'
+[ "$(cat "$wezterm_fd_log")" = 'closed' ] || \
+  fail 'the concurrent WezTerm child retained the serialization lock descriptor'
 [ ! -e "$runtime_dir/sway-scratchpad.fake-lock" ] || \
   fail 'scratch serialization left a stale lock after both invocations exited'
 
-assert_status 2 env PATH="$fake_bin:$PATH" SWAYMSG_LOG="$log" KITTY_LOG="$kitty_log" \
+assert_status 2 env PATH="$fake_bin:$PATH" SWAYMSG_LOG="$log" WEZTERM_LOG="$wezterm_log" \
   "$scratch_helper" unexpected
-assert_status 43 env PATH="$fake_bin:$PATH" SWAYMSG_LOG="$log" KITTY_LOG="$kitty_log" \
+assert_status 43 env PATH="$fake_bin:$PATH" SWAYMSG_LOG="$log" WEZTERM_LOG="$wezterm_log" \
   SWAYMSG_TREE_STATUS=43 "$scratch_helper"
-assert_status 1 env PATH="$fake_bin:$PATH" SWAYMSG_LOG="$log" KITTY_LOG="$kitty_log" \
+assert_status 1 env PATH="$fake_bin:$PATH" SWAYMSG_LOG="$log" WEZTERM_LOG="$wezterm_log" \
   SWAYMSG_TREE_JSON='not-json' "$scratch_helper"
 printf '%s\n' '{}' >"$tree_state"
 assert_status 44 env PATH="$fake_bin:$PATH" HOME="$scratch_home" SWAYMSG_LOG="$log" \
-  KITTY_LOG="$kitty_log" KITTY_FD_LOG="$kitty_fd_log" FLOCK_LOG="$flock_log" \
+  WEZTERM_LOG="$wezterm_log" WEZTERM_FD_LOG="$wezterm_fd_log" FLOCK_LOG="$flock_log" \
   XDG_RUNTIME_DIR="$runtime_dir" \
-  SWAYMSG_TREE_STATE_FILE="$tree_state" KITTY_STATUS=44 "$scratch_helper"
+  SWAYMSG_TREE_STATE_FILE="$tree_state" WEZTERM_STATUS=44 "$scratch_helper"
 assert_status 46 env PATH="$fake_bin:$PATH" HOME="$scratch_home" SWAYMSG_LOG="$log" \
-  KITTY_LOG="$kitty_log" KITTY_FD_LOG="$kitty_fd_log" FLOCK_LOG="$flock_log" \
+  WEZTERM_LOG="$wezterm_log" WEZTERM_FD_LOG="$wezterm_fd_log" FLOCK_LOG="$flock_log" \
   XDG_RUNTIME_DIR="$runtime_dir" \
   SWAYMSG_TREE_STATE_FILE="$tree_state" FLOCK_STATUS=46 "$scratch_helper"
-assert_status 45 env PATH="$fake_bin:$PATH" SWAYMSG_LOG="$log" KITTY_LOG="$kitty_log" \
-  SWAYMSG_TREE_JSON='{"app_id":"kitty-scratchpad"}' SWAYMSG_COMMAND_STATUS=45 \
+assert_status 45 env PATH="$fake_bin:$PATH" SWAYMSG_LOG="$log" WEZTERM_LOG="$wezterm_log" \
+  SWAYMSG_TREE_JSON='{"app_id":"wezterm-scratchpad"}' SWAYMSG_COMMAND_STATUS=45 \
   "$scratch_helper"
-assert_status 1 env PATH="$fake_bin:$PATH" SWAYMSG_LOG="$log" KITTY_LOG="$kitty_log" \
-  SWAYMSG_TREE_JSON='{"app_id":"kitty-scratchpad"}' \
+assert_status 1 env PATH="$fake_bin:$PATH" SWAYMSG_LOG="$log" WEZTERM_LOG="$wezterm_log" \
+  SWAYMSG_TREE_JSON='{"app_id":"wezterm-scratchpad"}' \
   SWAYMSG_COMMAND_JSON='[{"success":false}]' "$scratch_helper"
 
 pass 'Sway workspace and scratchpad helpers validate input and propagate failures'

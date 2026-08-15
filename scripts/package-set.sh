@@ -5,8 +5,8 @@ set -u
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 ROOT_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
 
-common_packages='bash-linux bat bin direnv fd neovim prezto sesh tmux zellij'
-macos_packages='aerospace bin-macos ccstatusline cmux devservices ghostty herdr karabiner kitty kitty-macos shell-macos skhd wezterm yabai'
+common_packages='bash-linux bat bin direnv fd neovim prezto sesh tmux wezterm zellij'
+macos_packages='aerospace bin-macos ccstatusline cmux devservices ghostty herdr karabiner kitty kitty-macos shell-macos skhd yabai'
 ubuntu_packages='kitty kitty-ubuntu shell-ubuntu sway waybar wofi mako swaylock xdg-portal'
 
 packages_for() {

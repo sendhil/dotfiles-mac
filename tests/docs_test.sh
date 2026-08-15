@@ -47,6 +47,7 @@ first_preflight=$(printf '%s\n' "$readme" | grep -n -m1 'make preflight-ubuntu' 
 [ "$first_bootstrap" -lt "$first_doctor" ] && [ "$first_doctor" -lt "$first_preflight" ] || \
   fail 'README must run linux-laptop-setup before the dotfiles Ubuntu preflight'
 setup_sequence='bin/bootstrap
+bin/install-wezterm
 bin/audit work
 bin/apply work
 bin/audit work
@@ -58,7 +59,7 @@ for check in \
   'Sway reaches a stable desktop' \
   'GNOME can still be selected' \
   'Alt+Enter' \
-  'Alt+d' \
+  'Alt+Space' \
   'focus' \
   'move' \
   'workspaces 1–20' \
@@ -88,6 +89,10 @@ done
 
 assert_contains "$checklist" 'Wofi launcher' \
   'Ubuntu first-login checklist does not identify the Wofi launcher'
+case "$readme
+$checklist" in
+  *'Alt+d'*) fail 'supported documentation still advertises the retired Alt-d launcher binding' ;;
+esac
 case "$readme
 $checklist" in
   *Fuzzel*|*fuzzel*) fail 'supported documentation still references unavailable Fuzzel' ;;

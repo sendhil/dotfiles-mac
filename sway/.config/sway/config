@@ -1,6 +1,6 @@
 # Sway preserves the established workflow while remaining hardware-neutral.
 set $mod Mod1
-set $term kitty
+set $term wezterm
 set $menu wofi --show drun
 
 floating_modifier $mod normal
@@ -30,16 +30,16 @@ bindsym $mod+Shift+j move down
 bindsym $mod+Shift+k move up
 bindsym $mod+Shift+l move right
 
-bindsym $mod+Return exec kitty
-bindsym $mod+d exec $menu
+bindsym $mod+Return exec $term
+bindsym $mod+space exec $menu
 bindsym $mod+Shift+q kill
 bindsym $mod+Shift+space floating toggle
 bindsym $mod+f fullscreen toggle
 bindsym $mod+Shift+f fullscreen toggle
 bindsym $mod+Tab workspace back_and_forth
 bindsym $mod+grave exec ~/.local/bin/sway-scratchpad
-# Scratch Kitty Wayland app_id; keep it out of the normal Kitty workspace route.
-for_window [app_id="^kitty-scratchpad$"] move scratchpad, scratchpad show
+# Scratch WezTerm Wayland app_id; keep it out of the normal WezTerm workspace route.
+for_window [app_id="^wezterm-scratchpad$"] move scratchpad, scratchpad show
 
 bindsym $mod+1 exec ~/.local/bin/sway-workspace-toggle 1
 bindsym $mod+2 exec ~/.local/bin/sway-workspace-toggle 2
@@ -143,8 +143,8 @@ assign [class="^Google-chrome$"] workspace number 1
 assign [app_id="^code$"] workspace number 2
 # VS Code XWayland class; disable this line if the observed identifier differs.
 assign [class="^Code$"] workspace number 2
-# Kitty Wayland app_id; the scratch terminal uses a different app_id.
-assign [app_id="^kitty$"] workspace number 3
+# WezTerm Wayland app_id; the scratch terminal uses a different app_id.
+assign [app_id="^org.wezfurlong.wezterm$"] workspace number 3
 # Obsidian Wayland app_id; disable this line if the observed identifier differs.
 assign [app_id="^obsidian$"] workspace number 9
 # Obsidian XWayland class; disable this line if the observed identifier differs.

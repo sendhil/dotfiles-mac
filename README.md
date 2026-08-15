@@ -20,6 +20,7 @@ the supported flow in `linux-laptop-setup` first:
 
 ```bash
 bin/bootstrap
+bin/install-wezterm
 bin/audit work
 bin/apply work
 bin/audit work
@@ -27,6 +28,8 @@ bin/doctor work
 ```
 
 Review the first audit before applying. The second audit should converge.
+The explicit WezTerm step installs the official package and the exact
+`JetBrainsMono Nerd Font Mono` family used by this repository's shared config.
 Review the doctor output, then clone this repository, including any
 submodules, and continue with its Ubuntu preflight. Run doctor again from
 inside Sway when completing the physical-session checklist.
@@ -168,14 +171,14 @@ few choices intentionally differ from stock i3:
 | Workspaces | `Alt+1`…`0` | Toggles between workspace N and N+10 when N is already focused. |
 | Workspaces 11–20 | `Alt+Shift+Backtick`, then a number | An explicit secondary-workspace mode. |
 | Back-and-forth | `Alt+Tab` | Direct previous-workspace access. |
-| Scratch terminal | `Alt+Backtick` | Uses Sway's native scratchpad with Kitty. |
+| Scratch terminal | `Alt+Backtick` | Uses Sway's native scratchpad with a dedicated WezTerm window. |
 | Resize | `Alt+r`, then `h/j/k/l` | A Vim-direction resize mode. |
 | Outputs | `Alt+Shift+;`, then `m` | Enters a mode for focusing outputs or moving containers. |
 | Floating | `Alt+Shift+Space` | Toggles floating for the focused container. |
 | Fullscreen | `Alt+f` | `Alt+Shift+f` remains a compatibility alias. |
-| Terminal / launcher | `Alt+Enter` / `Alt+d` | Explicit Kitty and Wofi launch bindings. |
+| Terminal / launcher | `Alt+Enter` / `Alt+Space` | Explicit WezTerm and Wofi launch bindings. |
 
-Known Chrome, VS Code, Kitty, Obsidian, and Slack identifiers have initial
+Known Chrome, VS Code, WezTerm, Obsidian, and Slack identifiers have initial
 workspace routes. Wayland `app_id` values and XWayland classes vary by package
 and launch mode, so do not guess a new rule. Launch the application, run
 `swaymsg -t get_tree`, inspect its `app_id` or `window_properties.class`, and

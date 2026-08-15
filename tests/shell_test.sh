@@ -28,9 +28,9 @@ minimal_path=/usr/bin:/bin
 PATH=$minimal_path HOME="$mac_home" ZDOTDIR="$mac_home" \
   /bin/zsh -dfc 'source "$HOME/.zshrc"'
 PATH=$minimal_path HOME="$ubuntu_home" ZDOTDIR="$ubuntu_home" \
-  /bin/zsh -dfc 'source "$HOME/.zshrc"; test "$EDITOR" = nvim; test "$LESS" = FRX; test "$TERMINAL" = kitty'
+  /bin/zsh -dfc 'source "$HOME/.zshrc"; test "$EDITOR" = nvim; test "$LESS" = FRX; test "$TERMINAL" = wezterm'
 PATH=$minimal_path HOME="$ubuntu_home" \
-  /bin/bash --noprofile --norc -c 'source "$HOME/.bashrc"; test "$EDITOR" = nvim; test "$LESS" = FRX; test "$TERMINAL" = kitty'
+  /bin/bash --noprofile --norc -c 'source "$HOME/.bashrc"; test "$EDITOR" = nvim; test "$LESS" = FRX; test "$TERMINAL" = wezterm'
 
 nounset_home="$tmp_dir/nounset-home"
 mkdir -p "$nounset_home/.local/bin" "$nounset_home/.cargo/bin" "$nounset_home/go/bin"

@@ -7,8 +7,8 @@ ROOT_DIR=$(CDPATH= cd -- "$TEST_DIR/.." && pwd)
 . "$TEST_DIR/test_helper.sh"
 cd "$ROOT_DIR"
 
-expected_common='bash-linux bat bin direnv fd neovim prezto sesh tmux zellij'
-expected_macos="$expected_common aerospace bin-macos ccstatusline cmux devservices ghostty herdr karabiner kitty kitty-macos shell-macos skhd wezterm yabai"
+expected_common='bash-linux bat bin direnv fd neovim prezto sesh tmux wezterm zellij'
+expected_macos="$expected_common aerospace bin-macos ccstatusline cmux devservices ghostty herdr karabiner kitty kitty-macos shell-macos skhd yabai"
 expected_ubuntu="$expected_common kitty kitty-ubuntu shell-ubuntu sway waybar wofi mako swaylock xdg-portal"
 
 macos=$(scripts/package-set.sh macos)
@@ -19,10 +19,12 @@ ubuntu=$(scripts/package-set.sh ubuntu)
 assert_contains "$macos" aerospace 'macOS includes AeroSpace'
 assert_contains "$macos" karabiner 'macOS includes Karabiner'
 assert_contains "$macos" shell-macos 'macOS includes its shell fragment'
+assert_contains "$macos" wezterm 'macOS includes the shared WezTerm config'
 case $macos in *sway*|*hammerspoon*) fail 'macOS contains retired/wrong platform package' ;; esac
 assert_contains "$ubuntu" sway 'Ubuntu includes Sway'
 assert_contains "$ubuntu" wofi 'Ubuntu includes the Jammy-compatible Wofi launcher'
 assert_contains "$ubuntu" shell-ubuntu 'Ubuntu includes its shell fragment'
+assert_contains "$ubuntu" wezterm 'Ubuntu includes the shared WezTerm config'
 case $ubuntu in
   *aerospace*|*karabiner*|*hammerspoon*) fail 'Ubuntu contains a Mac package' ;;
   *fuzzel*) fail 'Ubuntu contains Fuzzel, which has no Jammy candidate' ;;

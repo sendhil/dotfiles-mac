@@ -1,7 +1,7 @@
 # Ubuntu-only shell environment. Wayland variables are set only in a Wayland
 # session so SSH and the GNOME fallback remain usable.
 export BROWSER=${BROWSER:-xdg-open}
-export TERMINAL=${TERMINAL:-kitty}
+export TERMINAL=${TERMINAL:-wezterm}
 
 if [ -n "${WAYLAND_DISPLAY:-}" ]; then
   export MOZ_ENABLE_WAYLAND=${MOZ_ENABLE_WAYLAND:-1}
