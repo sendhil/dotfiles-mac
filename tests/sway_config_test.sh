@@ -73,7 +73,9 @@ assert_contains "$config" 'focus output left' 'output mode cannot focus an adjac
 assert_contains "$config" 'move container to output left' 'output mode cannot move a container between outputs'
 assert_contains "$config" 'bindsym $mod+Shift+space floating toggle' 'floating toggle is absent'
 assert_contains "$config" 'bindsym $mod+Return exec kitty' 'baseline terminal binding is absent'
-assert_contains "$config" 'bindsym $mod+d exec fuzzel' 'launcher binding is absent'
+assert_contains "$config" 'set $menu wofi --show drun' 'Wofi drun menu command is absent'
+assert_contains "$config" 'bindsym $mod+d exec $menu' 'launcher binding is absent'
+assert_not_contains "$config" 'fuzzel' 'Sway still references unavailable Fuzzel'
 assert_contains "$config" 'bindsym $mod+f fullscreen toggle' 'discoverable fullscreen binding is absent'
 assert_contains "$config" 'bindsym $mod+Shift+f fullscreen toggle' \
   'AeroSpace fullscreen compatibility alias is absent'

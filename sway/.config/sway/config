@@ -1,7 +1,7 @@
 # Sway preserves the established workflow while remaining hardware-neutral.
 set $mod Mod1
 set $term kitty
-set $menu fuzzel
+set $menu wofi --show drun
 
 floating_modifier $mod normal
 default_border pixel 2
@@ -31,7 +31,7 @@ bindsym $mod+Shift+k move up
 bindsym $mod+Shift+l move right
 
 bindsym $mod+Return exec kitty
-bindsym $mod+d exec fuzzel
+bindsym $mod+d exec $menu
 bindsym $mod+Shift+q kill
 bindsym $mod+Shift+space floating toggle
 bindsym $mod+f fullscreen toggle

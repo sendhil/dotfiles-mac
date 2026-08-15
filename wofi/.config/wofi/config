@@ -1,0 +1,8 @@
+show=drun
+width=50%
+height=40%
+allow_images=true
+image_size=24
+prompt=Search applications
+term=kitty
+insensitive=true
