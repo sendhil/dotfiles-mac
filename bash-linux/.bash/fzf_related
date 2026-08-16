@@ -104,6 +104,29 @@ function zm() {
   session=$(zellij list-sessions -n 2>/dev/null | grep -v "EXITED" | awk '{print $1}' | fzf --exit-0) && zellij attach "$session" || echo "No sessions found."
 }
 
+# hm - create a new Herdr session, or switch to an existing one.
+# `hm` will allow you to select your Herdr session via fzf.
+# `hm dev` will attach to the dev session (or create it if needed).
+
+function hm() {
+  if [ -n "${1:-}" ]; then
+    herdr session attach "$1"
+    return
+  fi
+
+  local session
+  if ! session=$(herdr session list 2>/dev/null | awk 'NR > 1 {print $1}' | fzf --exit-0); then
+    echo "No sessions found."
+    return
+  fi
+  if [ -z "$session" ]; then
+    echo "No sessions found."
+    return
+  fi
+
+  herdr session attach "$session"
+}
+
 function fzfp() {
   fzf --preview '[[ $(file --mime {}) =~ binary ]] &&
     echo {} is a binary file ||
