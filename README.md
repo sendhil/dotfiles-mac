@@ -15,8 +15,23 @@ The supported entry points are deliberately explicit:
 ## Prerequisites and setup order
 
 Machine software is owned by a separate setup repository. On a Mac, complete
-the current workflow in `mac-laptop-setup`. On an Ubuntu work laptop, complete
-the supported flow in `linux-laptop-setup` first:
+the current workflow in `mac-laptop-setup`. On an Ubuntu work laptop, clone
+both repositories at the conventional locations and run the resumable
+coordinator from `linux-laptop-setup`:
+
+```bash
+bin/setup-work-laptop work "$HOME/src/dotfiles-mac"
+```
+
+The first pass is intended to run from GNOME. It checks the package database,
+installs the reviewed software, links this repository, validates or installs
+the appropriate GDM Sway session, and runs doctor. Log out, choose Sway (or
+**Sway (NVIDIA test)** when directed), and rerun the same command inside Sway.
+That second pass creates the optional laptop-local keyboard/font profile when
+needed, reruns doctor in the graphical session, and points to the physical
+checklist. Existing coordinator-owned work is discovered and skipped safely.
+
+For troubleshooting, the underlying `linux-laptop-setup` stages remain:
 
 ```bash
 bin/bootstrap
@@ -27,16 +42,19 @@ bin/audit work
 bin/doctor work
 ```
 
-Review the first audit before applying. The second audit should converge.
+The coordinator performs the same reviewed stages and stops before package
+mutation if `dpkg` is unhealthy. When running stages manually, review the
+first audit before applying; the second audit should converge.
 The explicit WezTerm step installs the official package and the exact
 `JetBrainsMono Nerd Font Mono` family used by this repository's shared config.
-Review the doctor output, then clone this repository, including any
-submodules, and continue with its Ubuntu preflight. Run doctor again from
-inside Sway when completing the physical-session checklist.
+Clone this repository with its submodules before running the coordinator. If
+an existing checkout was not cloned recursively, initialize its submodules
+before continuing:
 
 ```bash
 git clone --recurse-submodules git@github.com:sendhil/dotfiles-mac.git
 cd dotfiles-mac
+git submodule update --init --recursive
 ```
 
 The TPM launcher is vendored as ordinary tracked files at
@@ -133,8 +151,8 @@ package.
 
 ### Laptop-local Sway and WezTerm profile
 
-After entering Sway on a laptop, create the optional machine-local desktop
-profile with:
+The second coordinator pass creates the optional machine-local desktop profile
+after entering Sway. To create or update it manually, run:
 
 ```bash
 scripts/setup-local-laptop.sh
@@ -158,6 +176,13 @@ scripts/setup-local-laptop.sh --keyboard 1:1:AT_Translated_Set_2_keyboard --font
 Reload Sway and restart WezTerm after changing the profile. The script only
 updates files carrying its ownership marker and refuses unrelated existing
 files.
+
+The tracked WezTerm configuration also mirrors the Mac application shortcuts
+on the physical Command key (Super after the laptop-local swap): `Super+T`
+opens a tab, `Super+N` opens a window, `Super+W` closes the current tab with
+confirmation, `Super+C` copies, `Super+V` pastes, and `Super+F` searches.
+Ctrl remains terminal input, so shell/editor bindings such as `Ctrl+C`,
+`Ctrl+N`, and `Ctrl+T` are not consumed by the terminal emulator.
 
 Clipboard behavior also follows the session. `~/.local/bin/dotfiles-copy`
 uses `pbcopy` on macOS, `wl-copy` in a local Wayland session, and an OSC 52

@@ -175,6 +175,39 @@ local function send_herdr_key(sequence, fallback_key, fallback_mods)
 end
 
 config.keys = {
+	-- Keep the physical Command-key muscle memory shared by macOS and Linux.
+	-- On Linux, the laptop-local Sway fragment maps the built-in keyboard's
+	-- physical Alt key to Super; Ctrl remains available to terminal programs.
+	{
+		key = "t",
+		mods = "CMD",
+		action = wezterm.action.SpawnTab("CurrentPaneDomain"),
+	},
+	{
+		key = "n",
+		mods = "CMD",
+		action = wezterm.action.SpawnWindow,
+	},
+	{
+		key = "w",
+		mods = "CMD",
+		action = wezterm.action.CloseCurrentTab({ confirm = true }),
+	},
+	{
+		key = "c",
+		mods = "CMD",
+		action = wezterm.action.CopyTo("Clipboard"),
+	},
+	{
+		key = "v",
+		mods = "CMD",
+		action = wezterm.action.PasteFrom("Clipboard"),
+	},
+	{
+		key = "f",
+		mods = "CMD",
+		action = wezterm.action.Search({ CaseInSensitiveString = "" }),
+	},
 	{
 		key = "Escape",
 		mods = "NONE",

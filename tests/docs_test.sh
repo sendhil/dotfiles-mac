@@ -13,6 +13,8 @@ for needle in \
   'cross-platform' \
   'mac-laptop-setup' \
   'linux-laptop-setup' \
+  'bin/setup-work-laptop work "$HOME/src/dotfiles-mac"' \
+  'rerun the same command inside Sway' \
   'git clone --recurse-submodules' \
   'TPM launcher is vendored' \
   'make preflight-macos' \
@@ -30,6 +32,13 @@ for needle in \
   'selected built-in keyboard' \
   'external keyboards' \
   'current workspace' \
+  'Super+T' \
+  'Super+N' \
+  'Super+W' \
+  'Super+C' \
+  'Super+V' \
+  'Super+F' \
+  'Ctrl remains terminal input' \
   'OSC 52' \
   'GNOME' \
   'GDM' \
@@ -67,6 +76,8 @@ for check in \
   'GNOME can still be selected' \
   'Alt+Enter' \
   'Alt+Space' \
+  'Super+T' \
+  'Super+V' \
   'focus' \
   'move' \
   'workspaces 1–20' \

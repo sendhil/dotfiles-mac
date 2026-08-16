@@ -27,8 +27,30 @@ assert_contains "$wezterm" 'type(local_overrides) ~= "table"' \
   'shared WezTerm config does not reject a non-table local override'
 assert_contains "$wezterm" 'config[key] = value' \
   'shared WezTerm config does not merge machine-local values'
-assert_not_contains "$wezterm" 'key = "t", mods = "CMD"' \
-  'shared WezTerm config redundantly replaces the native Super-t tab binding'
+for mac_binding in \
+  'key = "t"' \
+  'key = "n"' \
+  'key = "w"' \
+  'key = "c"' \
+  'key = "v"' \
+  'key = "f"'; do
+  assert_contains "$wezterm" "$mac_binding" \
+    "shared WezTerm config lacks Mac-style binding: $mac_binding"
+done
+assert_contains "$wezterm" 'wezterm.action.SpawnTab("CurrentPaneDomain")' \
+  'shared WezTerm config does not open a tab with Super-t'
+assert_contains "$wezterm" 'wezterm.action.SpawnWindow' \
+  'shared WezTerm config does not open a window with Super-n'
+assert_contains "$wezterm" 'wezterm.action.CloseCurrentTab({ confirm = true })' \
+  'shared WezTerm config does not confirm before Super-w closes a tab'
+assert_contains "$wezterm" 'wezterm.action.CopyTo("Clipboard")' \
+  'shared WezTerm config does not copy with Super-c'
+assert_contains "$wezterm" 'wezterm.action.PasteFrom("Clipboard")' \
+  'shared WezTerm config does not paste with Super-v'
+assert_contains "$wezterm" 'wezterm.action.Search({ CaseInSensitiveString = "" })' \
+  'shared WezTerm config does not search with Super-f'
+assert_not_contains "$wezterm" 'mods = "CTRL"' \
+  'shared WezTerm config consumes Ctrl terminal sequences for GUI shortcuts'
 
 case $(git -C "$ROOT_DIR" check-ignore -v wezterm/.config/wezterm/local.lua 2>/dev/null || true) in
   '') fail 'machine-local WezTerm override is not ignored' ;;

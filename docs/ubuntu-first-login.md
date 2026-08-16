@@ -7,14 +7,13 @@ critical workflow works reliably.
 
 ## Before choosing Sway
 
-- [ ] Finish `bin/bootstrap`, `bin/audit work`, `bin/apply work`, and the
-  follow-up audit in the separate `linux-laptop-setup` checkout.
-- [ ] Run `bin/doctor work` from `linux-laptop-setup` and review every warning.
-- [ ] Run `make preflight-ubuntu` and `make stow-ubuntu` from this dotfiles
-  checkout, resolving every conflict explicitly without deleting existing
-  home-directory content.
-- [ ] In a Sway session, run `scripts/setup-local-laptop.sh`, choose the
-  selected built-in keyboard, and verify that it creates only
+- [ ] From `linux-laptop-setup`, run
+  `bin/setup-work-laptop work "$HOME/src/dotfiles-mac"` in GNOME and review
+  every warning. It performs the software and dotfiles handoff without
+  deleting existing home-directory content.
+- [ ] Log into the Sway session selected by the coordinator, then rerun the
+  same command inside Sway.
+- [ ] Verify the second pass selects the built-in keyboard and creates only
   `~/.config/sway/local.d/laptop.conf` and `~/.config/wezterm/local.lua`.
 - [ ] Confirm the laptop profile uses font size 17, swaps the built-in left Alt
   and Windows keys, and leaves external keyboards unchanged.
@@ -26,6 +25,10 @@ Log out, open GDM's session chooser, and select Sway. Then verify:
 - [ ] Sway reaches a stable desktop, and logout returns to GDM normally.
 - [ ] GNOME can still be selected in GDM and reaches a stable desktop.
 - [ ] `Alt+Enter` opens WezTerm and `Alt+Space` opens the Wofi launcher.
+- [ ] The physical Command key provides the shared WezTerm shortcuts:
+  `Super+T` opens a tab, `Super+N` opens a window, `Super+W` closes the current
+  tab with confirmation, `Super+C` copies, `Super+V` pastes, and `Super+F`
+  searches. Ctrl remains terminal input.
 - [ ] Focus with `Alt+h/j/k/l` and move with `Alt+Shift+h/j/k/l` work in every
   direction.
 - [ ] Selection and move bindings cover workspaces 1–20, including the
