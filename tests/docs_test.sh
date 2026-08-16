@@ -30,7 +30,10 @@ for needle in \
   '~/.config/wezterm/local.lua' \
   'font size 17' \
   'selected built-in keyboard' \
+  'built-in touchpad' \
   'external keyboards' \
+  'natural scrolling' \
+  'two-finger tap for right-click' \
   'current workspace' \
   'Super+T' \
   'Super+N' \

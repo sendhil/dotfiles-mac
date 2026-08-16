@@ -159,18 +159,24 @@ scripts/setup-local-laptop.sh
 ```
 
 The helper asks you to choose the selected built-in keyboard from Sway's live
-input inventory. It writes an exact device rule to
-`~/.config/sway/local.d/laptop.conf` that swaps the left Alt and Windows keys;
-external keyboards are not changed. The physical Windows key then behaves as
-Option for the existing Sway `Mod1` bindings, while the physical Alt key beside
-the spacebar behaves as Command/Super for WezTerm's native shortcuts.
+input inventory and automatically selects the built-in touchpad when it is
+unambiguous. It writes exact device rules to
+`~/.config/sway/local.d/laptop.conf`: the keyboard rule swaps the left Alt and
+Windows keys, while the touchpad rule enables natural scrolling, tap-to-click,
+and a two-finger tap for right-click; external keyboards, mice, and trackpads
+are not changed. The physical Windows key then behaves as Option for the
+existing Sway `Mod1` bindings, while the physical Alt key beside the spacebar
+behaves as Command/Super for WezTerm's native shortcuts.
 
 The helper also writes `~/.config/wezterm/local.lua` with laptop font size 17.
 Both files are ignored, never Stowed, and may differ on every machine. Pass an
 exact identifier or another size for repeatable setup:
 
 ```bash
-scripts/setup-local-laptop.sh --keyboard 1:1:AT_Translated_Set_2_keyboard --font-size 17
+scripts/setup-local-laptop.sh \
+  --keyboard 1:1:AT_Translated_Set_2_keyboard \
+  --touchpad 1267:12371:DELL0A78:00_04F3:3053_Touchpad \
+  --font-size 17
 ```
 
 Reload Sway and restart WezTerm after changing the profile. The script only

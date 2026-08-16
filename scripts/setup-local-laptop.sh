@@ -7,10 +7,11 @@ MARKER='# Managed by dotfiles scripts/setup-local-laptop.sh.'
 
 usage() {
 	cat <<EOF
-usage: $PROGRAM [--keyboard IDENTIFIER] [--font-size NUMBER]
+usage: $PROGRAM [--keyboard IDENTIFIER] [--touchpad IDENTIFIER] [--font-size NUMBER]
 
 Create ignored, machine-local Sway and WezTerm overrides.
 When --keyboard is omitted, select a physical keyboard from the live Sway session.
+When --touchpad is omitted, select the only reported touchpad or prompt when needed.
 The default laptop font size is 17.
 EOF
 }
@@ -27,6 +28,7 @@ operational_error() {
 }
 
 keyboard_id=
+touchpad_id=
 font_size=17
 
 while [ "$#" -gt 0 ]; do
@@ -39,6 +41,11 @@ while [ "$#" -gt 0 ]; do
 		--font-size)
 			[ "$#" -ge 2 ] || input_error '--font-size requires a number'
 			font_size=$2
+			shift 2
+			;;
+		--touchpad)
+			[ "$#" -ge 2 ] || input_error '--touchpad requires an identifier'
+			touchpad_id=$2
 			shift 2
 			;;
 		--help)
@@ -119,6 +126,55 @@ keyboard_count=$(printf '%s\n' "$inputs_json" | jq -r --arg identifier "$keyboar
 keyboard_name=$(printf '%s\n' "$inputs_json" | jq -r --arg identifier "$keyboard_id" \
 	'.[] | select(.type == "keyboard" and .identifier == $identifier) | .name')
 
+if [ -z "$touchpad_id" ]; then
+	touchpad_lines=$(printf '%s\n' "$inputs_json" | jq -r '
+		.[]
+		| select(.type == "pointer")
+		| select(.name | test("touchpad|trackpad"; "i"))
+		| [.identifier, .name]
+		| @tsv
+	')
+
+	touchpad_ids=()
+	touchpad_names=()
+	while IFS=$'\t' read -r candidate_id candidate_name; do
+		[ -n "$candidate_id" ] || continue
+		touchpad_ids[${#touchpad_ids[@]}]=$candidate_id
+		touchpad_names[${#touchpad_names[@]}]=$candidate_name
+	done < <(printf '%s\n' "$touchpad_lines")
+
+	case ${#touchpad_ids[@]} in
+		0) operational_error 'no touchpad was reported by Sway' ;;
+		1) touchpad_id=${touchpad_ids[0]} ;;
+		*)
+			printf 'Select the built-in touchpad:\n' >&2
+			index=0
+			while [ "$index" -lt "${#touchpad_ids[@]}" ]; do
+				printf '  %d) %s [%s]\n' "$((index + 1))" "${touchpad_names[$index]}" "${touchpad_ids[$index]}" >&2
+				index=$((index + 1))
+			done
+			printf 'Touchpad [1-%d]: ' "${#touchpad_ids[@]}" >&2
+			IFS= read -r selection || input_error 'touchpad selection was cancelled'
+			case $selection in
+				''|*[!0-9]*) input_error 'touchpad selection must be a listed number' ;;
+			esac
+			[ "$selection" -ge 1 ] && [ "$selection" -le "${#touchpad_ids[@]}" ] ||
+				input_error 'touchpad selection is outside the listed range'
+			touchpad_id=${touchpad_ids[$((selection - 1))]}
+			;;
+	esac
+fi
+
+case $touchpad_id in
+	''|*[!A-Za-z0-9_.:-]*) input_error 'touchpad identifier contains unsafe characters' ;;
+esac
+
+touchpad_count=$(printf '%s\n' "$inputs_json" | jq -r --arg identifier "$touchpad_id" \
+	'[.[] | select(.type == "pointer" and .identifier == $identifier and (.name | test("touchpad|trackpad"; "i")))] | length')
+[ "$touchpad_count" -eq 1 ] || input_error 'touchpad identifier is not present exactly once in Sway'
+touchpad_name=$(printf '%s\n' "$inputs_json" | jq -r --arg identifier "$touchpad_id" \
+	'.[] | select(.type == "pointer" and .identifier == $identifier) | .name')
+
 sway_target="$HOME/.config/sway/local.d/laptop.conf"
 wezterm_target="$HOME/.config/wezterm/local.lua"
 
@@ -155,6 +211,13 @@ $MARKER
 input "$keyboard_id" {
     xkb_options altwin:swap_lalt_lwin
 }
+
+# $touchpad_name
+input "$touchpad_id" {
+    tap enabled
+    tap_button_map lrm
+    natural_scroll enabled
+}
 EOF
 
 cat >"$stage_dir/local.lua" <<EOF
@@ -177,5 +240,6 @@ mv -f "$wezterm_temp" "$wezterm_target"
 wezterm_temp=
 
 printf 'configured built-in keyboard: %s [%s]\n' "$keyboard_name" "$keyboard_id"
+printf 'configured built-in touchpad: %s [%s]\n' "$touchpad_name" "$touchpad_id"
 printf 'configured WezTerm font size: %s\n' "$font_size"
 printf 'reload Sway and restart WezTerm to apply the local laptop profile\n'
