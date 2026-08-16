@@ -24,7 +24,7 @@ inputs='[
   {"identifier":"0:1:Power_Button","name":"Power Button","type":"keyboard"},
   {"identifier":"1:1:AT_Translated_Set_2_keyboard","name":"AT Translated Set 2 keyboard","type":"keyboard"},
   {"identifier":"1234:5678:External_Mechanical_Keyboard","name":"External Mechanical Keyboard","type":"keyboard"},
-  {"identifier":"1267:12371:DELL0A78:00_04F3:3053_Touchpad","name":"DELL0A78:00 04F3:3053 Touchpad","type":"pointer"},
+  {"identifier":"1267:12371:DELL0A78:00_04F3:3053_Touchpad","name":"DELL0A78:00 04F3:3053 Touchpad","type":"touchpad"},
   {"identifier":"4321:8765:External_Mouse","name":"External Mouse","type":"pointer"}
 ]'
 internal='1:1:AT_Translated_Set_2_keyboard'

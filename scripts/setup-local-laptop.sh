@@ -129,7 +129,7 @@ keyboard_name=$(printf '%s\n' "$inputs_json" | jq -r --arg identifier "$keyboard
 if [ -z "$touchpad_id" ]; then
 	touchpad_lines=$(printf '%s\n' "$inputs_json" | jq -r '
 		.[]
-		| select(.type == "pointer")
+		| select(.type == "touchpad")
 		| select(.name | test("touchpad|trackpad"; "i"))
 		| [.identifier, .name]
 		| @tsv
@@ -170,10 +170,10 @@ case $touchpad_id in
 esac
 
 touchpad_count=$(printf '%s\n' "$inputs_json" | jq -r --arg identifier "$touchpad_id" \
-	'[.[] | select(.type == "pointer" and .identifier == $identifier and (.name | test("touchpad|trackpad"; "i")))] | length')
+	'[.[] | select(.type == "touchpad" and .identifier == $identifier and (.name | test("touchpad|trackpad"; "i")))] | length')
 [ "$touchpad_count" -eq 1 ] || input_error 'touchpad identifier is not present exactly once in Sway'
 touchpad_name=$(printf '%s\n' "$inputs_json" | jq -r --arg identifier "$touchpad_id" \
-	'.[] | select(.type == "pointer" and .identifier == $identifier) | .name')
+	'.[] | select(.type == "touchpad" and .identifier == $identifier) | .name')
 
 sway_target="$HOME/.config/sway/local.d/laptop.conf"
 wezterm_target="$HOME/.config/wezterm/local.lua"
