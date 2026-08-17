@@ -1,3 +1,0 @@
-# Elephant discovers installed providers from its configured provider
-# directory. Do not ignore the clipboard or snippets providers.
-ignored_providers = []

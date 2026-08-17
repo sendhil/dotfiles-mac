@@ -46,7 +46,7 @@ for needle in \
   'GNOME' \
   'GDM' \
   'NVIDIA' \
-  'Walker' \
+  'Wofi' \
   'stock i3' \
   'swaymsg -t get_tree' \
   'pre-linux-2026-08-11'
@@ -108,12 +108,8 @@ do
   assert_contains "$checklist" "$check" "Ubuntu first-login checklist is missing a physical check: $check"
 done
 
-assert_contains "$checklist" 'Walker' \
-  'Ubuntu first-login checklist does not identify the Walker launcher'
-assert_contains "$readme" 'clipboard history' \
-  'README does not document Walker clipboard history'
-assert_contains "$readme" 'Chrome bookmarks' \
-  'README does not document Walker Chrome bookmark search'
+assert_contains "$checklist" 'Wofi launcher' \
+  'Ubuntu first-login checklist does not identify the Wofi launcher'
 case "$readme
 $checklist" in
   *'Alt+d'*) fail 'supported documentation still advertises the retired Alt-d launcher binding' ;;

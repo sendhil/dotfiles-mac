@@ -1,7 +1,7 @@
 # Sway preserves the established workflow while remaining hardware-neutral.
 set $mod Mod1
 set $term wezterm
-set $menu walker
+set $menu wofi --show drun
 
 # Optional per-machine input settings are ignored by Git and never stowed.
 include ~/.config/sway/local.d/*.conf

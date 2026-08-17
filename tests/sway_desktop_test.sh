@@ -8,7 +8,8 @@ ROOT_DIR=$(CDPATH= cd -- "$TEST_DIR/.." && pwd)
 
 sway_config_file="$ROOT_DIR/sway/.config/sway/config"
 waybar_config_file="$ROOT_DIR/waybar/.config/waybar/config.jsonc"
-desktop_packages='waybar walker mako swaylock xdg-portal'
+chromium_override_file="$ROOT_DIR/bin/.local/share/applications/chromium_daemon.desktop"
+desktop_packages='waybar wofi mako swaylock xdg-portal'
 
 for package in $desktop_packages; do
   [ -d "$ROOT_DIR/$package" ] || fail "desktop package is absent: $package"
@@ -17,14 +18,17 @@ done
 for config_file in \
   "$waybar_config_file" \
   "$ROOT_DIR/waybar/.config/waybar/style.css" \
-  "$ROOT_DIR/walker/.config/walker/themes/tokyo-night/style.css" \
-  "$ROOT_DIR/walker/.config/elephant/elephant.toml" \
+  "$ROOT_DIR/wofi/.config/wofi/config" \
+  "$ROOT_DIR/wofi/.config/wofi/style.css" \
   "$ROOT_DIR/mako/.config/mako/config" \
   "$ROOT_DIR/swaylock/.config/swaylock/config" \
   "$ROOT_DIR/xdg-portal/.config/xdg-desktop-portal/portals.conf"
 do
   [ -f "$config_file" ] || fail "desktop config is absent: ${config_file#"$ROOT_DIR/"}"
 done
+[ -f "$chromium_override_file" ] || fail 'Chromium daemon desktop entry override is absent'
+assert_contains "$(cat "$chromium_override_file")" 'Hidden=true' \
+  'Chromium daemon desktop entry is not hidden'
 
 sway_config=$(cat "$sway_config_file")
 for command in \
@@ -103,7 +107,7 @@ assert_contains "$swaylock_config" 'indicator' 'Swaylock does not show its authe
 
 for themed_config in \
   "$ROOT_DIR/waybar/.config/waybar/style.css" \
-  "$ROOT_DIR/walker/.config/walker/themes/tokyo-night/style.css" \
+  "$ROOT_DIR/wofi/.config/wofi/style.css" \
   "$ROOT_DIR/mako/.config/mako/config" \
   "$ROOT_DIR/swaylock/.config/swaylock/config"
 do
@@ -112,7 +116,7 @@ done
 
 if rg -n '(/Users/|/home/|eDP(-[0-9]+)?|DP-[0-9]+|HDMI-[A-Z]-[0-9]+|DVI-[A-Z]-[0-9]+)' \
   "$ROOT_DIR/waybar/.config" \
-  "$ROOT_DIR/walker/.config" \
+  "$ROOT_DIR/wofi/.config" \
   "$ROOT_DIR/mako/.config" \
   "$ROOT_DIR/swaylock/.config" \
   "$ROOT_DIR/xdg-portal/.config" \
@@ -123,7 +127,7 @@ fi
 if rg -ni 'fuzzel' \
   "$ROOT_DIR/scripts/package-set.sh" \
   "$ROOT_DIR/sway/.config" \
-  "$ROOT_DIR/walker/.config" \
+  "$ROOT_DIR/wofi/.config" \
   >/dev/null 2>&1; then
   fail 'selected Ubuntu desktop configuration still references Fuzzel'
 fi

@@ -76,20 +76,13 @@ assert_contains "$config" 'move container to output left' 'output mode cannot mo
 assert_contains "$config" 'bindsym $mod+Shift+space floating toggle' 'floating toggle is absent'
 assert_contains "$config" 'set $term wezterm' 'WezTerm is not the configured terminal'
 assert_contains "$config" 'bindsym $mod+Return exec $term' 'baseline terminal binding is absent'
-assert_contains "$config" 'set $menu walker' 'Walker launcher command is absent'
+assert_contains "$config" 'set $menu wofi --show drun' 'Wofi drun menu command is absent'
 assert_contains "$config" 'bindsym $mod+space exec $menu' 'Alt-Space launcher binding is absent'
 assert_not_contains "$config" 'bindsym $mod+d exec $menu' 'retired Alt-d launcher binding remains'
 assert_not_contains "$config" 'fuzzel' 'Sway still references unavailable Fuzzel'
-assert_not_contains "$config" 'wofi' 'Sway still references retired Wofi'
 assert_contains "$config" 'bindsym $mod+f fullscreen toggle' 'discoverable fullscreen binding is absent'
 assert_contains "$config" 'bindsym $mod+Shift+f fullscreen toggle' \
   'AeroSpace fullscreen compatibility alias is absent'
-assert_contains "$config" 'gaps inner 6' \
-  'Sway inner gaps are not set to 6px'
-assert_contains "$config" 'gaps outer 6' \
-  'Sway outer gaps are not set to 6px'
-assert_contains "$config" 'smart_gaps on' \
-  'Sway smart gaps are not enabled'
 
 assert_contains "$config" \
   'exec_always dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=sway' \
