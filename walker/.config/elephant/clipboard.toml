@@ -1,0 +1,2 @@
+# Keep a useful, bounded clipboard history for Walker's `:` provider.
+max_items = 200

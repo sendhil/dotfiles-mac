@@ -24,7 +24,8 @@ Log out, open GDM's session chooser, and select Sway. Then verify:
 
 - [ ] Sway reaches a stable desktop, and logout returns to GDM normally.
 - [ ] GNOME can still be selected in GDM and reaches a stable desktop.
-- [ ] `Alt+Enter` opens WezTerm and `Alt+Space` opens the Wofi launcher.
+- [ ] `Alt+Enter` opens WezTerm and `Alt+Space` opens Walker. Search an app,
+  a Chrome bookmark, a snippet, and clipboard history from the launcher.
 - [ ] The physical Command key provides the shared WezTerm shortcuts:
   `Super+T` opens a tab, `Super+N` opens a window, `Super+W` closes the current
   tab with confirmation, `Super+C` copies, `Super+V` pastes, and `Super+F`

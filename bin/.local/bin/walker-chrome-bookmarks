@@ -1,0 +1,88 @@
+#!/bin/bash
+
+set -eu
+
+chrome_root=${XDG_CONFIG_HOME:-"$HOME/.config"}/google-chrome
+
+list_bookmarks() {
+  local bookmark_file title url index=0
+
+  [ -d "$chrome_root" ] || return 0
+
+  while IFS= read -r -d '' bookmark_file; do
+    while IFS=$'\t' read -r title url; do
+      [ -n "${url:-}" ] || continue
+      index=$((index + 1))
+      # The third field is an opaque, numeric selection id used by the
+      # Elephant menu. The first two fields remain human-readable data.
+      printf '%s\t%s\t%s\n' "$title" "$url" "$index"
+    done < <(
+      jq -r '
+        .. | objects
+        | select(.type? == "url" and (.url? | type) == "string")
+        | [(.name? // ""), .url]
+        | @tsv
+      ' "$bookmark_file" 2>/dev/null || true
+    )
+  done < <(find "$chrome_root" -mindepth 2 -maxdepth 2 -type f -name Bookmarks -print0 2>/dev/null || true)
+}
+
+open_bookmark() {
+  local url=${1:-}
+  [ -n "$url" ] || {
+    printf 'error: bookmark URL is required\n' >&2
+    return 2
+  }
+
+  if ! list_bookmarks | awk -F '\t' -v wanted="$url" '$2 == wanted { found = 1 } END { exit found ? 0 : 1 }'; then
+    printf 'error: URL is not a discovered Chrome bookmark\n' >&2
+    return 1
+  fi
+
+  command -v xdg-open >/dev/null 2>&1 || {
+    printf 'error: xdg-open is required to open bookmarks\n' >&2
+    return 1
+  }
+  xdg-open "$url"
+}
+
+open_bookmark_index() {
+  local wanted=${1:-} url
+  case $wanted in
+    ''|*[!0-9]*)
+      printf 'error: numeric bookmark index is required\n' >&2
+      return 2
+      ;;
+  esac
+
+  url=$(list_bookmarks | awk -F '\t' -v wanted="$wanted" '$3 == wanted { print $2; exit }')
+  [ -n "$url" ] || {
+    printf 'error: bookmark index was not discovered\n' >&2
+    return 1
+  }
+  open_bookmark "$url"
+}
+
+case ${1-} in
+  '')
+    list_bookmarks
+    ;;
+  --open)
+    [ "$#" -eq 2 ] || {
+      printf 'usage: %s [--open URL|--open-index INDEX]\n' "$0" >&2
+      exit 2
+    }
+    open_bookmark "$2"
+    ;;
+  --open-index)
+    [ "$#" -eq 2 ] || {
+      printf 'usage: %s [--open URL|--open-index INDEX]\n' "$0" >&2
+      exit 2
+    }
+    open_bookmark_index "$2"
+    ;;
+  *)
+    printf 'usage: %s [--open URL|--open-index INDEX]\n' "$0" >&2
+    exit 2
+    ;;
+esac

@@ -1,7 +1,7 @@
 # Sway preserves the established workflow while remaining hardware-neutral.
 set $mod Mod1
 set $term wezterm
-set $menu wofi --show drun
+set $menu walker
 
 # Optional per-machine input settings are ignored by Git and never stowed.
 include ~/.config/sway/local.d/*.conf
@@ -9,7 +9,8 @@ include ~/.config/sway/local.d/*.conf
 floating_modifier $mod normal
 default_border pixel 2
 gaps inner 6
-gaps outer 0
+gaps outer 6
+smart_gaps on
 focus_wrapping workspace
 
 exec_always dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=sway

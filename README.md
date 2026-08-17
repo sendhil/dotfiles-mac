@@ -118,9 +118,10 @@ grouping is:
 - **macOS packages:** AeroSpace, Karabiner, skhd, yabai, macOS terminal layers,
   and other Mac-only helpers and applications.
 - **Ubuntu packages:** the Linux shell and Kitty layers plus Sway, Waybar,
-  Wofi, Mako, Swaylock, and the desktop-portal preference. Wofi is used as the
-  launcher because it is available from the official Ubuntu 22.04 archive;
-  this workflow adds no launcher PPA or manual installer.
+  Walker, Mako, Swaylock, and the desktop-portal preference. Walker provides
+  the launcher surface for applications, clipboard history, snippets, and the
+  read-only Chrome bookmark bridge; its pinned runtime is installed by
+  `linux-laptop-setup`, while this repository owns the configuration.
 
 The package set controls only user configuration. It does not imply that the
 corresponding software is installed. Individual package targets remain
@@ -235,7 +236,7 @@ few choices intentionally differ from stock i3:
 | Outputs | `Alt+Shift+;`, then `m` | Enters a mode for focusing outputs or moving containers. |
 | Floating | `Alt+Shift+Space` | Toggles floating for the focused container. |
 | Fullscreen | `Alt+f` | `Alt+Shift+f` remains a compatibility alias. |
-| Terminal / launcher | `Alt+Enter` / `Alt+Space` | Explicit WezTerm and Wofi launch bindings. |
+| Terminal / launcher | `Alt+Enter` / `Alt+Space` | Explicit WezTerm and Walker launch bindings. Walker also searches clipboard history, snippets, and Chrome bookmarks. |
 
 Normal WezTerm windows open on the current workspace. Known Chrome, VS Code,
 Obsidian, and Slack identifiers have initial workspace routes. Wayland `app_id`
