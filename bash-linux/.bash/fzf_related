@@ -127,6 +127,44 @@ function hm() {
   herdr session attach "$session"
 }
 
+# hmd - select a Herdr session with fzf and delete it after confirmation.
+function hmd() {
+  local selection session session_status confirmation
+  if ! selection=$(herdr session list 2>/dev/null | awk 'NR > 1 {print $1 "\t" $2}' | fzf --exit-0); then
+    echo "No sessions found."
+    return
+  fi
+  if [ -z "$selection" ]; then
+    echo "No sessions found."
+    return
+  fi
+
+  session=${selection%%$'\t'*}
+  session_status=${selection#*$'\t'}
+  if [ "$session" = "$session_status" ]; then
+    session_status="unknown"
+  fi
+
+  if [ "$session_status" = "running" ]; then
+    printf "Stop and delete Herdr session '%s'? [y/N] " "$session"
+  else
+    printf "Delete Herdr session '%s'? [y/N] " "$session"
+  fi
+
+  read -r confirmation
+  case "$confirmation" in
+    y|Y|yes|YES)
+      if [ "$session_status" = "running" ]; then
+        herdr session stop "$session" || return
+      fi
+      herdr session delete "$session"
+      ;;
+    *)
+      echo "Deletion cancelled."
+      ;;
+  esac
+}
+
 function fzfp() {
   fzf --preview '[[ $(file --mime {}) =~ binary ]] &&
     echo {} is a binary file ||
