@@ -33,7 +33,7 @@ name = "catppuccin"
 auto_switch = true
 
 [update]
-manifest_check = false
+manifest_check = true
 
 [experimental]
 kitty_graphics = true
