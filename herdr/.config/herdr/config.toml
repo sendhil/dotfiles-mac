@@ -16,6 +16,18 @@ type = "plugin_action"
 command = "herdr.command-palette.open"
 description = "open command palette"
 
+[[keys.command]]
+key = "prefix+a"
+type = "plugin_action"
+command = "hhdebb.herdr-radar.view-flip"
+description = "Radar: flip active / recent"
+
+[[keys.command]]
+key = "prefix+comma"
+type = "plugin_action"
+command = "hhdebb.herdr-radar.settings"
+description = "Radar: open settings"
+
 [terminal]
 new_cwd = "follow"
 
@@ -30,7 +42,7 @@ agent_panel_sort = "priority"
 
 [theme]
 name = "catppuccin"
-auto_switch = true
+auto_switch = false
 
 [update]
 manifest_check = true
