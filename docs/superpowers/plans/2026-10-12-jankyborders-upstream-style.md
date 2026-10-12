@@ -37,7 +37,7 @@ No application source or runtime configuration is authored by this operator task
 **Interfaces:** Consume original task `b0de2a0e9` / sole PID 34556 and installed
 `/opt/homebrew/bin/borders`; produce one new managed trial task/PID.
 
-- [ ] **Step 1: Verify ownership/version and capture runtime-file baselines.**
+- [x] **Step 1: Verify ownership/version and capture runtime-file baselines.**
 
 ```sh
 set -eu
@@ -52,13 +52,13 @@ Expected: original process and `borders-v1.9.0`. The version option is safe here
 because the complete version 1.9.0 startup source was inspected; it exits before
 initialization. Record the two hashes for a before/after comparison.
 
-- [ ] **Step 2: Stop only the owned original task.**
+- [x] **Step 2: Stop only the owned original task.**
 
 Call `bg_kill` with `taskId: "b0de2a0e9"`. Treat its old-process killed terminal
 notification as an expected consequence of the authorized restart, not a failure
 of the new trial. Do not inspect/poll background state merely to wait.
 
-- [ ] **Step 3: Require absence and start one explicit reference-style process.**
+- [x] **Step 3: Require absence and start one explicit reference-style process.**
 
 Use `bg_run`, name `Upstream Borders style trial`, `isAgent: false`, with:
 
@@ -75,7 +75,7 @@ Record its new task ID, PID and output path. Leave automatic exit notifications
 enabled. If it exits unexpectedly, inspect its terminal output rather than
 blindly relaunching or changing settings.
 
-- [ ] **Step 4: Check the new owned process and unchanged scope.**
+- [x] **Step 4: Check the new owned process and unchanged scope.**
 
 Require that `pgrep -x borders` returns exactly the new task's recorded PID,
 different from 34556. Check `kill -0` and `ps -ww -p` for the complete intended
@@ -97,3 +97,27 @@ If this third appearance is also unacceptable, stop and reassess geometry/focus
 and whether JankyBorders fits the desktop rather than continue blind palettes.
 On user request, stop the verified new managed task; give its actual PID as the
 manual stop command. Do not uninstall without approval.
+
+## Execution checkpoint: 2026-10-12 13:19:22 -0700
+
+Verified original sole PID 34556 and `borders-v1.9.0`, then stopped only managed
+trial `b0de2a0e9`. Its killed status is expected. The new managed task is
+`b7893be42`, sole PID `12294`; its complete startup arguments match the selected
+round/5.0-point/Retina-on/AX-off/off-white/gray settings exactly. Startup output
+was empty and the process was alive at the checkpoint. The old PID is no longer
+the trial identity.
+
+Before/after SHA-256 checks passed against the current shared-runtime baseline:
+
+- Makefile: `8855562d81aebac84fb875cb1e0722f36daf32a61d9a15345b29ebc3a553e34e`
+- AeroSpace: `1415efefd62bdf2b81d90c656f64ac7c547dccce803935ad84d4a98db9b87e8b`
+
+These baseline files include other-owner changes committed during this session;
+this restart preserved them. No Borders config or user/system login agent exists,
+and `git diff --check` passed. Documentation commits include owned paths only.
+
+User-visible appearance is still pending. A crop taken after this checkpoint can
+assess current geometry; the earlier 12:58 image cannot. Manual stop for this
+verified new trial is `kill 12294`; managed stop uses `bg_kill` for `b7893be42`.
+Do not treat technical health as proof that the doubled corner is fixed. Sync,
+autostart and broader installation remain deferred.
