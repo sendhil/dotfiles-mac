@@ -92,7 +92,6 @@ outer.right =      0
 inherit-env-vars = true  # If you don't touch "exec" section,
 [exec.env-vars]          # it will fallback to "default-config.toml"
 PATH = '/opt/homebrew/bin:/opt/homebrew/sbin:${PATH}'
-CMUX_SOCKET_PATH = '/Users/spanchadsaram/Library/Application Support/cmux/cmux.sock'
 
 # 'main' binding mode declaration
 # See: https://nikitabobko.github.io/AeroSpace/guide#binding-modes
@@ -183,10 +182,6 @@ alt-shift-q = 'close --quit-if-last-window'
 
 alt-r = 'mode resize'
 alt-shift-backtick = 'mode workspace2'
-alt-backtick = 'exec-and-forget ~/.local/bin/cmux-scratch toggle'
-
-# cmux: back to previous workspace (reverses cmd+shift+u notification jump)
-cmd-shift-o = 'exec-and-forget /Applications/cmux.app/Contents/Resources/bin/cmux last-window'
 
 # 'alternate' binding mode declaration.
 # See: https://nikitabobko.github.io/AeroSpace/guide#binding-modes
