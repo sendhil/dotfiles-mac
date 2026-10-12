@@ -49,7 +49,7 @@ before installing/launching. Confirm that `~/.config/borders` and
 `~/Library/LaunchAgents/homebrew.mxcl.borders.plist` are absent. Record SHA-256
 fingerprints for `Makefile` and `aerospace/.config/aerospace/aerospace.toml`.
 
-- [ ] **Step 2: Install only the stable formula.**
+- [x] **Step 2: Install only the stable formula.**
 
 Use `bg_run` (`isAgent: false`, automatic completion notification enabled):
 
@@ -61,7 +61,7 @@ HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1 \
 Expected: exit 0. If installation fails, inspect the terminal output and diagnose
 it before changing anything. Do not install a HEAD build or bypass security.
 
-- [ ] **Step 3: Check the installed executable.**
+- [x] **Step 3: Check the installed executable.**
 
 ```sh
 brew list --versions borders
@@ -71,7 +71,7 @@ test -x /opt/homebrew/bin/borders
 Expected: a stable version (the inspected local formula is 1.9.0), and an
 executable. Do not assume undocumented `--version` or `--help` flags are safe.
 
-- [ ] **Step 4: Launch one temporary managed process.**
+- [x] **Step 4: Launch one temporary managed process.**
 
 Recheck `pgrep -x borders` first. If still absent, call `bg_run` with name
 `Local JankyBorders trial`, `isAgent: false`, and this command:
@@ -84,7 +84,7 @@ exec /opt/homebrew/bin/borders style=round width=3.0 hidpi=on ax_focus=off \
 Record the task ID and output path returned by the tool. Leave notifications
 enabled, so unexpected exit is reported automatically.
 
-- [ ] **Step 5: Run the process and scope smoke checks.**
+- [x] **Step 5: Run the process and scope smoke checks.**
 
 Run `pgrep -x borders`, then `ps -p "$(pgrep -x borders)" -o pid=,comm=,args=`;
 require one matching process and the intended options. Read its startup-output
@@ -114,3 +114,20 @@ If rejected, stop the recorded managed task with `bg_kill`, or send `kill` to it
 verified PID, then check that the process exited. Uninstall with
 `brew uninstall borders` only if the user requests removal of the installed
 binary. Do not remove the pre-existing tap.
+
+## Execution checkpoint: 2026-10-12
+
+- Installed stable Borders 1.9.0 successfully; installation task `bcf22ed61`
+  exited 0. Homebrew automatically trusted this specific formula, not all taps.
+  Existing untrusted-tap and outdated Command Line Tools warnings were nonfatal;
+  no unrelated trust or developer-tool changes were made.
+- Launched trial task `b0de2a0e9`, PID `34556`, with the approved explicit flags.
+  At the smoke-check checkpoint, exactly one matching process was alive and its
+  startup output was empty. Stop that verified trial with `kill 34556` or use
+  `bg_kill` for its recorded task ID.
+- No Borders config or login agent exists. SHA-256 checks confirmed `Makefile`
+  and the AeroSpace configuration were unchanged; `git diff --check` passed.
+- `.pi/tasks/` contains untracked harness-generated task metadata/output; it is
+  not shared runtime configuration and is not included in documentation commits.
+- User-visible rendering/focus/workspace/monitor acceptance is still pending.
+  Sync and autostart remain deferred.
