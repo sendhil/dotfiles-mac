@@ -107,10 +107,6 @@ wezterm.on("augment-command-palette", function(window, pane)
 				end),
 			}),
 		},
-		{
-			brief = "OpenCode: Pick session",
-			action = wezterm.action.SendString("oc-session\n"),
-		},
 	}
 end)
 
