@@ -1,7 +1,7 @@
 # JankyBorders: upstream screenshot-style trial
 
 Date: 2026-10-12
-Status: Repository look selected; written-spec review pending.
+Status: Repository look and written specification approved; restart authorized.
 
 ## Goal
 
