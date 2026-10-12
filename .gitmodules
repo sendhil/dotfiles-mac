@@ -1,9 +1,12 @@
-[submodule "tmux/plugins/tpm"]
-	path = tmux/plugins/tpm
-	url = https://github.com/tmux-plugins/tpm
 [submodule "tmux/.tmux/plugins/tmux-jump"]
 	path = tmux/.tmux/plugins/tmux-jump
 	url = https://github.com/schasse/tmux-jump
 [submodule "tmux/.tmux/plugins/tmux-yank"]
 	path = tmux/.tmux/plugins/tmux-yank
 	url = https://github.com/tmux-plugins/tmux-yank
+[submodule "tmux/.tmux/plugins/tokyo-night-tmux"]
+	path = tmux/.tmux/plugins/tokyo-night-tmux
+	url = https://github.com/janoamaral/tokyo-night-tmux
+[submodule "tmux/.tmux/plugins/vim-tmux-navigator"]
+	path = tmux/.tmux/plugins/vim-tmux-navigator
+	url = https://github.com/christoomey/vim-tmux-navigator

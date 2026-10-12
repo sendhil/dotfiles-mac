@@ -1,5 +1,5 @@
 # List of all packages
-PACKAGES = sketchybar kitty neovim skhd bash-linux bat yabai karabiner tmux prezto hammerspoon aerospace sesh fd direnv wezterm zellij ccstatusline devservices cmux ghostty bin herdr
+PACKAGES = sketchybar kitty neovim skhd bash-linux bat yabai karabiner tmux prezto hammerspoon aerospace sesh fd direnv wezterm zellij ccstatusline devservices ghostty bin herdr
 STOW_PACKAGES = $(filter-out herdr,$(PACKAGES))
 
 .PHONY: all
@@ -75,7 +75,3 @@ gitconfig:
 .PHONY: prestow
 prestow:
 	@./scripts/clear-out-files-before-stow.sh
-
-.PHONY: build-bin
-build-bin:
-	swiftc -O -o bin/.local/bin/cmux-scratch bin/.local/bin/cmux-scratch.swift
