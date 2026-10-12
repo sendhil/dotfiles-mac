@@ -1,7 +1,7 @@
 # JankyBorders: Omarchy-inspired amber trial
 
 Date: 2026-10-12
-Status: Amber style selected by the user; written-spec review pending.
+Status: Amber style and written specification approved; Apply now authorized.
 
 ## Goal and evidence
 
