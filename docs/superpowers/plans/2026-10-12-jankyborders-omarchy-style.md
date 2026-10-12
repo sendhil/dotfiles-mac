@@ -37,14 +37,14 @@ here. No application code or config file is authored by this operator task.
 **Interfaces:** Consume `/opt/homebrew/bin/borders` and sole owned PID 34556;
 produce a successful update request and the same living primary process.
 
-- [ ] **Step 1: Confirm the user-approved appearance and preflight.**
+- [x] **Step 1: Confirm the user-approved appearance and preflight.**
 
 The user reported the blue trial hard to see, chose Amber outline, and approved
 `docs/superpowers/specs/2026-10-12-jankyborders-omarchy-style-design.md` with
 Apply now. The current process preflight shows sole PID 34556 with original
 startup arguments. Repeat the ownership check immediately before the update.
 
-- [ ] **Step 2: Run one guarded update and technical smoke checks.**
+- [x] **Step 2: Run one guarded update and technical smoke checks.**
 
 From `/Users/sendhil/src/dotfiles-mac`, execute this as one shell command:
 
@@ -103,3 +103,21 @@ If the user wants rollback, guard sole ownership again and restore:
 
 Alternatively, stop the verified owned trial with `bg_kill` for `b0de2a0e9` or
 `kill 34556` after confirming identity. Do not uninstall without a user request.
+
+## Execution checkpoint: 2026-10-12
+
+The guarded update returned 0 without errors. The original sole Borders primary
+PID 34556 remained alive; its managed task is still `b0de2a0e9`. Requested live
+appearance is square, 4.0 points, active `0xffe68e0d`, inactive `0xaa595959`,
+with `hidpi=on` and `ax_focus=off` preserved. Startup arguments are not a query of
+this newly requested runtime appearance.
+
+Makefile SHA-256 remained
+`36caa35c019890731f4cf5144b0865181946c7f31bf1a9c7b6ae2d6482c4b37b`;
+AeroSpace SHA-256 remained
+`6515e37c829b8ea8189e90a8d9c1a66b963a6be1bb6160c783b117a88bca9fa2`.
+The latter includes unrelated concurrent AeroSpace/Sketchybar changes that this
+update preserved. No Borders config or login agent appeared; diff checks passed.
+
+Desktop acceptance is pending. No cross-Mac, startup, security or installation
+changes were made by this appearance update.
