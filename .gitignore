@@ -48,3 +48,7 @@ Temporary Items
 # End of https://www.toptal.com/developers/gitignore/api/macos,linux
 .vscode
 .worktrees/
+
+# Python helpers and tests
+__pycache__/
+*.pyc

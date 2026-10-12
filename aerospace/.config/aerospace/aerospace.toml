@@ -1,3 +1,7 @@
+# Catppuccin Mocha: keep workspace pills in sync with AeroSpace.
+exec-on-workspace-change = ['/bin/bash', '-c', '"$HOME/.config/sketchybar/plugins/event.sh" aerospace_workspace_change']
+on-focus-changed = ['exec-and-forget "$HOME/.config/sketchybar/plugins/event.sh" aerospace_focus_change']
+
 # Place a copy of this config to ~/.aerospace.toml
 # After that, you can edit ~/.aerospace.toml to your liking
 # It's not necessary to copy all keys to your config.
@@ -83,7 +87,7 @@ inner.horizontal = 6
 inner.vertical =   6
 outer.left =       0
 outer.bottom =     0
-outer.top =        0
+outer.top = [{ monitor."Built-in" = 8 }, 42] # Room for the 36px Mocha bar
 outer.right =      0
 
 
