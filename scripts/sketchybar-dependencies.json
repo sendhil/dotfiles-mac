@@ -1,0 +1,7 @@
+[
+  {"kind": "formula", "package": "stow", "command": "stow"},
+  {"kind": "formula", "package": "felixkratz/formulae/sketchybar", "command": "sketchybar"},
+  {"kind": "formula", "package": "malpern/tap/sketchybar-toggle", "command": "sketchybar-toggle"},
+  {"kind": "cask", "package": "nikitabobko/tap/aerospace", "command": "aerospace"},
+  {"kind": "cask", "package": "font-hack-nerd-font", "font": "HackNerdFont-Regular.ttf"}
+]
