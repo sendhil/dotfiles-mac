@@ -1,7 +1,7 @@
 # JankyBorders: local-first trial
 
 Date: 2026-10-12
-Status: Temporary-run approach approved; written-spec review pending.
+Status: Temporary-run approach and written spec approved by the user.
 
 ## Goal
 
