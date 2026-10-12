@@ -128,6 +128,27 @@ restarts the bar. Theme edits are shared through Git/Stow; running workspace sta
 logs, macOS permissions, and backups stay local. Setup refuses to overwrite changes
 to files it generated outside the checkout; preserve/reconcile those edits first.
 
+### Herdr Menubar badge
+
+The Mocha bar includes a Herdr badge. Install the separate **Herdr Menubar** companion
+app from your `herdr-menubar` checkout using its `scripts/install.sh`, then launch it.
+Use the same local signing configuration you normally use to build that app on each Mac.
+Core Herdr and your sessions do not need integration changes.
+
+The badge shows how many agents need attention. Click it to open Herdr Menubar's
+native menu beside the pointer; choosing an agent uses the app's session-aware focus
+behavior. Mint means connected, yellow means attention, and gray means disconnected,
+not running, or stale. The normal macOS menu item is still available at the top edge.
+Widgets and notifications do not need to be enabled.
+
+`sketchybar/.config/sketchybar/plugins/herdr.py` is a copy of
+`herdr-menubar/integrations/sketchybar/herdr.py` (status schema v1). Update both copies
+together when changing the integration. The app publishes only aggregate connection
+and attention information to
+`~/Library/Application Support/Herdr Menubar/sketchybar-status.json` and signals changes
+with `dev.herdr.menubar.statusChanged`; the bar also refreshes every 30 seconds.
+The setup script handles the bar configuration, while Herdr Menubar is installed separately.
+
 For an appearance-only edit on a configured Mac, `sketchybar --reload` is sufficient.
 `make stow-sketchybar` only links configuration; use the setup script for dependencies,
 startup services, menu preferences, and a recoverable backup.

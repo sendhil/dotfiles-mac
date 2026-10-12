@@ -64,6 +64,14 @@ sketchybar --add item mocha.network right \
     click_script="open 'x-apple.systempreferences:com.apple.Network-Settings.extension'" \
   --subscribe mocha.network wifi_change system_woke
 
+# Herdr Menubar is optional; stale or missing app status appears dimmed.
+sketchybar --add event herdr_status_changed dev.herdr.menubar.statusChanged
+sketchybar --add item mocha.herdr right \
+  --set mocha.herdr icon=󰆍 label=Herdr background.drawing=on update_freq=30 \
+    script="python3 '$PLUGIN_DIR/herdr.py'" \
+    click_script="open 'herdr-menubar://menu'" \
+  --subscribe mocha.herdr herdr_status_changed system_woke
+
 # Briefly present the focused app without ever consuming workspace room.
 sketchybar --add item mocha.front right \
   --set mocha.front icon.drawing=off label.color=0xffa6adc8 label.max_chars=18 \
