@@ -1,2 +1,5 @@
 # Prefer a named tab; otherwise Radar falls back to the agent title/name.
 row_label = "tab"
+
+# Follow Herdr's selected theme, not macOS appearance: our terminal stays dark.
+follow_appearance = false

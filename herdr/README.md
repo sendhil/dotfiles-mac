@@ -77,7 +77,7 @@ herdr plugin action invoke hhdebb.herdr-radar.settings
 
 Popup: arrows select/change, Enter edits text, `r` resets an option, `s` saves/applies, `q` closes. Saving restarts only Radar, not Herdr. Review and commit the preference diff to sync it.
 
-Default tracked preference: `row_label = "tab"`: named nonnumeric tabs win, otherwise the agent title, otherwise vendor name. Old Auto Title-generated names count as named until cleared; Radar does not rename tabs.
+Default tracked preferences: `row_label = "tab"`: named nonnumeric tabs win, otherwise the agent title, otherwise vendor name. Old Auto Title-generated names count as named until cleared; Radar does not rename tabs. `follow_appearance = false` makes Radar follow Herdr's selected theme rather than macOS light/dark mode, keeping sidebar colours legible with the dark terminal default.
 
 ## Verify / troubleshoot
 

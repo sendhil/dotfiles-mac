@@ -103,6 +103,12 @@ function backups(f) {
 }
 function test(name, fn) {fn();console.log('PASS '+name);}
 try {
+ test('Radar follows the selected dark Herdr theme rather than desktop appearance',()=>{
+  const prefs=fs.readFileSync(path.join(root,'herdr/.config/herdr/plugins/config/hhdebb.herdr-radar/config.toml'),'utf8');
+  assert.match(prefs,/^follow_appearance\s*=\s*false\s*(?:#.*)?$/m,'Radar must not select light inks for a dark terminal');
+  const main=fs.readFileSync(path.join(root,'herdr/.config/herdr/config.toml'),'utf8');
+  assert.match(main,/\[theme\]\s*\nname\s*=\s*"catppuccin"/,'Herdr baseline must retain the dark theme');
+ });
  test('fresh offline deployment and repeat preserve local edits',()=>{
   const f=fixture();ok(run(f,['--deploy-only']));
   assert.equal(fs.lstatSync(f.main).isSymbolicLink(),false);
