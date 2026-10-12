@@ -135,7 +135,7 @@ app from your `herdr-menubar` checkout using its `scripts/install.sh`, then laun
 Use the same local signing configuration you normally use to build that app on each Mac.
 Core Herdr and your sessions do not need integration changes.
 
-The badge shows how many agents need attention. Click it to open Herdr Menubar's
+The badge shows only an icon when clear, and adds a number when agents need attention. Click it to open Herdr Menubar's
 native menu beside the pointer; choosing an agent uses the app's session-aware focus
 behavior. Mint means connected, yellow means attention, and gray means disconnected,
 not running, or stale. The normal macOS menu item is still available at the top edge.
