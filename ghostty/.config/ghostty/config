@@ -6,3 +6,8 @@ copy-on-select = clipboard
 
 # Match Wezterm's mouse wheel scroll speed (1 line per notch instead of 3)
 mouse-scroll-multiplier = discrete:1
+
+# >>> herdr-radar font block
+font-codepoint-map = U+E1A0-U+E1BA=Herdr Agent Icons Max
+font-codepoint-map = U+E1C0-U+E1C5=Herdr Agent Icons Max
+# <<< herdr-radar font block

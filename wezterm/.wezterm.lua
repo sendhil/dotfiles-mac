@@ -114,8 +114,11 @@ wezterm.on("augment-command-palette", function(window, pane)
 	}
 end)
 
--- Includes Nerd Font v3 glyphs used by Pi's Powerline status bar.
-config.font = wezterm.font("JetBrainsMono Nerd Font Mono")
+-- Keep Nerd Font v3 glyphs for Pi's Powerline bar and Radar's agent icons.
+config.font = wezterm.font_with_fallback({
+	"JetBrainsMono Nerd Font Mono",
+	"Herdr Agent Icons Max",
+})
 config.font_size = 23
 config.line_height = 1.2
 config.color_scheme = DARK

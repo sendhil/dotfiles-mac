@@ -1,0 +1,2 @@
+# Prefer a named tab; otherwise Radar falls back to the agent title/name.
+row_label = "tab"

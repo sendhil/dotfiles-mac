@@ -33,6 +33,7 @@ make stow-tmux      # Install only tmux config
 - `direnv` - Directory environment configuration
 - `fd` - Find alternative configuration
 - `hammerspoon` - macOS automation
+- `herdr` - Herdr baseline and synced Radar preferences ([Mac setup](herdr/README.md)); deployed separately from Stow
 - `karabiner` - Keyboard customization (see [karabiner/README.md](karabiner/README.md) for profile setup)
 - `kitty` - Terminal emulator configuration
 - `neovim` - Neovim configuration (see [Neovim Setup](#neovim-setup) for dependencies)
@@ -49,6 +50,8 @@ make stow           # Install all configurations
 make unstow         # Remove all configurations
 make stow-<package> # Install specific package
 make unstow-<package> # Remove specific package
+make setup-herdr     # Install/apply pinned Radar after offline deployment
+make check-herdr     # Verify local Herdr + Radar configuration
 make gitconfig      # Update git aliases
 ```
 
