@@ -1,4 +1,5 @@
-font-size = 24
+font-family = JetBrainsMono Nerd Font Mono
+font-size = 23
 adjust-cell-height = 20%
 theme = TokyoNight Storm
 cursor-color = #7aa2f7
@@ -7,7 +8,24 @@ copy-on-select = clipboard
 # Match Wezterm's mouse wheel scroll speed (1 line per notch instead of 3)
 mouse-scroll-multiplier = discrete:1
 
+# Match WezTerm's no-confirmation close behavior.
+confirm-close-surface = false
+
+# Reserve Herdr's palette and workspace keys for the terminal application.
+# Use Ghostty's native keyboard encoding rather than forcing escape sequences.
+keybind = cmd+shift+p=unbind
+keybind = cmd+shift+up=unbind
+keybind = cmd+shift+down=unbind
+keybind = ctrl+shift+p=toggle_command_palette
+
+# Shell prompt only: this types the command and Enter into the active pane.
+# Do not invoke it while an agent, editor, or another TUI is receiving input.
+command-palette-entry = title:"Browse Themes",description:"Shell prompt only: open Ghostty's native theme browser in this pane.",action:"text:/Applications/Ghostty.app/Contents/MacOS/ghostty +list-themes\\n"
+
 # >>> herdr-radar font block
 font-codepoint-map = U+E1A0-U+E1BA=Herdr Agent Icons Max
 font-codepoint-map = U+E1C0-U+E1C5=Herdr Agent Icons Max
 # <<< herdr-radar font block
+
+# Theme choices persist locally without modifying this stowed base.
+config-file = ?~/.local/state/dotfiles-mac/ghostty/theme.ghostty
