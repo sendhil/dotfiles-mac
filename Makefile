@@ -1,5 +1,5 @@
 # List of all packages
-PACKAGES = sketchybar kitty neovim skhd bash-linux bat yabai karabiner tmux prezto hammerspoon aerospace sesh fd direnv wezterm zellij ccstatusline devservices ghostty bin herdr
+PACKAGES = sketchybar kitty neovim skhd bash-linux bat yabai karabiner tmux prezto hammerspoon aerospace sesh fd direnv wezterm zellij ccstatusline devservices ghostty bin herdr rex
 STOW_PACKAGES = $(filter-out herdr,$(PACKAGES))
 
 .PHONY: all

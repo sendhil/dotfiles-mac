@@ -38,6 +38,7 @@ make stow-tmux      # Install only tmux config
 - `kitty` - Terminal emulator configuration
 - `neovim` - Neovim configuration (see [Neovim Setup](#neovim-setup) for dependencies)
 - `prezto` - Zsh configuration framework
+- `rex` - Rex terminal multiplexer config (`~/.config/rex/init.lua`)
 - `sesh` - Session management
 - `skhd` - Simple hotkey daemon
 - `tmux` - Terminal multiplexer configuration
