@@ -22,4 +22,6 @@ source ~/.bash/bash_profile
 
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 
+source ~/.bash/x_cmd.zsh
+
 # zprof

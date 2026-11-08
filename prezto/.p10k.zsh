@@ -104,6 +104,12 @@
     # example               # example user-defined segment (see prompt_example function below)
   )
 
+  # Kubernetes detection runs kubectl (including its lazy completion setup).
+  # Opt in with DOTFILES_KUBECONTEXT=1 before startup or before reloading this file.
+  if [[ ${DOTFILES_KUBECONTEXT:-0} != 1 ]]; then
+    POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(${POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS:#kubecontext})
+  fi
+
   # Defines character set used by powerlevel10k. It's best to let `p10k configure` set it for you.
   typeset -g POWERLEVEL9K_MODE=nerdfont-complete
   # When set to `moderate`, some icons will have an extra space after them. This is meant to avoid

@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class PromptStartupTests(unittest.TestCase):
-    def test_unused_cloud_and_task_segments_are_disabled_without_removing_work_context(self):
+    def test_default_prompt_avoids_unused_cloud_task_and_kubernetes_detection(self):
         with tempfile.TemporaryDirectory() as home:
             result = subprocess.run(
                 ['/bin/zsh', '-dfc', 'source "$1"; print -rl -- $POWERLEVEL9K_LEFT_PROMPT_ELEMENTS $POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS', 'prompt-test', str(ROOT / 'prezto/.p10k.zsh')],
@@ -24,10 +24,123 @@ class PromptStartupTests(unittest.TestCase):
             )
         self.assertEqual(result.returncode, 0, result.stderr)
         segments = result.stdout.splitlines()
-        for segment in ('gcloud', 'google_app_cred', 'azure', 'taskwarrior'):
+        for segment in ('gcloud', 'google_app_cred', 'azure', 'taskwarrior', 'kubecontext'):
             self.assertNotIn(segment, segments)
-        for segment in ('dir', 'vcs', 'aws', 'kubecontext'):
+        for segment in ('dir', 'vcs', 'aws'):
             self.assertIn(segment, segments)
+
+    def test_kubernetes_prompt_can_be_opted_in_and_disabled_on_reload(self):
+        with tempfile.TemporaryDirectory() as home:
+            result = subprocess.run(
+                ['/bin/zsh', '-dfc',
+                 'source "$1"; '
+                 'print -r -- "on:${(M)POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS[@]:#kubecontext}"; '
+                 'unset DOTFILES_KUBECONTEXT; source "$1"; '
+                 'print -r -- "off:${(M)POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS[@]:#kubecontext}"; '
+                 'DOTFILES_KUBECONTEXT=1; source "$1"; '
+                 'print -r -- "on:${(M)POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS[@]:#kubecontext}"',
+                 'prompt-test', str(ROOT / 'prezto/.p10k.zsh')],
+                env={'HOME': home, 'PATH': '/usr/bin:/bin', 'TERM': 'xterm-256color',
+                     'DOTFILES_KUBECONTEXT': '1'},
+                capture_output=True, text=True, timeout=10, check=False,
+            )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.splitlines(), ['on:kubecontext', 'off:', 'on:kubecontext'])
+
+
+class LazyXCmdTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(prefix='lazy-xcmd-test-')
+        self.addCleanup(self.temp.cleanup)
+        self.home = Path(self.temp.name)
+        self.calls = self.home / 'calls'
+        self.loader = self.home / '.x-cmd.root/X'
+        self.loader.parent.mkdir()
+        self.loader.write_text(
+            'print -r -- initialized >>"$TEST_CALLS"\n'
+            'typeset -g X_CMD_FIXTURE_LOADED=1\n'
+            '___x_cmd() { print -rl -- "$@"; }\n'
+            'x() { ___x_cmd "$@"; }\n'
+        )
+        self.env = {
+            'HOME': str(self.home), 'PATH': '/usr/bin:/bin',
+            'TERM': 'xterm-256color', 'TEST_CALLS': str(self.calls),
+        }
+
+    def run_xcmd(self, script, startup=None):
+        return subprocess.run(
+            ['/bin/zsh', '-dfc', 'source "$1"; ' + script, 'xcmd-test',
+             str(startup or ROOT / 'bash-linux/.bash/x_cmd.zsh')],
+            env=self.env, capture_output=True, text=True, timeout=10, check=False,
+        )
+
+    def test_x_initializes_only_on_first_use_and_preserves_arguments(self):
+        result = self.run_xcmd(
+            'print -r -- "before:${X_CMD_FIXTURE_LOADED:-0}"; '
+            'x "value with spaces" "" \'quote"value\' || exit $?; '
+            'print -r -- "after:${X_CMD_FIXTURE_LOADED:-0}"'
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.splitlines(),
+                         ['before:0', 'value with spaces', '', 'quote"value', 'after:1'])
+        self.assertEqual(self.calls.read_text().splitlines(), ['initialized'])
+
+    def test_native_two_stage_agent_loader_still_initializes_on_first_use(self):
+        native_loader = self.loader.read_text()
+        self.loader.write_text(
+            'if [[ -n ${CLAUDECODE:-} ]] && (( ! $+functions[X_cmd_is_claudecode1] )); then\n'
+            '  X_cmd_is_claudecode1() { return 0; }\n'
+            '  x() { source "$HOME/.x-cmd.root/X"; ___x_cmd "$@"; }\n'
+            '  return 0\n'
+            'fi\n' + native_loader
+        )
+        self.env['CLAUDECODE'] = '1'
+        result = self.run_xcmd('x "value with spaces"')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.splitlines(), ['value with spaces'])
+        self.assertEqual(self.calls.read_text().splitlines(), ['initialized'])
+
+    def test_reloading_startup_keeps_the_native_x_without_reinitializing(self):
+        result = self.run_xcmd('x first; source "$1"; x second')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.splitlines(), ['first', 'second'])
+        self.assertEqual(self.calls.read_text().splitlines(), ['initialized'])
+
+    def test_native_x_exit_status_is_preserved(self):
+        self.loader.write_text('___x_cmd() { return 37; }; x() { ___x_cmd "$@"; }\n')
+        result = self.run_xcmd('x failure')
+        self.assertEqual(result.returncode, 37, result.stderr)
+        self.assertEqual(result.stderr, '')
+
+    def test_loader_failure_is_returned_without_running_a_partial_command(self):
+        self.loader.write_text(
+            '___x_cmd() { print -r -- should-not-run; }; return 23\n'
+        )
+        result = self.run_xcmd('x failure')
+        self.assertEqual(result.returncode, 23, result.stderr)
+        self.assertEqual(result.stdout, '')
+        self.assertEqual(result.stderr, '')
+
+    def test_tracked_zshrc_registers_x_without_initializing_x_cmd(self):
+        (self.home / '.zprezto').mkdir()
+        (self.home / '.zprezto/init.zsh').write_text('')
+        (self.home / '.bash').mkdir()
+        (self.home / '.bash/bash_profile').write_text('')
+        (self.home / '.bash/x_cmd.zsh').symlink_to(ROOT / 'bash-linux/.bash/x_cmd.zsh')
+        result = self.run_xcmd(
+            'print -rl -- "loaded:${X_CMD_FIXTURE_LOADED:-0}" "available:$+functions[x]"',
+            startup=ROOT / 'bash-linux/.zshrc',
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.splitlines(), ['loaded:0', 'available:1'])
+        self.assertFalse(self.calls.exists())
+
+    def test_missing_x_cmd_installation_does_not_shadow_an_x_command(self):
+        self.loader.unlink()
+        result = self.run_xcmd('(( ! $+functions[x] ))')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, '')
+        self.assertEqual(result.stderr, '')
 
 
 LOCAL_CONFIG = os.environ.get('SHELL_STARTUP_LOCAL_CONFIG')
