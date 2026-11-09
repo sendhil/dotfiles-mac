@@ -19,7 +19,7 @@ function fixture() {
   const bin = path.join(dir, 'bin');
   const base = path.join(dir, 'tracked-config');
   const config = path.join(home, '.config/ghostty/config');
-  const state = path.join(home, '.local/state/dotfiles-mac/ghostty/theme.ghostty');
+  const state = path.join(home, '.config/ghostty/auto/theme.ghostty');
   const calls = path.join(dir, 'calls');
   const themes = path.join(dir, 'theme resources');
   fs.mkdirSync(themes, {recursive: true});
@@ -80,6 +80,45 @@ function test(name, body) {
   body(); passed++; console.log('ok - ' + name);
 }
 try {
+  test('native saves and helper controls share one selection', () => {
+    const native = '/Applications/Ghostty.app/Contents/MacOS/ghostty';
+    assert.ok(fs.existsSync(native), 'native Ghostty is required for this integration test');
+    const f = fixture();
+    fs.writeFileSync(f.base, fs.readFileSync(path.join(root, 'ghostty/.config/ghostty/config'), 'utf8'));
+    f.original = fs.readFileSync(f.base, 'utf8');
+    const legacy = path.join(f.home, '.local/state/dotfiles-mac/ghostty/theme.ghostty');
+    const legacyContents = 'theme = TokyoNight Day\n';
+    fs.mkdirSync(path.dirname(legacy), {recursive: true});
+    fs.writeFileSync(legacy, legacyContents);
+    fs.mkdirSync(path.dirname(f.state), {recursive: true});
+    // This is the actual native w file format observed on this Mac.
+    fs.writeFileSync(f.state, 'theme = Ayu Light\n');
+    const env = {GHOSTTY_BIN: native, XDG_CONFIG_HOME: path.join(f.home, '.config')};
+    const effective = () => {
+      const result = spawnSync(native, ['+show-config', '--no-pager'], {env: {...f.env, ...env}, encoding: 'utf8', timeout: 10000});
+      ok(result);
+      return result.stdout;
+    };
+    const current = () => {
+      const result = run(f, ['current'], env);
+      ok(result);
+      return result.stdout.trim();
+    };
+    assert.match(effective(), /^theme = Ayu Light$/m, 'native w saves must be loaded instead of the stale legacy selection');
+    assert.equal(current(), 'Ayu Light', 'the helper must read native w saves');
+    ok(run(f, ['toggle'], env));
+    assert.match(effective(), /^theme = TokyoNight Day$/m, 'the toggle must write the native selection file');
+    assert.equal(current(), 'TokyoNight Day');
+    fs.writeFileSync(f.state, 'theme = Ayu Light\n');
+    assert.match(effective(), /^theme = Ayu Light$/m, 'a later native w save must replace the helper selection');
+    assert.equal(current(), 'Ayu Light');
+    ok(run(f, ['reset'], env));
+    assert.ok(!fs.existsSync(f.state), 'reset must remove the native selection file');
+    assert.match(effective(), /^theme = TokyoNight Storm$/m, 'reset must expose the base, not the old custom selection');
+    assert.equal(current(), 'TokyoNight Storm');
+    assert.equal(fs.readFileSync(legacy, 'utf8'), legacyContents, 'the old file is ignored, not rewritten');
+    unchanged(f);
+  });
   test('set persists a validated local override without changing the tracked base', () => {
     const f = fixture();
     ok(run(f, ['set', 'TokyoNight Day']));
