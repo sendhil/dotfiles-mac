@@ -112,3 +112,124 @@ rex.action{
 for key, dir in pairs({ left = "left", right = "right", up = "up", down = "down", h = "left", j = "down", k = "up", l = "right" }) do
   rex.bind("ctrl+a>" .. key, "pane.focus", { direction = dir })
 end
+
+-- Resize mode (Herdr prefix+r): ctrl+a then r, then h/j/k/l or arrows resize.
+-- shift+h/j/k/l resize in bigger steps, = balances splits, esc or enter leaves.
+-- Tiled panes move the split border (pane.resize). A focused floating pane is
+-- resized directly: left/up shrink its width/height, right/down grow them.
+local function focused_floating_layer()
+  local view = rex.session.view{}
+  for _, w in ipairs((view and view.windows) or {}) do
+    if w.window_id == view.active_window_id and w.focused_block_id then
+      for _, l in ipairs(w.layers or {}) do
+        if l.kind == "floating" then
+          for _, b in ipairs(l.blocks or {}) do
+            if b.block_id == w.focused_block_id then return l end
+          end
+        end
+      end
+    end
+  end
+end
+
+rex.action{
+  name  = "resize_smart",
+  title = "Resize Pane or Floating Pane",
+  args  = { direction = "string", big = "boolean?" },
+  run   = function(ctx, args)
+    local layer = focused_floating_layer()
+    if layer == nil then
+      rex.client.queue("pane.resize", { direction = args.direction, amount = args.big and 15 or nil })
+      return
+    end
+    local step = args.big and 0.10 or 0.03
+    local x, y, w, h = layer.bounds[1], layer.bounds[2], layer.bounds[3], layer.bounds[4]
+    local d = args.direction
+    if d == "right" then w = w + step
+    elseif d == "left" then w = w - step
+    elseif d == "down" then h = h + step
+    elseif d == "up" then h = h - step end
+    w = math.max(0.1, math.min(w, 1 - x))
+    h = math.max(0.1, math.min(h, 1 - y))
+    local _, err = rex.session.resize_layer{ layer_id = layer.layer_id, bounds = { x, y, w, h } }
+    if err ~= nil then error(err, 0) end
+  end,
+}
+rex.mode("resize", { exclusive = true })
+rex.bind("ctrl+a>r", "client.mode.enter", { name = "resize" })
+for key, dir in pairs({ h = "left", j = "down", k = "up", l = "right", left = "left", down = "down", up = "up", right = "right" }) do
+  rex.bind("resize/" .. key, "resize_smart", { direction = dir })
+end
+for key, dir in pairs({ h = "left", j = "down", k = "up", l = "right" }) do
+  rex.bind("resize/shift+" .. key, "resize_smart", { direction = dir, big = true })
+end
+rex.bind("resize/=", "pane.balance")
+rex.bind("resize/esc", "client.mode.exit")
+rex.bind("resize/enter", "client.mode.exit")
+
+-- Move mode: ctrl+a then m, then h/j/k/l or arrows move a floating pane
+-- (shift = bigger steps). A tiled pane swaps with its neighbour instead.
+-- c centers a floating pane. esc or enter leaves the mode.
+rex.action{
+  name  = "move_smart",
+  title = "Move Pane or Floating Pane",
+  args  = { direction = "string", big = "boolean?" },
+  run   = function(ctx, args)
+    local layer = focused_floating_layer()
+    if layer == nil then
+      rex.client.queue("pane.move", { direction = args.direction })
+      return
+    end
+    local step = args.big and 0.10 or 0.03
+    local x, y, w, h = layer.bounds[1], layer.bounds[2], layer.bounds[3], layer.bounds[4]
+    local d = args.direction
+    if d == "right" then x = x + step
+    elseif d == "left" then x = x - step
+    elseif d == "down" then y = y + step
+    elseif d == "up" then y = y - step end
+    x = math.max(0, math.min(x, 1 - w))
+    y = math.max(0, math.min(y, 1 - h))
+    local _, err = rex.session.resize_layer{ layer_id = layer.layer_id, bounds = { x, y, w, h } }
+    if err ~= nil then error(err, 0) end
+  end,
+}
+rex.action{
+  name  = "center_floating",
+  title = "Center Floating Pane",
+  run   = function(ctx, args)
+    local layer = focused_floating_layer()
+    if layer == nil then return end
+    local w, h = layer.bounds[3], layer.bounds[4]
+    local _, err = rex.session.resize_layer{ layer_id = layer.layer_id, bounds = { (1 - w) / 2, (1 - h) / 2, w, h } }
+    if err ~= nil then error(err, 0) end
+  end,
+}
+rex.mode("move", { exclusive = true })
+rex.bind("ctrl+a>m", "client.mode.enter", { name = "move" })
+for key, dir in pairs({ h = "left", j = "down", k = "up", l = "right", left = "left", down = "down", up = "up", right = "right" }) do
+  rex.bind("move/" .. key, "move_smart", { direction = dir })
+end
+for key, dir in pairs({ h = "left", j = "down", k = "up", l = "right" }) do
+  rex.bind("move/shift+" .. key, "move_smart", { direction = dir, big = true })
+end
+rex.bind("move/c", "center_floating")
+rex.bind("move/esc", "client.mode.exit")
+rex.bind("move/enter", "client.mode.exit")
+
+-- Float the focused pane into a centered 80% x 80% layer (replaces the default
+-- alt+cmd+enter). A pane that is already floating goes back to the layout via
+-- the built-in pane.float.
+rex.action{
+  name  = "float_centered",
+  title = "Float Pane (Centered)",
+  run   = function(ctx, args)
+    if focused_floating_layer() ~= nil then
+      rex.client.queue("pane.float")
+      return
+    end
+    local _, err = rex.session.float_block{ block_id = ctx.block_id, bounds = { 0.1, 0.1, 0.8, 0.8 } }
+    if err ~= nil then error(err, 0) end
+    rex.session.focus_block{ block_id = ctx.block_id }
+  end,
+}
+rex.bind("alt+cmd+enter", "float_centered")
