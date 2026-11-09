@@ -79,6 +79,35 @@ rex.action{
 }
 rex.bind("ctrl+a>ctrl+a", "jump_attention")
 
+-- Archive / restore sessions and tabs with the rex-archive fzf picker (rex/.local/bin/rex-archive).
+-- Opens it in a floating pane over the current tab; the pane closes when the picker exits.
+rex.action{
+  name  = "archive_sessions",
+  title = "Archive Sessions…",
+  description = "Archive sessions or tabs to disk and restore them later (rex-archive).",
+  category = "Sessions",
+  keywords = "archive restore defer stash hide park sessions tabs rex-archive",
+  run   = function(ctx, args)
+    local split, err = rex.session.new_split{
+      anchor_id = ctx.block_id,
+      direction = "horizontal",
+      side      = "after",
+      focus     = true,
+      layout    = rex.layout.block{
+        flavor  = "com.superlogical.terminal.shell",
+        label   = "rex-archive",
+        options = { command = { os.getenv("HOME") .. "/.local/bin/rex-archive" } },
+      },
+    }
+    if err ~= nil then error(err, 0) end
+    local block_id = split.block_ids[1]
+    local _, ferr = rex.session.float_block{ block_id = block_id, bounds = { 0.08, 0.08, 0.84, 0.84 } }
+    if ferr ~= nil then rex.log("warn", "rex-archive: couldn't float picker: " .. ferr) end
+    rex.session.focus_block{ block_id = block_id }
+    return { block_id = block_id }
+  end,
+}
+
 -- Pane focus after the ctrl+a prefix: arrows and vim keys
 for key, dir in pairs({ left = "left", right = "right", up = "up", down = "down", h = "left", j = "down", k = "up", l = "right" }) do
   rex.bind("ctrl+a>" .. key, "pane.focus", { direction = dir })

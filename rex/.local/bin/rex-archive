@@ -1,0 +1,683 @@
+#!/usr/bin/env -S uv run --quiet --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
+"""rex-archive: archive and restore Rex sessions and tabs from an fzf picker.
+
+States
+  live      a normal Rex session
+  archived  snapshot saved to disk, session killed; restore rebuilds it
+
+Usage
+  rex-archive                 open the picker (same as `rex-archive ui`)
+  rex-archive list            print picker lines
+  rex-archive preview KEY     print the preview for one entry
+  rex-archive archive KEY...  snapshot + kill sessions
+  rex-archive restore KEY...  rebuild archived sessions and tabs
+  rex-archive delete KEY...   move archives to the trash folder
+  rex-archive go KEY          show a session in the Rex app (restores archives first)
+
+KEY is a session ID (session:...), a tab (tab:<session id>|<window id>), or archive:<name>;
+labels also work for live sessions. An archived tab restores into its original session if it still exists, otherwise into the current session.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import shlex
+import shutil
+import subprocess
+import sys
+import time
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
+from pathlib import Path
+
+STATE_DIR = Path(os.environ.get("REX_ARCHIVE_DIR", Path.home() / ".local/share/rex-archive"))
+ARCHIVE_DIR = STATE_DIR / "archived"
+RESTORED_DIR = STATE_DIR / "restored"
+TRASH_DIR = STATE_DIR / "trash"
+STATUS_FILE = STATE_DIR / "status"
+TAIL_LINES = 200
+SHELLS = {"zsh", "bash", "fish", "sh", "dash", "nu", "tcsh", "ksh", "login"}
+SELF = os.path.realpath(__file__)
+
+DIM, BOLD, RESET = "\033[2m", "\033[1m", "\033[0m"
+GREEN, BLUE, RED = "\033[32m", "\033[34m", "\033[31m"
+
+
+# ---------------------------------------------------------------- rex helpers
+
+class RexError(RuntimeError):
+    pass
+
+
+def rex(*args: str, json_out: bool = False, check: bool = True, timeout: float = 20):
+    proc = subprocess.run(["rex", *args], capture_output=True, text=True, timeout=timeout)
+    if check and proc.returncode != 0:
+        raise RexError((proc.stderr or proc.stdout).strip() or f"rex {' '.join(args)} failed")
+    if json_out:
+        return json.loads(proc.stdout or "null")
+    return proc.stdout
+
+
+def list_sessions() -> list[dict]:
+    return rex("ls", "--json", json_out=True).get("sessions", [])
+
+
+def inspect(session_id: str) -> dict:
+    return rex("session", "inspect", session_id, "--json", json_out=True)
+
+
+def block_process(session_id: str, block_id: str) -> dict:
+    try:
+        out = rex("block", "call", "-s", session_id, "-b", block_id, "process", timeout=5)
+        return json.loads(out)
+    except Exception:
+        return {}
+
+
+def capture_tail(session_id: str, block_id: str, n: int) -> list[str]:
+    try:
+        out = rex("capture", "-s", session_id, "-b", block_id, "--trim", "--unwrap", timeout=10)
+    except Exception:
+        return []
+    return out.splitlines()[-n:]
+
+
+def client_action(name: str, **kw: str) -> bool:
+    """Best-effort app action (needs Remote Control enabled in the Rex app)."""
+    args = [f"{k}={v}" for k, v in kw.items()]
+    proc = subprocess.run(["rex", "do", name, *args], capture_output=True, text=True, timeout=10)
+    return proc.returncode == 0
+
+
+# ---------------------------------------------------------------- layout walking
+
+def tiled_layout(window: dict) -> dict | None:
+    for layer in window.get("layers", []):
+        if layer.get("kind") == "tiled":
+            return layer.get("layout")
+    return None
+
+
+def leaves(node: dict | None) -> list[str]:
+    if not node:
+        return []
+    if "block_id" in node:
+        return [node["block_id"]]
+    sp = node.get("split", {})
+    return leaves(sp.get("before")) + leaves(sp.get("after"))
+
+
+def block_meta(window: dict) -> dict[str, dict]:
+    meta = {}
+    for layer in window.get("layers", []):
+        for b in layer.get("blocks", []):
+            meta[b["block_id"]] = {**b, "floating": layer.get("kind") != "tiled"}
+    return meta
+
+
+# ---------------------------------------------------------------- program detection
+
+def classify(proc: dict) -> dict:
+    """Work out what is running in a pane and how to bring it back."""
+    fg = proc.get("foreground") or {}
+    cwd = fg.get("cwd") or next((a.get("cwd") for a in proc.get("ancestors", []) if a.get("cwd")), None)
+    cwd = cwd or proc.get("home") or str(Path.home())
+    argv0 = (fg.get("argv0") or fg.get("name") or "").lstrip("-")
+    prog = os.path.basename(argv0)
+    pid = fg.get("pid")
+    info = {"cwd": cwd, "program": prog or "shell", "kind": "shell", "cmd": None, "autorun": False}
+
+    if not prog or prog in SHELLS:
+        return info
+    if prog == "claude":
+        sid = None
+        try:
+            sid = json.loads((Path.home() / f".claude/sessions/{pid}.json").read_text()).get("sessionId")
+        except Exception:
+            pass
+        info.update(kind="agent", claude_session_id=sid, autorun=True,
+                    cmd=f"claude --resume {sid}" if sid else "claude --continue")
+        return info
+    if prog == "pi":
+        info.update(kind="agent", autorun=True, cmd="pi --continue")
+        return info
+    if prog == "codex":
+        info.update(kind="agent", autorun=True, cmd="codex resume --last")
+        return info
+
+    # Anything else: recover the full command line locally, and type it without running it.
+    cmd = prog
+    if pid:
+        try:
+            full = subprocess.run(["ps", "-o", "command=", "-p", str(pid)],
+                                  capture_output=True, text=True, timeout=3).stdout.strip()
+            if full:
+                cmd = full
+        except Exception:
+            pass
+    info.update(kind="other", cmd=cmd, autorun=False)
+    return info
+
+
+# ---------------------------------------------------------------- snapshot
+
+def snapshot(session_id: str, window_id: str | None = None) -> dict:
+    """Snapshot a whole session, or just one tab of it when window_id is given."""
+    view = inspect(session_id)
+    if window_id:
+        view["windows"] = [w for w in view.get("windows", []) if w["window_id"] == window_id]
+        if not view["windows"]:
+            raise RexError(f"tab {window_id} not found")
+        view["active_window_id"] = window_id
+    # The picker's own pane: left out when it floats (palette launch); kept as a plain
+    # shell when it's a tiled pane you ran `rex-archive` from.
+    picker = os.environ.get("REX_BLOCK")
+    for w in view.get("windows", []):
+        for layer in w.get("layers", []):
+            if layer.get("kind") != "tiled":
+                layer["blocks"] = [b for b in layer.get("blocks", []) if b["block_id"] != picker]
+    jobs = {}
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        for w in view.get("windows", []):
+            for bid in block_meta(w):
+                jobs[bid] = (pool.submit(block_process, session_id, bid),
+                             pool.submit(capture_tail, session_id, bid, TAIL_LINES))
+    panes = {}
+    for bid, (pf, tf) in jobs.items():
+        panes[bid] = {**classify(pf.result()), "tail": tf.result()}
+        if bid == picker:
+            panes[bid].update(kind="shell", cmd=None, autorun=False, program="shell")
+
+    def build(node):
+        if not node:
+            return None
+        if "block_id" in node:
+            return {"pane": node["block_id"]}
+        sp = node["split"]
+        return {"split": sp.get("direction", "horizontal"), "ratio": sp.get("ratio", 0.5),
+                "before": build(sp.get("before")), "after": build(sp.get("after"))}
+
+    windows = []
+    active_index = 0
+    for i, w in enumerate(view.get("windows", [])):
+        if w["window_id"] == view.get("active_window_id"):
+            active_index = i
+        meta = block_meta(w)
+        wpanes = {}
+        for bid, m in meta.items():
+            wpanes[bid] = {**panes[bid], "label": m.get("label", ""), "flavor": m.get("flavor", ""),
+                           "floating": m["floating"], "focused": bid == w.get("focused_block_id")}
+        windows.append({"label": w.get("label", ""), "layout": build(tiled_layout(w)), "panes": wpanes})
+
+    session_label = view.get("label", "")
+    data = {"version": 1, "type": "session", "label": session_label, "session_id": session_id,
+            "session_label": session_label, "archived_at": time.time(),
+            "active_window": active_index, "windows": windows}
+    if window_id:
+        data.update(type="tab", label=tab_name(windows[0]["label"], view, window_id))
+    return data
+
+
+# ---------------------------------------------------------------- restore
+
+DEFAULT_WINDOW = re.compile(r"^Window [0-9a-f]{8}$")
+DEFAULT_BLOCK = re.compile(r"^(Block [0-9a-f]{8}|shell)$")
+
+
+def first_pane(node, panes):
+    while node and "split" in node:
+        node = node["before"]
+    return panes.get(node["pane"]) if node else None
+
+
+def tab_name(label: str, view: dict | None = None, window_id: str | None = None) -> str:
+    if label and not DEFAULT_WINDOW.match(label):
+        return label
+    if view and window_id:
+        ids = [w["window_id"] for w in view.get("windows", [])]
+        if window_id in ids:
+            return f"tab {ids.index(window_id) + 1}"
+    return "tab"
+
+
+def restore_archive(data: dict, into: str | None = None) -> str:
+    """Rebuild an archive. With `into`, its tabs are added to that existing session."""
+    windows = data["windows"]
+    if not windows:
+        raise RexError("archive has no windows")
+    session_id = into
+    jobs: list[tuple[str, dict]] = []  # (new block id, pane spec)
+
+    def grow(node, block_id, panes):
+        if node is None:
+            return
+        if "pane" in node:
+            jobs.append((block_id, panes[node["pane"]]))
+            return
+        direction = "right" if node["split"] == "horizontal" else "below"
+        pct = max(1, min(99, round((1 - node["ratio"]) * 100)))
+        cwd = (first_pane(node["after"], panes) or {}).get("cwd", str(Path.home()))
+        out = rex("split", "-s", session_id, "-b", block_id, f"--split={direction}", f"--ratio={pct}",
+                  "-c", cwd, "--focus=false", "--json", json_out=True)
+        grow(node["before"], block_id, panes)
+        grow(node["after"], out["block_ids"][0], panes)
+
+    window_ids = []
+    for i, w in enumerate(windows):
+        label = w["label"] if w["label"] and not DEFAULT_WINDOW.match(w["label"]) else ""
+        root = w["layout"]
+        # Floating panes come back as extra tiled tabs would be surprising; fold them in as splits.
+        tiled_ids = set()
+        def collect(n):
+            if n and "pane" in n: tiled_ids.add(n["pane"])
+            elif n: collect(n["before"]); collect(n["after"])
+        collect(root)
+        extras = [pid for pid in w["panes"] if pid not in tiled_ids]
+        for pid in extras:
+            root = {"split": "vertical", "ratio": 0.7, "before": root, "after": {"pane": pid}} if root else {"pane": pid}
+        cwd = (first_pane(root, w["panes"]) or {}).get("cwd", str(Path.home()))
+        if session_id is None:
+            args = ["new", data.get("session_label") or data.get("label") or "restored", "-c", cwd, "--json"]
+            if label:
+                args += ["--window", label]
+            out = rex(*args, json_out=True)
+            session_id = out["session_id"]
+            win = out["initial_windows"][0]
+            first_block, window_id = win["block_ids"][0], win.get("window_id")
+        else:
+            args = ["window", "new", "-s", session_id] + ([label] if label else []) + ["-c", cwd, "--focus=false", "--json"]
+            out = rex(*args, json_out=True)
+            first_block, window_id = out["block_ids"][0], out.get("window_id")
+        window_ids.append(window_id)
+        grow(root, first_block, w["panes"])
+
+    def wait_for_prompt(block_id: str, limit: float = 4.0) -> None:
+        # Typing before the shell draws its prompt echoes the text twice; wait for first output.
+        deadline = time.time() + limit
+        while time.time() < deadline:
+            if capture_tail(session_id, block_id, 1):
+                time.sleep(0.15)
+                return
+            time.sleep(0.1)
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        list(pool.map(wait_for_prompt, [b for b, p in jobs if p.get("cmd")]))
+
+    for block_id, pane in jobs:
+        lbl = pane.get("label", "")
+        if lbl and not DEFAULT_BLOCK.match(lbl):
+            rex("api", "call", "-s", session_id, "session.set_block_label",
+                json.dumps({"block_id": block_id, "label": lbl}), check=False)
+        if pane.get("cmd"):
+            rex("send", "-s", session_id, "-b", block_id, pane["cmd"], check=False)
+            if pane.get("autorun"):
+                rex("send-key", "-s", session_id, "-b", block_id, "enter", check=False)
+
+    active = data.get("active_window", 0)
+    if 0 <= active < len(window_ids) and window_ids[active]:
+        rex("focus", "-s", session_id, window_ids[active], check=False)
+    return session_id
+
+
+# ---------------------------------------------------------------- state helpers
+
+def archives() -> list[Path]:
+    if not ARCHIVE_DIR.is_dir():
+        return []
+    return sorted(ARCHIVE_DIR.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+
+
+def archive_path(key: str) -> Path:
+    return ARCHIVE_DIR / f"{key.split(':', 1)[1]}.json"
+
+
+def resolve_session(key: str) -> dict | None:
+    for s in list_sessions():
+        if key in (s["session_id"], s["label"]) or s["session_id"].endswith(key):
+            return s
+    return None
+
+
+def slug(text: str) -> str:
+    return re.sub(r"[^A-Za-z0-9._-]+", "-", text).strip("-")[:60] or "session"
+
+
+def ago(ts: float) -> str:
+    d = time.time() - ts
+    for unit, secs in (("d", 86400), ("h", 3600), ("m", 60)):
+        if d >= secs:
+            return f"{int(d // secs)}{unit} ago"
+    return "just now"
+
+
+def tilde(path: str | None) -> str:
+    home = str(Path.home())
+    return ("~" + path[len(home):]) if path and path.startswith(home) else (path or "?")
+
+
+def status(msg: str) -> None:
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    STATUS_FILE.write_text(f"{datetime.now():%H:%M} {msg}\n")
+    print(msg)
+
+
+def own_session() -> str | None:
+    return os.environ.get("REX_SESSION")
+
+
+def own_window(view: dict | None) -> str | None:
+    """The tab this picker is running in, so it never archives itself."""
+    me = os.environ.get("REX_BLOCK")
+    for w in (view or {}).get("windows", []):
+        if me in block_meta(w):
+            return w["window_id"]
+    return None
+
+
+def tab_key(session_id: str, window_id: str) -> str:
+    return f"tab:{session_id}|{window_id}"
+
+
+def parse_tab_key(key: str) -> tuple[str, str]:
+    sid, wid = key[len("tab:"):].split("|", 1)
+    return sid, wid
+
+
+def write_archive(data: dict) -> None:
+    ARCHIVE_DIR.mkdir(parents=True, exist_ok=True)
+    prefix = f"{slug(data['session_label'])}--" if data.get("type") == "tab" else ""
+    path = ARCHIVE_DIR / f"{datetime.now():%Y%m%d-%H%M%S}-{prefix}{slug(data['label'])}.json"
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(data, indent=2))
+    tmp.rename(path)
+
+
+# ---------------------------------------------------------------- commands
+
+def cmd_list(_args) -> None:
+    sessions = list_sessions()
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        views = list(pool.map(lambda s: _safe(inspect, s["session_id"]), sessions))
+    rows = []
+    for s, v in zip(sessions, views):
+        sid = s["session_id"]
+        wins = (v or {}).get("windows", [])
+        npanes = sum(len(leaves(tiled_layout(w))) for w in wins)
+        detail = f"{len(wins)} tab{'s' * (len(wins) != 1)}, {npanes} pane{'s' * (npanes != 1)}"
+        if sid == own_session():
+            detail += "  (this session)"
+        rows.append(f"{GREEN}●{RESET} {GREEN}live    {RESET}\t{sid}\t{BOLD}{s['label']}{RESET}\t  {DIM}{detail}{RESET}")
+        # Tab rows: only when there is more than one tab (a lone tab is the session).
+        if len(wins) > 1:
+            mine = own_window(v) if sid == own_session() else None
+            for i, w in enumerate(wins):
+                branch = "└" if i == len(wins) - 1 else "├"
+                labels = [m.get("label", "") for m in block_meta(w).values()]
+                named = [l for l in labels if l and not DEFAULT_BLOCK.match(l)]
+                tdetail = f"{len(labels)} pane{'s' * (len(labels) != 1)}" + (f": {', '.join(named)}" if named else "")
+                if w["window_id"] == mine:
+                    tdetail += "  (this tab)"
+                rows.append(f"{DIM}   {branch}{RESET}      \t{tab_key(sid, w['window_id'])}\t"
+                             f"{tab_name(w.get('label', ''), v, w['window_id'])}\t  {DIM}{tdetail}{RESET}")
+    if rows:
+        print("\n".join(rows))
+    for p in archives():
+        try:
+            data = json.loads(p.read_text())
+        except Exception:
+            continue
+        n = len(data.get("windows", []))
+        when = ago(data.get("archived_at", p.stat().st_mtime))
+        if data.get("type") == "tab":
+            detail = f"tab from {data.get('session_label', '?')}, {when}"
+        else:
+            detail = f"{when}, {n} tab{'s' * (n != 1)}"
+        print(f"{BLUE}○{RESET} {BLUE}archived{RESET}\tarchive:{p.stem}\t{data.get('label', p.stem)}\t  {DIM}{detail}{RESET}")
+
+
+def _safe(fn, *a):
+    try:
+        return fn(*a)
+    except Exception:
+        return None
+
+
+def _print_pane_line(pane: dict, indent="    ") -> None:
+    what = pane.get("cmd") or pane.get("program") or "shell"
+    marker = "▸" if pane.get("focused") else "·"
+    lbl = pane.get("label", "")
+    lbl = f"{lbl}: " if lbl and not DEFAULT_BLOCK.match(lbl) else ""
+    run = "" if pane.get("autorun") or not pane.get("cmd") else f" {DIM}(typed, not run){RESET}"
+    print(f"{indent}{marker} {lbl}{BOLD}{what}{RESET}{run}  {DIM}{tilde(pane.get('cwd'))}{RESET}")
+
+
+def cmd_preview(args) -> None:
+    key = args[0]
+    cols = int(os.environ.get("FZF_PREVIEW_COLUMNS", "80"))
+    rule = DIM + "─" * min(cols, 80) + RESET
+    if key.startswith("archive:"):
+        data = json.loads(archive_path(key).read_text())
+        what = f"tab from {data.get('session_label')}, " if data.get("type") == "tab" else ""
+        print(f"{BOLD}{data['label']}{RESET}  {BLUE}{what}archived {ago(data['archived_at'])}{RESET}"
+              f"  {DIM}{datetime.fromtimestamp(data['archived_at']):%a %b %d %H:%M}{RESET}")
+        if data.get("type") == "tab":
+            orig = resolve_session(data.get("session_id", ""))
+            dest = f"back into {orig['label']}" if orig else "into the current session"
+            print(f"{DIM}restores {dest}{RESET}")
+        print()
+        focus_tail = []
+        for i, w in enumerate(data["windows"]):
+            act = " *" if i == data.get("active_window") else ""
+            print(f"  {i + 1}. {w['label']}{act}")
+            for pane in w["panes"].values():
+                _print_pane_line(pane)
+                if pane.get("focused") and (i == data.get("active_window") or not focus_tail):
+                    focus_tail = pane.get("tail", [])
+        print(f"\n{rule}\n{DIM}output when archived:{RESET}")
+        print("\n".join(focus_tail[-40:]))
+        return
+
+    only_window = None
+    if key.startswith("tab:"):
+        key, only_window = parse_tab_key(key)
+    s = resolve_session(key)
+    if not s:
+        print("session no longer exists")
+        return
+    sid = s["session_id"]
+    view = inspect(sid)
+    state = f"{GREEN}live{RESET}"
+    if only_window:
+        print(f"{BOLD}{tab_name(next((w.get('label', '') for w in view['windows'] if w['window_id'] == only_window), ''), view, only_window)}"
+              f"{RESET}  {DIM}tab in{RESET} {s['label']}  {state}\n")
+        view["windows"] = [w for w in view.get("windows", []) if w["window_id"] == only_window]
+        view["active_window_id"] = only_window
+    else:
+        print(f"{BOLD}{s['label']}{RESET}  {state}\n")
+    blocks = [(w, bid) for w in view.get("windows", []) for bid in block_meta(w)]
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        procs = dict(zip([b for _, b in blocks], pool.map(lambda wb: block_process(sid, wb[1]), blocks)))
+    focus_block = None
+    for i, w in enumerate(view.get("windows", [])):
+        active = w["window_id"] == view.get("active_window_id")
+        print(f"  {i + 1}. {w.get('label', '')}{' *' if active else ''}")
+        for bid, m in block_meta(w).items():
+            info = classify(procs.get(bid, {}))
+            info.update(label=m.get("label", ""), focused=bid == w.get("focused_block_id"),
+                        cmd=info["program"] if info["kind"] != "shell" else None, autorun=True)
+            _print_pane_line(info)
+            if active and bid == w.get("focused_block_id"):
+                focus_block = bid
+    if focus_block:
+        print(f"\n{rule}\n{DIM}recent output (focused pane):{RESET}")
+        print("\n".join(capture_tail(sid, focus_block, 40)))
+
+
+def cmd_archive(keys) -> None:
+    done = []
+    # Closing the picker's own tab or session kills this process, so that happens last,
+    # after every snapshot is on disk and the status line is written.
+    last_steps: list[tuple[str, ...]] = []
+    session_keys = [k for k in keys if not k.startswith(("archive:", "tab:"))]
+    sessions = [s for s in map(resolve_session, session_keys) if s]
+    whole = {s["session_id"] for s in sessions}
+
+    # Tabs first, skipping any whose whole session is also being archived.
+    for key in keys:
+        if not key.startswith("tab:"):
+            continue
+        sid, wid = parse_tab_key(key)
+        if sid in whole:
+            continue
+        view = _safe(inspect, sid)
+        if not view or wid not in [w["window_id"] for w in view.get("windows", [])]:
+            continue
+        if len(view["windows"]) == 1:  # last tab: archive the session instead
+            sessions.append({"session_id": sid, "label": view.get("label", "")})
+            continue
+        data = snapshot(sid, wid)
+        write_archive(data)
+        close = ("window", "close", "-s", sid, wid)
+        if sid == own_session() and wid == own_window(view):
+            last_steps.append(close)
+        else:
+            rex(*close)
+        done.append(f"{data['label']} (tab)")
+
+    for s in sessions:
+        data = snapshot(s["session_id"])
+        write_archive(data)
+        if s["session_id"] == own_session():
+            last_steps.append(("kill", s["session_id"]))
+        else:
+            rex("kill", s["session_id"])
+        done.append(data["label"])
+    status(f"archived {len(done)}: {', '.join(done)}" if done else "nothing archived")
+    for step in last_steps:
+        rex(*step, check=False)
+
+
+def cmd_restore(keys, select: bool = False) -> None:
+    done, errors, last = [], [], None
+    for key in keys:
+        try:
+            if key.startswith("archive:"):
+                path = archive_path(key)
+                data = json.loads(path.read_text())
+                if data.get("type") == "tab":
+                    orig = resolve_session(data.get("session_id", ""))
+                    into = orig["session_id"] if orig else own_session()
+                    last = restore_archive(data, into=into)
+                    dest = orig["label"] if orig else ("this session" if into else "a new session")
+                    done.append(f"{data['label']} → {dest}")
+                else:
+                    last = restore_archive(data)
+                    done.append(data["label"])
+                RESTORED_DIR.mkdir(parents=True, exist_ok=True)
+                path.rename(RESTORED_DIR / path.name)
+        except Exception as e:  # keep going with the rest of the selection
+            errors.append(f"{key}: {e}")
+    if select and last:
+        client_action("session.select", session_id=last)
+    msg = f"restored {len(done)}: {', '.join(done)}" if done else "nothing to restore"
+    if errors:
+        msg += f"  | {RED}errors:{RESET} " + "; ".join(errors)
+    status(msg)
+
+
+def cmd_delete(keys) -> None:
+    TRASH_DIR.mkdir(parents=True, exist_ok=True)
+    done = []
+    for key in keys:
+        if key.startswith("archive:") and archive_path(key).exists():
+            p = archive_path(key)
+            p.rename(TRASH_DIR / p.name)
+            done.append(p.stem)
+    status(f"trashed {len(done)} archive(s) → {tilde(str(TRASH_DIR))}" if done
+           else "x only deletes archives (archive a session first)")
+
+
+def cmd_go(args) -> None:
+    key = args[0]
+    if key.startswith("archive:"):
+        cmd_restore([key], select=True)
+        return
+    if key.startswith("tab:"):
+        sid, wid = parse_tab_key(key)
+        if not client_action("session.select", session_id=sid, window_id=wid):
+            status("couldn't switch the app (is Remote Control on in Rex settings?)")
+        return
+    s = resolve_session(key)
+    if not s:
+        return
+    if not client_action("session.select", session_id=s["session_id"]):
+        status("couldn't switch the app (is Remote Control on in Rex settings?)")
+
+
+HELP = "enter go    space select  * all\na archive   r restore     x trash\n/ filter    esc/q close"
+
+
+def cmd_header(_args) -> None:
+    print(HELP)
+    if STATUS_FILE.exists():
+        print(DIM + STATUS_FILE.read_text().strip() + RESET)
+
+
+def cmd_ui(_args) -> None:
+    if not shutil.which("fzf"):
+        sys.exit("fzf not found")
+    STATUS_FILE.unlink(missing_ok=True)
+    me = shlex.quote(SELF)
+    reload = f"reload({me} list)+transform-header({me} header)+clear-selection"
+    normal_keys = "a,r,x,q,j,k,space,*,/"
+
+    def act(cmd):
+        return f"execute-silent({me} {cmd} {{+2}})+{reload}"
+
+    binds = [
+        f"enter:execute-silent({me} go {{2}})+abort",
+        f"a:{act('archive')}", f"r:{act('restore')}", f"x:{act('delete')}",
+        f"ctrl-a:{act('archive')}", f"ctrl-r:{act('restore')}", f"ctrl-x:{act('delete')}",
+        "j:down", "k:up", "q:abort", "space:toggle+down", "*:toggle-all",
+        f"/:unbind({normal_keys})+change-prompt(filter> )",
+        # esc leaves filter mode if you're in it; otherwise it closes the picker.
+        f"esc:transform:[ \"$FZF_PROMPT\" = \"filter> \" ] && echo 'clear-query+rebind({normal_keys})+change-prompt(> )' || echo abort",
+    ]
+    lister = subprocess.Popen([SELF, "list"], stdout=subprocess.PIPE)
+    fzf = ["fzf", "--ansi", "--multi", "--tabstop=1", "--delimiter=\t", "--with-nth=1,3,4", "--layout=reverse",
+           "--border=rounded", "--border-label= rex sessions ", "--prompt=> ", "--marker=✓ ",
+           "--pointer=▶", "--header", HELP, "--header-first", "--no-sort", "--tiebreak=index",
+           f"--preview={me} preview {{2}}", "--preview-window=right,50%,wrap,<100(down,55%,wrap)",
+           *[f"--bind={b}" for b in binds]]
+    subprocess.run(fzf, stdin=lister.stdout)
+
+
+COMMANDS = {
+    "list": cmd_list, "preview": cmd_preview, "archive": cmd_archive,
+    "restore": cmd_restore, "delete": cmd_delete, "go": cmd_go, "header": cmd_header, "ui": cmd_ui,
+}
+
+
+def main() -> None:
+    argv = sys.argv[1:]
+    if argv and argv[0] in ("-h", "--help", "help"):
+        print(__doc__)
+        return
+    cmd = argv[0] if argv else "ui"
+    if cmd not in COMMANDS:
+        sys.exit(f"unknown command {cmd!r}\n{__doc__}")
+    try:
+        COMMANDS[cmd](argv[1:])
+    except RexError as e:
+        status(f"error: {e}")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
