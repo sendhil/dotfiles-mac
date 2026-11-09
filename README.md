@@ -201,6 +201,30 @@ To run the filesystem installer tests and workspace-layout tests:
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -v
 ```
 
+## Zsh Startup
+
+x-cmd is initialized on the first `x` command, rather than in every new shell.
+Its normal commands, completions, and hooks become available after that first use.
+The lazy loader lives in `bash-linux/.bash/x_cmd.zsh`, sourced by `.zshrc`.
+
+Powerlevel10k does not query Kubernetes during startup by default. To show the
+Kubernetes context in the current shell, opt in and reload the prompt config:
+
+```zsh
+export DOTFILES_KUBECONTEXT=1; source ~/.p10k.zsh
+```
+
+To turn it off again:
+
+```zsh
+unset DOTFILES_KUBECONTEXT; source ~/.p10k.zsh
+```
+
+For a persistent opt-in, set `DOTFILES_KUBECONTEXT=1` in `~/.zshenv` before
+Powerlevel10k loads. Kubernetes commands and their lazy completions still work
+when the prompt segment is disabled. Git-status and completion caching are unchanged.
+These startup changes apply to new shells; existing tabs do not need restarting.
+
 ## Neovim Setup
 
 The Neovim configuration requires several dependencies to work properly. You have two options:
