@@ -16,6 +16,7 @@ local statuses = {
 }
 rex = {
   bind = function() end,
+  mode = function() end,
   action = function(def) actions[def.name] = def.run end,
   log = function() end,
   call = function(method)
@@ -133,3 +134,70 @@ result = jump("client:closed-origin", "session:test", "block:current")
 assert(result.found == false and #queued == 0, "a closed origin must be forgotten")
 table.insert(blocks["session:other"], 1, original)
 print("PASS: a closed starting pane is forgotten without switching tabs")
+
+-- Snoozed panes (id = rex.snooze, state = idle) are skipped even if another record says done/blocked.
+statuses["block:question"] = {
+  records = {
+    { state = "done", app = "pi" },
+    { id = "rex.snooze", state = "idle", app = "snooze" },
+  },
+}
+statuses["block:finished"] = { records = { { state = "idle", app = "pi" } } }
+statuses["block:current"] = { records = { { state = "idle", app = "pi" } } }
+result = jump("client:snooze", "session:test", "block:current")
+assert(result.found == false and focused == nil, "actively snoozed pane must be skipped by jump_attention")
+print("PASS: actively snoozed pane is skipped by jump_attention")
+
+-- Expired snooze (id = rex.snooze, state = blocked) is visited and auto-acknowledged.
+local started_cmds = {}
+rex.exec = {
+  start = function(argv, opts)
+    started_cmds[#started_cmds + 1] = { argv = argv, opts = opts }
+    return {}
+  end,
+}
+statuses["block:question"] = {
+  records = {
+    { state = "idle", app = "pi" },
+    { id = "rex.snooze", state = "blocked", kind = "question", app = "snooze" },
+  },
+}
+result = jump("client:snooze-wake", "session:test", "block:current")
+assert(result.found and result.block_id == "block:question" and result.state == "blocked", "expired snooze must be visited as blocked")
+assert(#started_cmds == 1 and started_cmds[1].argv[2] == "ack" and started_cmds[1].argv[3] == "--ringing-only" and started_cmds[1].argv[4] == "block:question", "jumping to expired snooze must acknowledge it with --ringing-only")
+assert(started_cmds[1].opts and started_cmds[1].opts.detach == true, "ack must run detached")
+print("PASS: expired snooze is visited and auto-acknowledged")
+
+-- A throwing rex.exec.start must not prevent session.select from queuing.
+rex.exec = {
+  start = function() error("spawn failed") end,
+}
+result = jump("client:snooze-err", "session:test", "block:current")
+assert(result.found and #queued == 1 and queued[1].action == "session.select", "session.select must still queue even if ack fails")
+print("PASS: failing ack does not break attention jump")
+
+-- snooze_pane action opens floating rex-snooze picker targeting the current session and block.
+local split_called, float_called = nil, nil
+rex.session.new_split = function(args)
+  split_called = args
+  return { block_ids = { "block:picker" } }
+end
+rex.session.float_block = function(args)
+  float_called = args
+  return {}
+end
+rex.layout = {
+  block = function(def) return def end,
+}
+blocks["session:test"][#blocks["session:test"] + 1] = {
+  block_id = "block:picker", window_id = "window:current", creator_name = terminal, placement = "placed",
+}
+assert(actions.snooze_pane, "snooze_pane action must be defined")
+local sres = actions.snooze_pane({ session_id = "session:test", block_id = "block:current" }, {})
+assert(sres and sres.block_id == "block:picker", "snooze_pane must return the picker block_id")
+assert(split_called and split_called.anchor_id == "block:current", "snooze_pane must split from ctx.block_id")
+local cmd = split_called.layout.options.command
+assert(cmd[2] == "ui" and cmd[3] == "-s" and cmd[4] == "session:test" and cmd[5] == "-b" and cmd[6] == "block:current", "snooze_pane must pass session and block to rex-snooze")
+assert(float_called and float_called.block_id == "block:picker", "snooze_pane must float the picker pane")
+print("PASS: snooze_pane opens floating rex-snooze picker with target session and block")
+
