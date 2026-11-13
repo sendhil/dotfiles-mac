@@ -3,7 +3,8 @@
 set -euo pipefail
 umask 077
 
-STATE_DIR="$HOME/.local/state/dotfiles-mac/ghostty"
+# Share Ghostty 1.4's native browser auto-theme file.
+STATE_DIR="$HOME/.config/ghostty/auto"
 STATE_FILE="$STATE_DIR/theme.ghostty"
 TEMP_FILE=""
 trap 'if [[ -n "$TEMP_FILE" ]]; then rm -f -- "$TEMP_FILE"; fi' EXIT

@@ -27,5 +27,5 @@ font-codepoint-map = U+E1A0-U+E1BA=Herdr Agent Icons Max
 font-codepoint-map = U+E1C0-U+E1C5=Herdr Agent Icons Max
 # <<< herdr-radar font block
 
-# Theme choices persist locally without modifying this stowed base.
-config-file = ?~/.local/state/dotfiles-mac/ghostty/theme.ghostty
+# Shared by the native browser's w key and theme.sh; this file stays local.
+config-file = ?~/.config/ghostty/auto/theme.ghostty
