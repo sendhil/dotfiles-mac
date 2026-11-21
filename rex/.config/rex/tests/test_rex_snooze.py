@@ -10,6 +10,8 @@ from importlib.machinery import SourceFileLoader
 from importlib.util import module_from_spec, spec_from_loader
 from pathlib import Path
 
+import pytest
+
 SCRIPT_PATH = Path(__file__).resolve().parents[3] / ".local" / "bin" / "rex-snooze"
 
 
@@ -32,6 +34,60 @@ def decode_osc(seq: str) -> dict[str, str]:
             v = base64.b64decode(v).decode("utf-8")
         pairs[k] = v
     return pairs
+
+
+def test_daemon_stderr_is_recorded(tmp_path, monkeypatch):
+    mod = load_module()
+    monkeypatch.setattr(mod, "STATE_DIR", tmp_path)
+    monkeypatch.setattr(mod, "DAEMON_PID_FILE", tmp_path / "daemon.pid")
+    monkeypatch.setattr(mod, "_is_daemon_lock_held", lambda: False)
+    def fake_start(_argv, **kwargs):
+        if hasattr(kwargs["stderr"], "write"):
+            kwargs["stderr"].write("daemon failure\n")
+    monkeypatch.setattr(mod.subprocess, "Popen", fake_start)
+    mod._notify_or_start_daemon(has_entries=True)
+    log = tmp_path / "daemon.log"
+    assert log.exists(), "daemon stderr must be recorded"
+    assert "daemon failure" in log.read_text()
+
+
+def test_picker_reports_fzf_error(tmp_path, monkeypatch):
+    mod = load_module()
+    executable = tmp_path / "fzf"
+    executable.write_text("#!/bin/sh\nexit 2\n")
+    executable.chmod(0o755)
+    monkeypatch.setenv("PATH", str(tmp_path))
+    monkeypatch.setattr(mod, "STATUS_FILE", tmp_path / "status")
+    monkeypatch.setattr(mod, "SNOOZES_FILE", tmp_path / "snoozes.json")
+    with pytest.raises(mod.RexError, match="fzf"):
+        mod.cmd_ui([])
+
+
+def test_tty_writer_emits_output_to_pty_master():
+    mod = load_module()
+    master, slave = os.openpty()
+    try:
+        assert mod.write_tty_direct(os.ttyname(slave), "test-output")
+        assert os.read(master, 100) == b"test-output"
+    finally:
+        os.close(master)
+        os.close(slave)
+
+
+def test_tty_writer_rejects_regular_file(tmp_path, monkeypatch):
+    mod = load_module()
+    target = tmp_path / "not-a-tty"
+    target.write_text("unchanged")
+    real_open = os.open
+    monkeypatch.setattr(mod.os, "open", lambda *_args, **_kwargs: real_open(target, os.O_WRONLY))
+    assert not mod.write_tty_direct("/dev/pts/13", "unsafe")
+    assert target.read_text() == "unchanged"
+
+
+def test_resolve_linux_pseudoterminal_from_process(monkeypatch):
+    mod = load_module()
+    monkeypatch.setattr(mod.subprocess, "run", lambda *args, **kwargs: type("Result", (), {"stdout": "pts/13\n"})())
+    assert mod.resolve_tty_from_process({"foreground": {"pid": 1234}}) == "/dev/pts/13"
 
 
 def test_parse_spec_presets_and_custom_queries():
@@ -158,7 +214,7 @@ def test_daemon_tick_lifecycle_and_autoclear():
     assert "block:1" in entries
     assert writes == []
 
-    # User switches to another tab (unfocused), then switches back (focused): auto-clears
+    # Session focus changes alone do not prove the user visited the pane.
     views_other_tab = {
         "session:1": {
             "active_window_id": "window:2",
@@ -184,13 +240,44 @@ def test_daemon_tick_lifecycle_and_autoclear():
         now=1063.0,
         write_tty=writer,
     )
-    assert "block:1" not in entries
-    assert len(writes) == 1
-    assert decode_osc(writes[0][1]) == {"state": "clear", "id": "rex.snooze"}
+    assert "block:1" in entries
+    assert writes == []
 
 
-def test_daemon_tick_autoclear_on_subsecond_keystroke_when_already_focused():
+def test_daemon_does_not_wake_a_reused_pty():
     mod = load_module()
+    entries = {"block:1": {"session_id": "session:1", "tty": "/dev/pts/1", "state": "snoozed", "due_at": 1}}
+    views = {"session:1": {"active_window_id": "window:1", "windows": [{"window_id": "window:1", "focused_block_id": "block:1", "layers": [{"blocks": [{"block_id": "block:1"}]}]}]}}
+    writes = []
+    mod.process_entries(entries, views=views, tty_atimes={}, now=2, write_tty=lambda tty, data: writes.append((tty, data)) or True, verify_tty=lambda entry: False)
+    assert entries["block:1"]["state"] == "snoozed"
+    assert writes == []
+
+
+def test_session_focus_alone_does_not_acknowledge_reminder():
+    mod = load_module()
+    entries = {"block:1": {"session_id": "session:1", "tty": "/dev/ttys001", "state": "ringing", "tty_atime_at_expiry": 100, "seen_unfocused": True}}
+    views = {"session:1": {"active_window_id": "window:1", "windows": [{"window_id": "window:1", "focused_block_id": "block:1", "layers": [{"blocks": [{"block_id": "block:1"}]}]}]}}
+    writes = []
+    mod.process_entries(entries, views=views, tty_atimes={"/dev/ttys001": 100}, now=1000, write_tty=lambda tty, data: writes.append((tty, data)) or True)
+    assert "block:1" in entries
+    assert writes == []
+
+
+def test_linux_atime_change_does_not_acknowledge_reminder(monkeypatch):
+    mod = load_module()
+    monkeypatch.setattr(mod.sys, "platform", "linux")
+    entries = {"block:1": {"session_id": "session:1", "tty": "/dev/pts/1", "state": "ringing", "tty_atime_at_expiry": 100, "seen_unfocused": False}}
+    views = {"session:1": {"active_window_id": "window:1", "windows": [{"window_id": "window:1", "focused_block_id": "block:1", "layers": [{"blocks": [{"block_id": "block:1"}]}]}]}}
+    writes = []
+    mod.process_entries(entries, views=views, tty_atimes={"/dev/pts/1": 200}, now=1000, write_tty=lambda tty, data: writes.append((tty, data)) or True)
+    assert "block:1" in entries
+    assert writes == []
+
+
+def test_daemon_tick_autoclear_on_subsecond_keystroke_when_already_focused(monkeypatch):
+    mod = load_module()
+    monkeypatch.setattr(mod.sys, "platform", "darwin")
     writes: list[tuple[str, str]] = []
 
     def writer(tty: str | None, data: str) -> bool:
@@ -309,6 +396,49 @@ def test_unknown_views_and_failed_writes_preserve_entries():
     assert entries["block:due"]["state"] == "ringing"
 
 
+def test_ack_does_not_write_to_reused_pty(tmp_path, monkeypatch):
+    mod = load_module()
+    monkeypatch.setattr(mod, "STATE_DIR", tmp_path)
+    monkeypatch.setattr(mod, "SNOOZES_FILE", tmp_path / "snoozes.json")
+    monkeypatch.setattr(mod, "LOCK_FILE", tmp_path / "lock")
+    monkeypatch.setattr(mod, "_notify_or_start_daemon", lambda **_kwargs: None)
+    monkeypatch.setattr(mod, "block_process", lambda *_args: {"foreground": {"pid": 1234}})
+    monkeypatch.setattr(mod.subprocess, "run", lambda *args, **kwargs: type("Result", (), {"stdout": "pts/999\n"})())
+    master, slave = os.openpty()
+    try:
+        with mod._locked_state() as entries:
+            entries["block:1"] = {"session_id": "session:1", "block_id": "block:1", "tty": os.ttyname(slave), "state": "ringing"}
+        with pytest.raises(mod.RexError, match="block:1"):
+            mod.ack_blocks(["block:1"])
+        assert "block:1" in mod.load_entries()
+        assert not mod.select.select([master], [], [], 0)[0]
+    finally:
+        os.close(master)
+        os.close(slave)
+
+
+def test_ack_preserves_reminder_when_clear_fails(tmp_path, monkeypatch):
+    mod = load_module()
+    monkeypatch.setattr(mod, "STATE_DIR", tmp_path)
+    monkeypatch.setattr(mod, "SNOOZES_FILE", tmp_path / "snoozes.json")
+    monkeypatch.setattr(mod, "LOCK_FILE", tmp_path / "lock")
+    monkeypatch.setattr(mod, "write_tty_direct", lambda _tty, _data: False)
+    monkeypatch.setattr(mod, "_notify_or_start_daemon", lambda **_kwargs: None)
+    master, slave = os.openpty()
+    try:
+        tty = os.ttyname(slave)
+        monkeypatch.setattr(mod, "block_process", lambda *_args: {"foreground": {"pid": 1234}})
+        monkeypatch.setattr(mod.subprocess, "run", lambda *args, **kwargs: type("Result", (), {"stdout": tty + "\n"})())
+        with mod._locked_state() as entries:
+            entries["block:1"] = {"session_id": "session:1", "block_id": "block:1", "tty": tty, "state": "ringing"}
+        with pytest.raises(mod.RexError, match="block:1"):
+            mod.ack_blocks(["block:1"])
+        assert "block:1" in mod.load_entries()
+    finally:
+        os.close(master)
+        os.close(slave)
+
+
 def test_ack_ringing_only_and_preset_guard(tmp_path, monkeypatch):
     mod = load_module()
     monkeypatch.setattr(mod, "STATE_DIR", tmp_path)
@@ -317,6 +447,8 @@ def test_ack_ringing_only_and_preset_guard(tmp_path, monkeypatch):
     monkeypatch.setattr(mod, "DAEMON_LOCK_FILE", tmp_path / "daemon.lock")
     monkeypatch.setattr(mod, "DAEMON_PID_FILE", tmp_path / "daemon.pid")
     monkeypatch.setattr(mod, "write_tty_direct", lambda _tty, _data: True)
+    monkeypatch.setattr(mod, "block_process", lambda _sid, bid: {"foreground": {"pid": 1 if bid == "block:resnoozed" else 2}})
+    monkeypatch.setattr(mod.subprocess, "run", lambda args, **_kwargs: type("Result", (), {"stdout": "ttys001\n" if args[-1] == "1" else "ttys002\n"})())
     notified: list[bool] = []
     monkeypatch.setattr(mod, "_notify_or_start_daemon", lambda *, has_entries: notified.append(has_entries))
 
@@ -409,6 +541,23 @@ def test_next_sleep_seconds_cap_and_overdue_floor():
     assert mod.next_sleep_seconds({"block:1": {"state": "snoozed", "due_at": 950.0}}, now=1000.0) == 1.0
     # Once ringing: checks focus/atime at 1s interval
     assert mod.next_sleep_seconds({"block:1": {"state": "ringing", "due_at": 1000.0}}, now=1005.0) == 1.0
+
+
+def test_go_keeps_ringing_when_focus_fails(tmp_path, monkeypatch):
+    mod = load_module()
+    monkeypatch.setattr(mod, "STATE_DIR", tmp_path)
+    monkeypatch.setattr(mod, "SNOOZES_FILE", tmp_path / "snoozes.json")
+    monkeypatch.setattr(mod, "LOCK_FILE", tmp_path / "lock")
+    monkeypatch.setattr(mod, "_notify_or_start_daemon", lambda **_kwargs: None)
+    monkeypatch.setattr(mod, "find_block_context", lambda _sid, bid: {"session_id": "session:1", "window_id": "window:1", "block_id": bid})
+    def fail_focus(*_args, **_kwargs):
+        raise mod.RexError("focus failed")
+    monkeypatch.setattr(mod, "rex", fail_focus)
+    with mod._locked_state() as entries:
+        entries["block:1"] = {"session_id": "session:1", "state": "ringing"}
+    with pytest.raises(mod.RexError, match="focus failed"):
+        mod.cmd_go(["block:1"])
+    assert mod.load_entries()["block:1"]["state"] == "ringing"
 
 
 def test_dead_session_pruning_and_go_block_id(tmp_path, monkeypatch):

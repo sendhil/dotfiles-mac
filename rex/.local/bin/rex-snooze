@@ -7,7 +7,7 @@
 
 States
   snoozed  attention cleared (id=rex.snooze state=idle); countdown running
-  ringing  timer expired (id=rex.snooze state=blocked); auto-clears on focus/input
+  ringing  timer expired (id=rex.snooze state=blocked); clear by acknowledgement
 
 Usage
   rex-snooze [ui] [-s SESSION] [-b BLOCK]          open the fzf picker
@@ -31,6 +31,7 @@ import select
 import shlex
 import shutil
 import signal
+import stat
 import subprocess
 import sys
 import time
@@ -51,7 +52,7 @@ SNOOZE_APP = "snooze"
 MAX_DURATION_SECS = 30 * 86400
 DEFAULT_WINDOW = re.compile(r"^Window [0-9a-f]{8}$")
 SAFE_TOKEN_RE = re.compile(r"^[A-Za-z0-9_./+-]{1,64}$")
-SAFE_TTY_RE = re.compile(r"^/dev/ttys?\d+$")
+SAFE_TTY_RE = re.compile(r"^/dev/(?:ttys?\d+|pts/\d+)\Z")
 SELF = os.path.realpath(__file__)
 
 DIM, BOLD, RESET = "\033[2m", "\033[1m", "\033[0m"
@@ -145,10 +146,13 @@ def write_tty_direct(tty: str | None, data: str) -> bool:
         return False
     payload = memoryview(data.encode("utf-8"))
     try:
-        fd = os.open(path, os.O_WRONLY | os.O_NOCTTY | os.O_NONBLOCK)
+        fd = os.open(path, os.O_WRONLY | os.O_NOCTTY | os.O_NONBLOCK | getattr(os, "O_NOFOLLOW", 0))
     except OSError:
         return False
     try:
+        info = os.fstat(fd)
+        if not stat.S_ISCHR(info.st_mode) or info.st_uid != os.getuid() or not os.isatty(fd):
+            return False
         sent = 0
         while sent < len(payload):
             try:
@@ -350,6 +354,14 @@ def resolve_tty_from_process(proc: dict) -> str | None:
     return None
 
 
+def entry_tty_matches(entry: dict) -> bool:
+    """Refuse to write when the block no longer owns its recorded PTY."""
+    sid, bid, tty = entry.get("session_id"), entry.get("block_id"), entry.get("tty")
+    if not sid or not bid or not tty:
+        return False
+    return resolve_tty_from_process(block_process(sid, bid)) == tty
+
+
 def classify_proc(proc: dict) -> tuple[str, str]:
     fg = proc.get("foreground") or {}
     cwd = fg.get("cwd") or next((a.get("cwd") for a in proc.get("ancestors", []) if a.get("cwd")), None)
@@ -434,14 +446,15 @@ def _notify_or_start_daemon(*, has_entries: bool) -> None:
         return
     DAEMON_PID_FILE.unlink(missing_ok=True)
     if has_entries:
-        subprocess.Popen(
-            [sys.executable, SELF, "daemon"],
-            env={**os.environ, "REX_SNOOZE_DIR": str(STATE_DIR)},
-            start_new_session=True,
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
+        with (STATE_DIR / "daemon.log").open("a", encoding="utf-8") as log:
+            subprocess.Popen(
+                [sys.executable, SELF, "daemon"],
+                env={**os.environ, "REX_SNOOZE_DIR": str(STATE_DIR)},
+                start_new_session=True,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=log,
+            )
 
 
 def wait_interruptible(rfd: int, seconds: float) -> None:
@@ -485,6 +498,7 @@ def process_entries(
     now: float,
     write_tty: Callable[[str | None, str], bool] = write_tty_direct,
     inspected_at: float | None = None,
+    verify_tty: Callable[[dict], bool] | None = None,
 ) -> None:
     for bid in list(entries.keys()):
         entry = entries[bid]
@@ -505,7 +519,7 @@ def process_entries(
         due_at = float(entry.get("due_at") or 0)
 
         if state == "snoozed":
-            if now >= due_at and write_tty(tty, build_wakeup_sequence(entry)):
+            if now >= due_at and (verify_tty is None or verify_tty(entry)) and write_tty(tty, build_wakeup_sequence(entry)):
                 entry["state"] = "ringing"
                 entry["seen_unfocused"] = not is_focused
                 entry["tty_atime_at_expiry"] = get_tty_atime(tty) or tty_atimes.get(tty or "", 0)
@@ -515,8 +529,11 @@ def process_entries(
                 continue
             cur_atime = tty_atimes.get(tty or "", 0)
             exp_atime = int(entry.get("tty_atime_at_expiry") or 0)
-            should_clear = (is_focused and bool(entry.get("seen_unfocused"))) or (cur_atime > exp_atime > 0)
-            if should_clear and write_tty(tty, CLEAR_SEQ):
+            # Linux devpts atime is not a reliable signal of terminal input.
+            input_seen = sys.platform != "linux" and cur_atime > exp_atime > 0
+            # A session's remembered focus does not prove that a client visited it.
+            should_clear = input_seen
+            if should_clear and (verify_tty is None or verify_tty(entry)) and write_tty(tty, CLEAR_SEQ):
                 entries.pop(bid, None)
 
 
@@ -577,6 +594,7 @@ def cmd_daemon(_args: list[str]) -> None:
                             tty_atimes=atimes,
                             now=time.time(),
                             inspected_at=inspected_at,
+                            verify_tty=entry_tty_matches,
                         )
                     if not entries:
                         DAEMON_PID_FILE.unlink(missing_ok=True)
@@ -654,6 +672,7 @@ def ack_blocks(
         return 0
 
     removed = 0
+    failed: list[str] = []
     with _locked_state() as entries:
         targets = list(entries.keys()) if clear_all else normalized
         for bid in targets:
@@ -663,11 +682,18 @@ def ack_blocks(
             if ringing_only and entry.get("state") != "ringing":
                 continue
             tty = entry.get("tty")
-            cleared = not tty or write_tty_direct(tty, CLEAR_SEQ) or not Path(tty).exists()
-            if cleared or not ringing_only:
+            cleared = bool(tty and entry_tty_matches(entry) and write_tty_direct(tty, CLEAR_SEQ))
+            if not cleared and tty and not Path(tty).exists():
+                live = live_session_ids()
+                cleared = bool(entry.get("session_id") and live is not None and entry["session_id"] not in live)
+            if cleared:
                 entries.pop(bid, None)
                 removed += 1
+            else:
+                failed.append(bid)
         _notify_or_start_daemon(has_entries=bool(entries))
+    if failed:
+        raise RexError("failed to clear snooze for " + ", ".join(failed))
     return removed
 
 
@@ -839,10 +865,10 @@ def cmd_go(args: list[str]) -> None:
         status("pane no longer exists")
         return
     sid, wid = ctx["session_id"], ctx["window_id"]
+    rex("focus", "-s", sid, bid)
+    rex("do", "session.select", f"session_id={sid}", f"window_id={wid}", timeout=5)
     if entry and entry.get("state") == "ringing":
         ack_blocks([bid], ringing_only=True)
-    rex("focus", "-s", sid, bid, check=False)
-    rex("do", "session.select", f"session_id={sid}", f"window_id={wid}", check=False, timeout=5)
 
 
 def cmd_apply(args: list[str]) -> None:
@@ -943,7 +969,9 @@ def cmd_ui(args: list[str]) -> None:
         "--preview-window=right,52%,wrap,<100(down,55%,wrap)",
         *[f"--bind={b}" for b in binds],
     ]
-    subprocess.run(fzf, check=False, input=render_list(block_id), text=True)
+    result = subprocess.run(fzf, check=False, input=render_list(block_id), text=True)
+    if result.returncode not in (0, 1, 130):
+        raise RexError(f"fzf failed (exit {result.returncode}); a newer fzf with transform support may be required")
 
 
 COMMANDS = {
