@@ -21,6 +21,7 @@ rex.bind("shift+enter", "pane.send_key", { key = "ctrl+j" })
 -- Scans every session's terminals via their program status (OSC 7501) records.
 local TERMINAL = "com.superlogical.terminal"
 local RANK = { blocked = 1, error = 2, failed = 2, done = 3 }
+local SNOOZE_BOOTSTRAP = 'PATH="$HOME/.local/share/rex-snooze/bin:$HOME/.local/bin:$HOME/Library/Application Support/com.superlogical.rex/RexServer/Versions/Current/Rex Server.app/Contents/MacOS:/opt/homebrew/bin:/usr/local/bin:$PATH"; export PATH; exec "$HOME/.local/bin/rex-snooze" "$@"'
 -- Each app remembers where its current round of attention jumps began.
 local attention_origins = {}
 
@@ -40,11 +41,17 @@ rex.action{
         end
         if b.creator_name == TERMINAL and b.placement == "placed" and b.block_id ~= ctx.block_id then
           local st = rex.block.call(TERMINAL, "program_status", { block_id = b.block_id })
+          local b_best, snooze_state
           for _, rec in ipairs((st and st.records) or {}) do
+            if rec.id == "rex.snooze" then snooze_state = rec.state end
             local rank = RANK[rec.state]
-            if rank and (best == nil or rank < best.rank) then
-              best = { rank = rank, session_id = s.session_id, window_id = b.window_id, block_id = b.block_id, state = rec.state }
+            if rank and (b_best == nil or rank < b_best.rank) then
+              b_best = { rank = rank, session_id = s.session_id, window_id = b.window_id, block_id = b.block_id, state = rec.state }
             end
+          end
+          if snooze_state ~= "idle" and b_best and (best == nil or b_best.rank < best.rank) then
+            b_best.snooze_ack = (snooze_state == "blocked")
+            best = b_best
           end
         end
       end
@@ -74,13 +81,46 @@ rex.action{
       session_id = best.session_id,
       window_id = best.window_id,
     })
+    if best.snooze_ack then
+      local ok, result, ack_err
+      if ctx.server then
+        -- rex.call follows the selected remote context; rex.exec would run here.
+        ok, result, ack_err = pcall(rex.call, "client.action", { action = "snooze_ack", args = { block_id = best.block_id } })
+        if ok and result and result.result and result.result.started == false then
+          ack_err, result = result.result.error or "acknowledgement did not start", nil
+        end
+      elseif type(rex.exec) == "table" and rex.exec.start then
+        ok, result, ack_err = pcall(rex.exec.start, { "/bin/sh", "-c", SNOOZE_BOOTSTRAP, "rex-snooze", "ack", "--ringing-only", best.block_id }, { detach = true })
+      end
+      if not ok or not result then rex.log("warn", "snooze acknowledgement failed: " .. tostring(ack_err or result)) end
+    end
     return { found = not returning, returned = returning, state = best.state, block_id = best.block_id }
   end,
 }
 rex.bind("ctrl+a>ctrl+a", "jump_attention")
 
+-- Open a CLI picker in a centered floating pane over the current tab; closes when the picker exits.
+local function open_float_picker(ctx, label, cmd, shell)
+  local split, err = rex.session.new_split{
+    anchor_id = ctx.block_id,
+    direction = "horizontal",
+    side      = "after",
+    focus     = true,
+    layout    = rex.layout.block{
+      flavor  = "com.superlogical.terminal.shell",
+      label   = label,
+      options = { command = cmd, shell = shell },
+    },
+  }
+  if err ~= nil then error(err, 0) end
+  local block_id = split.block_ids[1]
+  local _, ferr = rex.session.float_block{ block_id = block_id, bounds = { 0.08, 0.08, 0.84, 0.84 } }
+  if ferr ~= nil then rex.log("warn", label .. ": couldn't float picker: " .. ferr) end
+  rex.session.focus_block{ block_id = block_id }
+  return { block_id = block_id }
+end
+
 -- Archive / restore sessions and tabs with the rex-archive fzf picker (rex/.local/bin/rex-archive).
--- Opens it in a floating pane over the current tab; the pane closes when the picker exits.
 rex.action{
   name  = "archive_sessions",
   title = "Archive Sessions…",
@@ -88,23 +128,23 @@ rex.action{
   category = "Sessions",
   keywords = "archive restore defer stash hide park sessions tabs rex-archive",
   run   = function(ctx, args)
-    local split, err = rex.session.new_split{
-      anchor_id = ctx.block_id,
-      direction = "horizontal",
-      side      = "after",
-      focus     = true,
-      layout    = rex.layout.block{
-        flavor  = "com.superlogical.terminal.shell",
-        label   = "rex-archive",
-        options = { command = { os.getenv("HOME") .. "/.local/bin/rex-archive" } },
-      },
-    }
-    if err ~= nil then error(err, 0) end
-    local block_id = split.block_ids[1]
-    local _, ferr = rex.session.float_block{ block_id = block_id, bounds = { 0.08, 0.08, 0.84, 0.84 } }
-    if ferr ~= nil then rex.log("warn", "rex-archive: couldn't float picker: " .. ferr) end
-    rex.session.focus_block{ block_id = block_id }
-    return { block_id = block_id }
+    return open_float_picker(ctx, "rex-archive", { os.getenv("HOME") .. "/.local/bin/rex-archive" })
+  end,
+}
+
+-- Snooze a pane for a duration and mark it blocked (OSC 7501) when due (rex/.local/bin/rex-snooze).
+rex.action{
+  name  = "snooze_pane",
+  title = "Snooze Pane…",
+  description = "Snooze a pane for a duration and mark it blocked when due (rex-snooze).",
+  category = "Pane",
+  keywords = "snooze defer remind timer later attention block pane rex-snooze",
+  run   = function(ctx, args)
+    -- Expand HOME on the server that owns the new terminal, not the Lua host.
+    local cmd = { "/bin/sh", "-c", SNOOZE_BOOTSTRAP, "rex-snooze", "ui" }
+    if ctx.session_id then cmd[#cmd + 1] = "-s"; cmd[#cmd + 1] = ctx.session_id end
+    if ctx.block_id then cmd[#cmd + 1] = "-b"; cmd[#cmd + 1] = ctx.block_id end
+    return open_float_picker(ctx, "rex-snooze", cmd, "none")
   end,
 }
 
