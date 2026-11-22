@@ -17,6 +17,9 @@ rex.bind("shift+cmd+left", "client.tab.move", { direction = "backward" })
 rex.bind("shift+cmd+right", "client.tab.move", { direction = "forward" })
 rex.bind("shift+enter", "pane.send_key", { key = "ctrl+j" })
 
+-- Hyper-M toggles the floating window between minimized and shown.
+rex.bind("ctrl+alt+cmd+shift+m", "pane.minimize_floating")
+
 -- Jump to the next pane that needs you: blocked first, then failed, then finished.
 -- Scans every session's terminals via their program status (OSC 7501) records.
 local TERMINAL = "com.superlogical.terminal"
