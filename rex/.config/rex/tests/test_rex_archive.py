@@ -93,3 +93,70 @@ def test_review_does_not_close_without_explicit_confirmation(archive, monkeypatc
     monkeypatch.setattr(archive, 'cmd_archive', lambda *a, **kw: pytest.fail('cancelled archive'))
     archive.COMMANDS['review'](['archive', 'session:1'])
     assert seen == ['Whole session: api']
+
+
+def test_favorite_workspace_lifecycle(archive, monkeypatch):
+    live = {}
+    monkeypatch.setattr(archive, 'list_sessions', lambda: list(live.values()))
+    def rex(*args, **kw):
+        if args[0] == 'new':
+            sid = 'session:' + str(len(created))
+            created.append(sid)
+            live[sid] = {'session_id': sid, 'label': 'fleet'}
+            return {'session_id': sid, 'initial_windows': [{'block_ids': ['b'], 'window_id': 'w'}]}
+        assert args[0] == 'focus'
+    created = []
+    monkeypatch.setattr(archive, 'rex', rex)
+    data = dict(type='session', label='fleet', session_label='fleet', archived_at=1,
+                windows=[{'label': 'logs', 'layout': None, 'panes': {}}])
+    archive.write_archive(data)
+    assert 'star' in archive.COMMANDS
+    key = 'archive:' + archive.archives()[0].stem
+    archive.cmd_star([key])
+    fid = archive.favorite_rows()[0]['id']
+    first = archive.open_favorite(fid)['session']
+    assert archive.open_favorite(fid)['session'] == first
+    assert len(created) == 1
+    archive.write_archive(dict(data, session_id=first))
+    live.clear()
+    assert archive.favorite_rows()[0]['state'] == 'Archived'
+    assert archive.open_favorite(fid)['session'] != first
+    live.clear()
+    live['session:unrelated'] = dict(session_id='session:unrelated', label='fleet')
+    assert archive.favorite_rows()[0]['state'] == 'Missing'
+    with pytest.raises(archive.RexError):
+        archive.open_favorite(fid)
+    archive.forget_missing(fid)
+    assert archive.favorite_rows() == []
+
+
+def test_live_tab_star_survives_parent_session_archive(archive, monkeypatch):
+    live = [{'session_id': 'session:old', 'label': 'project'}]
+    monkeypatch.setattr(archive, 'list_sessions', lambda: live)
+    monkeypatch.setattr(archive, 'inspect', lambda sid: {'windows': [{'window_id': 'w2', 'label': 'logs'}]})
+    archive.cmd_star(['tab:session:old|w2'])
+    fid = archive.favorite_rows()[0]['id']
+    windows = [dict(source_window=w, label=w, layout=None, panes={}) for w in ('w1', 'w2')]
+    archive.write_archive(dict(type='session', label='project', session_id='session:old', archived_at=1, windows=windows))
+    live.clear()
+    def rex(*args, **kw):
+        if args[0] == 'new':
+            return {'session_id':'session:new', 'initial_windows':[{'block_ids':['b'], 'window_id':'new1'}]}
+        if args[0] == 'window':
+            return {'block_ids':['b2'], 'window_id':'new2'}
+        assert args[0] == 'focus'
+    monkeypatch.setattr(archive, 'rex', rex)
+    assert archive.open_favorite(fid) == {'session':'session:new', 'window':'new2'}
+
+
+def test_star_archived_tab_keeps_destination_choice(archive, monkeypatch):
+    monkeypatch.setattr(archive, 'list_sessions', lambda: [])
+    archive.write_archive(dict(type='tab', session_label='old', label='logs', session_id='gone',
+                               windows=[{}], archived_at=1))
+    key = 'archive:' + archive.archives()[0].stem
+    archive.cmd_star([key])
+    fid = archive.favorite_rows()[0]['id']
+    assert archive.open_favorite(fid) == {'choose': True}
+    assert archive.archives()
+    archive.cmd_star([key])
+    assert archive.favorite_rows() == []

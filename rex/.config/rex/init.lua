@@ -202,6 +202,44 @@ rex.action{
   end,
 }
 
+rex.action{
+  name = "open_favorite", title = "Open Favorite…", category = "Sessions",
+  keywords = "star favorite bookmark workspace session tab archive",
+  run = function(ctx)
+    local fallback = "ui-favorites"
+    if needs_browser(ctx) then return archive_browser(ctx, fallback) end
+    local rows = archive_helper("favorites")
+    local items, by_id = {}, {}
+    for _, row in ipairs(rows) do
+      items[#items + 1] = { id = row.id, title = row.title, detail = row.state, icon = "star" }
+      by_id[row.id] = row
+    end
+    if #items == 0 then
+      archive_pick(ctx, { title = "No favorites yet", items = { { id = "close", title = "Close", subtitle = "In Manage Sessions & Archives, press Ctrl-F to star a row." } } }, fallback)
+      return
+    end
+    local id = archive_pick(ctx, { title = "Open favorite", items = items }, fallback)
+    if not id then return end
+    if by_id[id].state == "Missing" then
+      local choice = archive_pick(ctx, { title = by_id[id].title .. " is missing", items = {
+        { id = "keep", title = "Keep favorite" }, { id = "remove", title = "Remove favorite" },
+      } }, fallback)
+      if choice == "remove" then return archive_helper("forget-missing", id) end
+      return
+    end
+    local result = archive_helper("open-favorite", id)
+    if result.choose then
+      local targets = { { id = "new", title = "New session" } }
+      for _, s in ipairs(archive_helper("catalog").sessions) do targets[#targets + 1] = s end
+      local dest = archive_pick(ctx, { title = "Original session is gone. Restore tab into…", items = targets }, fallback)
+      if not dest then return end
+      result = archive_helper("open-favorite", id, dest)
+    end
+    rex.client.queue("session.select", { session_id = result.session, window_id = result.window })
+    return result
+  end,
+}
+
 -- Keep the live previews and batch commands in the terminal browser.
 rex.action{
   name  = "archive_sessions",

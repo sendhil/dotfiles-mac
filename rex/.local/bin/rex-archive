@@ -29,6 +29,8 @@ import os
 import re
 import shlex
 import shutil
+import sqlite3
+from contextlib import contextmanager
 import subprocess
 import sys
 import time
@@ -216,7 +218,7 @@ def snapshot(session_id: str, window_id: str | None = None, *, picker_ui: bool =
         for bid, m in meta.items():
             wpanes[bid] = {**panes[bid], "label": m.get("label", ""), "flavor": m.get("flavor", ""),
                            "floating": m["floating"], "focused": bid == w.get("focused_block_id")}
-        windows.append({"label": w.get("label", ""), "layout": build(tiled_layout(w)), "panes": wpanes})
+        windows.append({"source_window": w["window_id"], "label": w.get("label", ""), "layout": build(tiled_layout(w)), "panes": wpanes})
 
     session_label = view.get("label", "")
     data = {"version": 1, "type": "session", "label": session_label, "session_id": session_id,
@@ -255,7 +257,7 @@ def exact_resume(pane: dict) -> bool:
                 and pane.get("cmd") == f"claude --resume {sid}")
 
 
-def restore_archive(data: dict, into: str | None = None) -> str:
+def restore_archive(data: dict, into: str | None = None) -> tuple[str, list]:
     """Rebuild an archive. With `into`, its tabs are added to that existing session."""
     windows = data["windows"]
     if not windows:
@@ -331,7 +333,7 @@ def restore_archive(data: dict, into: str | None = None) -> str:
     active = data.get("active_window", 0)
     if 0 <= active < len(window_ids) and window_ids[active]:
         rex("focus", "-s", session_id, window_ids[active])
-    return session_id
+    return session_id, window_ids
 
 
 # ---------------------------------------------------------------- state helpers
@@ -401,6 +403,73 @@ def parse_tab_key(key: str) -> tuple[str, str]:
     return sid, wid
 
 
+@contextmanager
+def favorites_db():
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    db = sqlite3.connect(STATE_DIR / "favorites.sqlite3", timeout=12)
+    db.row_factory = sqlite3.Row
+    try:
+        with db:
+            db.execute("""CREATE TABLE IF NOT EXISTS favorite (
+                id TEXT PRIMARY KEY, title TEXT NOT NULL, live TEXT UNIQUE, archive TEXT, slot INTEGER)""")
+            db.execute("BEGIN IMMEDIATE")
+            yield db
+    finally:
+        db.close()
+
+
+def favorite_rows():
+    with favorites_db() as db:
+        saved = list(db.execute("SELECT * FROM favorite ORDER BY title COLLATE NOCASE, id"))
+    sessions = {s["session_id"] for s in list_sessions()} if saved else set()
+    windows = {}
+    rows = []
+    for f in saved:
+        live = f["live"] or ""
+        sid, wid = parse_tab_key(live) if live.startswith("tab:") else (live, None)
+        present = sid in sessions
+        if present and wid:
+            if sid not in windows:
+                windows[sid] = {w["window_id"] for w in inspect(sid)["windows"]}
+            present = wid in windows[sid]
+        archived = f["archive"] and archive_path(f["archive"]).is_file()
+        state = "Live" if present else "Archived" if archived else "Missing"
+        rows.append({**dict(f), "state": state, "session": sid, "window": wid})
+    return rows
+
+
+def cmd_star(keys):
+    sessions = {s["session_id"]: s["label"] for s in list_sessions()}
+    with favorites_db() as db:
+        for key in dict.fromkeys(keys):
+            archived = key.startswith("archive:")
+            column = "archive" if archived else "live"
+            slot = None
+            if archived:
+                data = json.loads(archive_path(key).read_text())
+                slot = 0 if data.get("type") == "tab" else None
+            removed = db.execute("DELETE FROM favorite WHERE archive=? AND slot IS ?", (key, slot)) if archived else db.execute(
+                "DELETE FROM favorite WHERE live=?", (key,))
+            if removed.rowcount:
+                continue
+            if archived:
+                title = data["label"]
+            elif key.startswith("tab:"):
+                sid, wid = parse_tab_key(key)
+                v = inspect(sid)
+                w = next((w for w in v["windows"] if w["window_id"] == wid), None)
+                if not w:
+                    raise RexError("Tab no longer exists.")
+                title = tab_name(w.get("label", ""), v, wid)
+            elif key in sessions:
+                title = sessions[key]
+            else:
+                raise RexError("Workspace no longer exists.")
+            db.execute(f"INSERT INTO favorite(id,title,{column},slot) VALUES(?,?,?,?)",
+                       (uuid.uuid4().hex, title, key, slot))
+    status("Updated favorites")
+
+
 def write_archive(data: dict) -> None:
     ARCHIVE_DIR.mkdir(parents=True, exist_ok=True)
     prefix = f"{slug(data['session_label'])}--" if data.get("type") == "tab" else ""
@@ -408,6 +477,15 @@ def write_archive(data: dict) -> None:
     tmp = path.with_suffix(".tmp")
     tmp.write_text(json.dumps(data, indent=2))
     tmp.rename(path)
+    sid = data.get("session_id")
+    if sid:
+        key = "archive:" + path.stem
+        with favorites_db() as db:
+            if data.get("type") != "tab":
+                db.execute("UPDATE favorite SET archive=?,slot=NULL WHERE live=?", (key, sid))
+            for i, w in enumerate(data["windows"]):
+                if wid := w.get("source_window"):
+                    db.execute("UPDATE favorite SET archive=?,slot=? WHERE live=?", (key, i, tab_key(sid, wid)))
 
 
 # ---------------------------------------------------------------- commands
@@ -465,7 +543,17 @@ def catalog():
                          "subtitle": f"{subtitle} → {where}", "detail": ago(data["archived_at"])})
         except (ValueError, KeyError, OSError):
             continue
+    stars = star_keys()
+    for row in rows:
+        if row["id"] in stars:
+            row["title"] = "★ " + row["title"]
+    rows.sort(key=lambda r: r["id"] not in stars)
     return {"archives": rows, "sessions": [{"id": k, "title": v} for k, v in sessions.items()]}
+
+
+def star_keys():
+    with favorites_db() as db:
+        return {k for row in db.execute("SELECT live,archive FROM favorite") for k in row if k}
 
 
 def cmd_catalog(_args):
@@ -477,13 +565,40 @@ def restore_to(key, dest):
     data = json.loads(path.read_text())
     if dest != "new" and (data.get("type") != "tab" or dest not in {s["session_id"] for s in list_sessions()}):
         raise RexError("Restore destination is no longer available.")
-    session = restore_archive(data, into=None if dest == "new" else dest)
-    RESTORED_DIR.mkdir(parents=True, exist_ok=True)
-    path.rename(RESTORED_DIR / path.name)
+    with favorites_db() as db:
+        if not path.exists():
+            raise RexError("Archive has already been restored or moved.")
+        session, windows = restore_archive(data, into=None if dest == "new" else dest)
+        for f in db.execute("SELECT id,slot FROM favorite WHERE archive=?", (key,)).fetchall():
+            slot = f["slot"]
+            live = tab_key(session, windows[slot]) if slot is not None else session
+            db.execute("UPDATE favorite SET live=?, archive=NULL WHERE id=?", (live, f["id"]))
+        RESTORED_DIR.mkdir(parents=True, exist_ok=True)
+        path.rename(RESTORED_DIR / path.name)
     panes = [p for w in data["windows"] for p in w["panes"].values()]
     return {"session": session, "panes_reopened": len(panes),
                       "staged_commands": sum(1 for p in panes if p.get("cmd") and not exact_resume(p)),
                       "resume_commands_sent": sum(exact_resume(p) for p in panes)}
+
+
+def open_favorite(fid, dest=None):
+    row = next((r for r in favorite_rows() if r["id"] == fid), None)
+    if not row or row["state"] == "Missing":
+        raise RexError("Favorite is missing. No matching live workspace or archive.")
+    if row["state"] == "Live":
+        return {"session": row["session"], "window": row["window"]}
+    item = next((r for r in catalog()["archives"] if r["id"] == row["archive"]), None)
+    if not item:
+        raise RexError("Archive no longer available.")
+    target = item["destination"]
+    if target == "choose" and dest is None:
+        return {"choose": True}
+    restore_to(row["archive"], dest if target == "choose" else target)
+    # An archived tab may have been included in a whole-session snapshot.
+    with favorites_db() as db:
+        live = db.execute("SELECT live FROM favorite WHERE id=?", (fid,)).fetchone()[0]
+    sid, wid = parse_tab_key(live) if live.startswith("tab:") else (live, None)
+    return {"session": sid, "window": wid}
 
 
 def cmd_restore_to(args):
@@ -515,8 +630,9 @@ def cmd_list(_args) -> None:
                     tdetail += "  (this tab)"
                 rows.append(f"{DIM}   {branch}{RESET}      \t{tab_key(sid, w['window_id'])}\t"
                              f"{tab_name(w.get('label', ''), v, w['window_id'])}\t  {DIM}{tdetail}{RESET}")
-    if rows:
-        print("\n".join(rows))
+    stars = star_keys()
+    for row in rows:
+        print(("★ " if row.split("\t")[1] in stars else "") + row)
     for p in archives():
         try:
             data = json.loads(p.read_text())
@@ -528,7 +644,8 @@ def cmd_list(_args) -> None:
             detail = f"tab from {data.get('session_label', '?')}, {when}"
         else:
             detail = f"{when}, {n} tab{'s' * (n != 1)}"
-        print(f"{BLUE}○{RESET} {BLUE}archived{RESET}\tarchive:{p.stem}\t{data.get('label', p.stem)}\t  {DIM}{detail}{RESET}")
+        star = "★ " if "archive:" + p.stem in stars else ""
+        print(f"{star}{BLUE}○{RESET} {BLUE}archived{RESET}\tarchive:{p.stem}\t{data.get('label', p.stem)}\t  {DIM}{detail}{RESET}")
 
 
 def _safe(fn, *a):
@@ -665,14 +782,12 @@ def cmd_restore(keys, select: bool = False) -> None:
                 if data.get("type") == "tab":
                     orig = resolve_session(data.get("session_id", ""))
                     into = orig["session_id"] if orig else own_session()
-                    last = restore_archive(data, into=into)
+                    last = restore_to(key, into or "new")["session"]
                     dest = orig["label"] if orig else ("this session" if into else "a new session")
                     done.append(f"{data['label']} → {dest}")
                 else:
-                    last = restore_archive(data)
+                    last = restore_to(key, "new")["session"]
                     done.append(data["label"])
-                RESTORED_DIR.mkdir(parents=True, exist_ok=True)
-                path.rename(RESTORED_DIR / path.name)
         except Exception as e:  # keep going with the rest of the selection
             errors.append(f"{key}: {e}")
     if select and last:
@@ -689,7 +804,9 @@ def cmd_delete(keys) -> None:
     for key in keys:
         if key.startswith("archive:") and archive_path(key).exists():
             p = archive_path(key)
-            p.rename(TRASH_DIR / p.name)
+            with favorites_db() as db:
+                p.rename(TRASH_DIR / p.name)
+                db.execute("DELETE FROM favorite WHERE archive=?", (key,))
             done.append(p.stem)
     status(f"trashed {len(done)} archive(s) → {tilde(str(TRASH_DIR))}" if done
            else "x only deletes archives (archive a session first)")
@@ -767,6 +884,41 @@ def cmd_ui_restore(_args):
     client_action("session.select", session_id=result["session"])
 
 
+def forget_missing(fid):
+    if not any(r["id"] == fid and r["state"] == "Missing" for r in favorite_rows()):
+        raise RexError("Favorite is no longer missing.")
+    with favorites_db() as db:
+        db.execute("DELETE FROM favorite WHERE id=?", (fid,))
+    return {"removed": True}
+
+
+def cmd_ui_favorites(_args):
+    rows = favorite_rows()
+    if not rows:
+        pick(["Close"], "No favorites yet. In Manage Sessions & Archives, press Ctrl-F to star a row.")
+        return
+    i = pick([f"★ {r['title']} · {r['state']}" for r in rows], "Open favorite · Enter open · Esc cancel")
+    if i is None:
+        return
+    row = rows[i]
+    if row["state"] == "Missing":
+        if pick(["Keep favorite", "Remove favorite"], f"{row['title']} is missing", search=False) == 1:
+            forget_missing(row["id"])
+        return
+    result = open_favorite(row["id"])
+    if result.get("choose"):
+        targets = [{"id": "new", "title": "New session"}, *catalog()["sessions"]]
+        i = pick([s["title"] for s in targets], "Original session is gone. Restore tab into…")
+        if i is None:
+            return
+        result = open_favorite(row["id"], targets[i]["id"])
+    args = {"session_id": result["session"]}
+    if result.get("window"):
+        args["window_id"] = result["window"]
+    if not client_action("session.select", **args):
+        raise RexError("Workspace is live but the app could not switch to it.")
+
+
 def cmd_review(args):
     verb, *keys = args
     if verb not in ("archive", "trash") or not keys:
@@ -776,7 +928,7 @@ def cmd_review(args):
         for k in keys:
             if not k.startswith("archive:"):
                 raise RexError("Select only saved archives to trash.")
-            names.append("Saved archive: " + json.loads(archive_path(k).read_text())["label"])
+            names.append(("★ Favorite archive (also removes star): " if k in star_keys() else "Saved archive: ") + json.loads(archive_path(k).read_text())["label"])
     else:
         sessions = {s["session_id"]: s["label"] for s in list_sessions()}
         for k in keys:
@@ -798,7 +950,7 @@ def cmd_review(args):
             cmd_delete(keys)
 
 
-HELP = "Type to search · Enter open · Tab mark · Esc close\nCtrl-A archive… · Ctrl-R restore · Ctrl-X trash…"
+HELP = "Type to search · Enter open · Tab mark · Esc close\nCtrl-F star/unstar · Ctrl-A archive… · Ctrl-R restore · Ctrl-X trash…"
 
 
 def cmd_header(_args) -> None:
@@ -815,6 +967,7 @@ def cmd_ui(_args) -> None:
     reload = f"reload({me} list)+transform-header({me} header)+clear-selection"
     binds = [
         f"enter:execute-silent({me} go {{2}})+abort",
+        f"ctrl-f:execute-silent({me} star {{+2}})+{reload}",
         f"ctrl-a:execute({me} review archive {{+2}})+{reload}",
         f"ctrl-r:execute-silent({me} restore {{+2}})+{reload}",
         f"ctrl-x:execute({me} review trash {{+2}})+{reload}",
@@ -829,6 +982,9 @@ def cmd_ui(_args) -> None:
 
 
 COMMANDS = {
+    "ui-favorites": cmd_ui_favorites, "forget-missing": lambda args: print(json.dumps(forget_missing(*args))),
+    "star": cmd_star, "favorites": lambda _: print(json.dumps(favorite_rows())),
+    "open-favorite": lambda args: print(json.dumps(open_favorite(*args))),
     "ui-tab": cmd_ui_tab, "ui-restore": cmd_ui_restore,
     "review": cmd_review, "catalog": cmd_catalog, "tab-summary": cmd_tab_summary,
     "archive-confirmed": cmd_archive_confirmed, "restore-to": cmd_restore_to,
