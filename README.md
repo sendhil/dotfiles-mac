@@ -38,7 +38,7 @@ make stow-tmux      # Install only tmux config
 - `kitty` - Terminal emulator configuration
 - `neovim` - Neovim configuration (see [Neovim Setup](#neovim-setup) for dependencies)
 - `prezto` - Zsh configuration framework
-- `rex` - Rex terminal multiplexer config (`~/.config/rex/init.lua`), `rex-archive` (`~/.local/bin/rex-archive`; palette: "Archive Sessions…"), and `rex-snooze` (`~/.local/bin/rex-snooze`; palette: "Snooze Pane…"); see [Rex snooze](rex/README.md) for remote setup
+- `rex` - Rex terminal multiplexer config (`~/.config/rex/init.lua`), `rex-archive` (`~/.local/bin/rex-archive`; palette: "Archive This Tab…", "Restore Archived Work…", and "Manage Sessions & Archives…"), and `rex-snooze` (`~/.local/bin/rex-snooze`; palette: "Snooze Pane…"); see [Rex snooze](rex/README.md) for remote setup
 - `sesh` - Session management
 - `skhd` - Simple hotkey daemon
 - `tmux` - Terminal multiplexer configuration

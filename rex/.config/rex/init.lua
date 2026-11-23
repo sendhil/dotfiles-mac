@@ -120,16 +120,93 @@ local function open_float_picker(ctx, label, cmd, shell)
   return { block_id = block_id }
 end
 
--- Archive / restore sessions and tabs with the rex-archive fzf picker (rex/.local/bin/rex-archive).
+local ARCHIVE_BOOTSTRAP = 'PATH="$HOME/.local/bin:$HOME/Library/Application Support/com.superlogical.rex/RexServer/Versions/Current/Rex Server.app/Contents/MacOS:/opt/homebrew/bin:/usr/local/bin:$PATH"; export PATH; exec "$HOME/.local/bin/rex-archive" "$@"'
+
+local function archive_browser(ctx, mode)
+  local argv = { "/bin/sh", "-c", ARCHIVE_BOOTSTRAP, "rex-archive", mode or "ui" }
+  if mode == "ui-tab" then
+    if not ctx.session_id or not ctx.block_id then error("Select a pane to archive its tab.", 0) end
+    argv[#argv + 1] = ctx.session_id
+    argv[#argv + 1] = ctx.block_id
+  end
+  return open_float_picker(ctx, "rex-archive", argv, "none")
+end
+
+-- Run on the local owner only. A remote selection uses the terminal browser there.
+local function archive_helper(...)
+  local argv = { "/bin/sh", "-c", ARCHIVE_BOOTSTRAP, "rex-archive", ... }
+  local r, err = rex.exec(argv, { timeout = 25 })
+  if not r then error(err, 0) end
+  if not r.ok then error(r.stderr ~= "" and r.stderr or r.stdout, 0) end
+  local result, why = rex.json.decode(r.stdout)
+  if not result then error(why or "Unreadable rex-archive response", 0) end
+  return result
+end
+
+local function archive_pick(ctx, prompt, fallback)
+  local id, why, detail = rex.ui.pick(prompt)
+  if why == "unsupported" then archive_browser(ctx, fallback or "ui-restore")
+  elseif not id and why ~= "cancelled" and why ~= "timeout" then error(detail or why, 0) end
+  return id
+end
+
+local function needs_browser(ctx)
+  return ctx.server or not (rex.ui and rex.ui.pick)
+end
+
+rex.action{
+  name = "archive_this_tab", title = "Archive This Tab…", category = "Sessions",
+  run = function(ctx)
+    if needs_browser(ctx) then return archive_browser(ctx, "ui-tab") end
+    local sid, bid = ctx.session_id, ctx.block_id
+    if not sid or not bid then error("Select a pane to archive its tab.", 0) end
+    local tab = archive_helper("tab-summary", sid, bid)
+    local title = tab.scope == "session" and "Archive & close last tab and session" or "Archive & close tab"
+    local choice = archive_pick(ctx, { title = title .. ": " .. tab.title .. "?", items = {
+      { id = "cancel", title = "Keep open" },
+      { id = "archive", title = title, subtitle = tab.detail .. " · Running processes will stop." },
+    } }, "ui-tab")
+    if choice == "archive" then return archive_helper("archive-confirmed", sid, tab.window, tab.scope) end
+  end,
+}
+
+rex.action{
+  name = "restore_archived_work", title = "Restore Archived Work…", category = "Sessions",
+  run = function(ctx)
+    if needs_browser(ctx) then return archive_browser(ctx, "ui-restore") end
+    local catalog = archive_helper("catalog")
+    local items, dest = {}, {}
+    for _, a in ipairs(catalog.archives) do
+      items[#items + 1] = { id = a.id, title = a.title, subtitle = a.subtitle, detail = a.detail }
+      dest[a.id] = a.destination
+    end
+    if #items == 0 then
+      archive_pick(ctx, { title = "No archived work", items = { { id = "close", title = "Close", subtitle = "Use Archive This Tab to save a workspace." } } })
+      return
+    end
+    local key = archive_pick(ctx, { title = "Restore archived work", placeholder = "Filter archives", items = items })
+    if not key then return end
+    local target = dest[key]
+    if target == "choose" then
+      local targets = { { id = "new", title = "New session" } }
+      for _, s in ipairs(catalog.sessions) do targets[#targets + 1] = s end
+      target = archive_pick(ctx, { title = "Original session is gone. Restore tab into…", items = targets })
+      if not target then return end
+    end
+    local result = archive_helper("restore-to", key, target)
+    rex.client.queue("session.select", { session_id = result.session })
+    return result
+  end,
+}
+
+-- Keep the live previews and batch commands in the terminal browser.
 rex.action{
   name  = "archive_sessions",
-  title = "Archive Sessions…",
+  title = "Manage Sessions & Archives…",
   description = "Archive sessions or tabs to disk and restore them later (rex-archive).",
   category = "Sessions",
   keywords = "archive restore defer stash hide park sessions tabs rex-archive",
-  run   = function(ctx, args)
-    return open_float_picker(ctx, "rex-archive", { os.getenv("HOME") .. "/.local/bin/rex-archive" })
-  end,
+  run   = function(ctx) return archive_browser(ctx) end,
 }
 
 -- Snooze a pane for a duration and mark it blocked (OSC 7501) when due (rex/.local/bin/rex-snooze).
